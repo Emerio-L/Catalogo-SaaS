@@ -1,0 +1,16 @@
+{
+  "name": "catalogo-productos",
+  "version": "1.0.0",
+  "description": "Catalogo de Productos Premium con MongoDB y Admin Panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.3.0",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.3"
+  }
+}

@@ -1,0 +1,2193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Productos</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: 'var(--color-primary-50)',
+                            100: 'var(--color-primary-100)',
+                            200: 'var(--color-primary-200)',
+                            300: 'var(--color-primary-300)',
+                            400: 'var(--color-primary-400)',
+                            500: 'var(--color-primary-500)',
+                            600: 'var(--color-primary-600)',
+                            700: 'var(--color-primary-700)',
+                            800: 'var(--color-primary-800)',
+                            900: 'var(--color-primary-900)',
+                            950: 'var(--color-primary-950)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF and jsPDF-AutoTable for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Glassmorphism classes */
+        .glass-header {
+            background: rgba(var(--color-primary-900-rgb), 0.85); /* primary-900 with opacity */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        
+        /* Custom shadows and glow */
+        .shadow-premium {
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 1px 0 rgba(0, 0, 0, 0.01);
+        }
+
+        .shadow-premium-hover {
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+        }
+
+        .glow-primary {
+            box-shadow: 0 10px 25px -5px rgba(var(--color-primary-500-rgb), 0.15), 0 8px 10px -6px rgba(var(--color-primary-500-rgb), 0.15);
+        }
+
+        /* Custom active states */
+        .card-active {
+            border-color: var(--color-primary-500) !important; /* primary-500 */
+            background-color: var(--color-primary-50); /* primary-50 */
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 15px 30px -10px rgba(var(--color-primary-500-rgb), 0.12);
+        }
+
+        .category-active {
+            background-color: var(--color-primary-500) !important;
+            color: white !important;
+            box-shadow: 0 4px 14px rgba(var(--color-primary-500-rgb), 0.35);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Toggle switch */
+        .toggle-dot {
+            transition: transform 0.3s ease-in-out;
+        }
+        input:checked ~ .toggle-dot {
+            transform: translateX(100%);
+            background-color: var(--color-primary-500);
+        }
+        input:checked ~ .toggle-bg {
+            background-color: var(--color-primary-50);
+            border-color: var(--color-primary-200);
+        }
+    </style>
+</head>
+<body class="pb-36 transition-all duration-300">
+
+    <!-- FLOATING TOAST NOTIFICATIONS CONTAINER -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- CLIENT VIEW (CATALOG) -->
+    <div id="client-view" class="w-full">
+        <!-- HEADER -->
+        <header class="glass-header text-white px-6 py-5 sticky top-0 z-50 rounded-b-[2rem] shadow-lg">
+            <div class="max-w-4xl mx-auto">
+                <div class="flex justify-between items-center mb-3">
+                    <h1 class="text-2xl font-extrabold tracking-tight uppercase text-center w-full select-none">
+                        Catálogo de <span onclick="detectarClickAdmin()" class="text-primary-400 font-black cursor-default">Productos</span>
+                    </h1>
+                </div>
+
+                <!-- Búsqueda rápida -->
+                <div class="relative mb-4">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-primary-300/70"></i>
+                    </span>
+                    <input type="text" id="buscar-producto" oninput="dibujar()" placeholder="¿Qué estás buscando hoy?..." 
+                    class="w-full pl-10 pr-4 py-3 bg-white/10 text-white placeholder-primary-200/60 rounded-2xl border border-white/10 outline-none text-sm font-medium focus:ring-2 focus:ring-primary-400 focus:bg-white/20 transition-all">
+                </div>
+
+                <!-- Categorías -->
+                <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                    <button onclick="filtrar('todos')" id="cat-todos"
+                        class="category-active whitespace-nowrap px-5 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold border border-white/5 uppercase transition-all">
+                        Todos
+                    </button>
+                    <button onclick="filtrar('verduras')" id="cat-verduras"
+                        class="whitespace-nowrap px-5 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold border border-white/5 text-primary-100 uppercase transition-all">
+                        Verduras
+                    </button>
+                    <button onclick="filtrar('frutas')" id="cat-frutas"
+                        class="whitespace-nowrap px-5 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold border border-white/5 text-primary-100 uppercase transition-all">
+                        Frutas
+                    </button>
+                    <button onclick="filtrar('otros')" id="cat-otros"
+                        class="whitespace-nowrap px-5 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold border border-white/5 text-primary-100 uppercase transition-all">
+                        Otros
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- PRODUCTOS CLIENTE -->
+        <main class="p-6 max-w-4xl mx-auto">
+            <div id="grid-productos" class="grid grid-cols-2 md:grid-cols-3 gap-6 animate-slide-up">
+                <div class="col-span-full text-center text-slate-400 py-32 font-bold animate-pulse uppercase tracking-widest text-xs">
+                    <i class="fa-solid fa-spinner fa-spin text-primary-500 text-3xl mb-4 block"></i>
+                    Cargando catálogo...
+                </div>
+            </div>
+        </main>
+
+        <!-- FOOTER TOTAL -->
+        <footer class="fixed bottom-6 left-4 right-4 max-w-lg mx-auto z-40">
+            <div class="bg-slate-900/95 backdrop-blur-xl rounded-3xl p-5 shadow-2xl flex justify-between items-center border border-white/10 transition-all duration-300">
+                <div>
+                    <p class="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">
+                        Monto de tu Orden
+                    </p>
+                    <p id="total-val" class="text-2xl font-black text-white tracking-tight">
+                        Q0.00
+                    </p>
+                </div>
+                <button onclick="abrirValidacion()"
+                    class="bg-primary-500 hover:bg-primary-400 active:scale-95 text-white px-8 py-4 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-lg transition-all duration-200">
+                    Confirmar Orden <i class="fa-solid fa-circle-check ml-2"></i>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+
+    <!-- ADMIN VIEW (DASHBOARD) -->
+    <div id="admin-view" class="w-full hidden">
+        <!-- HEADER ADMIN -->
+        <header class="bg-slate-900 text-white px-6 py-6 sticky top-0 z-50 rounded-b-[2rem] shadow-xl border-b border-slate-800">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span class="bg-primary-500/20 text-primary-400 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">Modo Administrador</span>
+                    <h1 class="text-2xl font-black tracking-tight mt-1 uppercase">
+                        Panel de <span class="text-primary-400">Inventario</span>
+                    </h1>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                    <button onclick="abrirAdminForm()" class="flex-grow md:flex-none flex items-center justify-center gap-2 text-white bg-primary-600 hover:bg-primary-500 px-4 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-primary-900/30">
+                        <i class="fa-solid fa-plus"></i> Agregar Producto
+                    </button>
+                    <button onclick="switchView('client')" class="flex-grow md:flex-none flex items-center justify-center gap-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-4 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all" title="Ver Catálogo (mantiene sesión activa)">
+                        <i class="fa-solid fa-eye"></i> Catálogo
+                    </button>
+                    <button onclick="cerrarSesion()" class="flex-grow md:flex-none flex items-center justify-center gap-2 text-rose-100 hover:text-white bg-rose-600 hover:bg-rose-500 px-4 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-rose-900/30" title="Cerrar Sesión y bloquear acceso">
+                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6 max-w-7xl mx-auto">
+            <!-- ADMIN METRICS -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-premium flex items-center gap-4">
+                    <div class="w-10 h-10 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-box"></i></div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 font-extrabold uppercase">Total</p>
+                        <h3 id="stat-total" class="text-lg font-black text-slate-800">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-premium flex items-center gap-4">
+                    <div class="w-10 h-10 bg-primary-50 text-primary-600 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-eye"></i></div>
+                    <div>
+                        <p class="text-[10px] text-primary-400 font-extrabold uppercase">Activos</p>
+                        <h3 id="stat-activos" class="text-lg font-black text-primary-700">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-premium flex items-center gap-4">
+                    <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-eye-slash"></i></div>
+                    <div>
+                        <p class="text-[10px] text-rose-400 font-extrabold uppercase">Inactivos</p>
+                        <h3 id="stat-inactivos" class="text-lg font-black text-rose-700">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BUSQUEDA & LISTADO EN DISEÑO DE COLUMNAS -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- COLUMNA PRODUCTOS (2/3 de ancho) -->
+                <div id="admin-productos-col" class="lg:col-span-3 space-y-6">
+                    <!-- TABS SELECTION -->
+                    <div class="flex gap-2 md:gap-4 border-b border-slate-200 pb-3 mb-2 overflow-x-auto">
+                        <button id="admin-tab-inventario" onclick="switchAdminTab('inventario')" 
+                            class="whitespace-nowrap text-xs font-black uppercase text-primary-600 border-b-2 border-primary-500 pb-2 transition-all">
+                            <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Inventario
+                        </button>
+                        <button id="admin-tab-pedidos" onclick="switchAdminTab('pedidos')" 
+                            class="whitespace-nowrap text-xs font-black uppercase text-slate-400 hover:text-slate-600 pb-2 transition-all">
+                            <i class="fa-solid fa-receipt mr-1.5"></i> Historial de Pedidos
+                        </button>
+                        <button id="admin-tab-config" onclick="switchAdminTab('config')" 
+                            class="whitespace-nowrap text-xs font-black uppercase text-slate-400 hover:text-slate-600 pb-2 transition-all">
+                            <i class="fa-solid fa-gear mr-1.5"></i> Configuración
+                        </button>
+                    </div>
+
+                    <!-- SECCIÓN INVENTARIO -->
+                    <div id="admin-seccion-inventario" class="space-y-6">
+                        <!-- BUSQUEDA & FILTRO EN ADMIN -->
+                        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-premium flex flex-col md:flex-row gap-4 items-center">
+                            <div class="relative w-full md:flex-grow">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                                </span>
+                                <input type="text" id="admin-buscar" oninput="dibujarAdmin()" placeholder="Buscar por nombre en inventario..." 
+                                class="w-full pl-10 pr-4 py-3 bg-slate-50 text-slate-700 placeholder-slate-400 rounded-xl border border-slate-200 outline-none text-sm font-semibold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                            </div>
+                            <div class="flex gap-2 w-full md:w-auto">
+                                <select id="admin-filtro-categoria" onchange="dibujarAdmin()" class="w-full md:w-48 p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-xs font-black uppercase text-slate-600 focus:ring-2 focus:ring-primary-500">
+                                    <option value="todos">Todas las categorías</option>
+                                    <option value="verduras">Verduras</option>
+                                    <option value="frutas">Frutas</option>
+                                    <option value="otros">Otros</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- LISTADO PRODUCTOS ADMIN -->
+                        <div class="bg-white rounded-3xl border border-slate-100 shadow-premium overflow-hidden">
+                            <!-- VISTA ESCRITORIO (TABLA) -->
+                            <div class="hidden md:block overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                                            <th class="p-4 pl-6 w-20">Imagen</th>
+                                            <th class="p-4">Producto</th>
+                                            <th class="p-4">Categoría</th>
+                                            <th class="p-4">Precio / Unidad</th>
+                                            <th class="p-4 w-24 text-center">Orden</th>
+                                            <th class="p-4 w-28 text-center">Estado</th>
+                                            <th class="p-4 pr-6 w-32 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-tabla-body" class="divide-y divide-slate-50 text-sm font-semibold text-slate-700">
+                                        <!-- Inyectado dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- VISTA MÓVIL (CARDS LIST) -->
+                            <div id="admin-movil-list" class="block md:hidden p-4 space-y-4">
+                                <!-- Inyectado dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN HISTORIAL DE PEDIDOS -->
+                    <div id="admin-seccion-pedidos" class="space-y-6 hidden">
+                        <!-- Búsqueda rápida de pedidos -->
+                        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-premium flex gap-4 items-center">
+                            <div class="relative w-full">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                                </span>
+                                <input type="text" id="pedidos-buscar" oninput="dibujarPedidos()" placeholder="Buscar por nombre de cliente o nro de pedido..." 
+                                class="w-full pl-10 pr-4 py-3 bg-slate-50 text-slate-700 placeholder-slate-400 rounded-xl border border-slate-200 outline-none text-sm font-semibold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Métricas de Pedidos y Acción de Limpieza -->
+                        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-premium flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-primary-50 text-primary-600 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-coins"></i></div>
+                                <div>
+                                    <p class="text-[10px] text-slate-400 font-extrabold uppercase">Suma Total de Facturas</p>
+                                    <h3 id="pedidos-suma-total" class="text-lg font-black text-primary-700">Q0.00</h3>
+                                </div>
+                            </div>
+                            <button onclick="abrirConfirmLimpiarPedidos()" class="w-full sm:w-auto flex items-center justify-center gap-2 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-100 hover:border-rose-600 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all">
+                                <i class="fa-solid fa-trash-can"></i> Limpiar Historial
+                            </button>
+                        </div>
+
+                        <!-- LISTADO PEDIDOS ADMIN -->
+                        <div class="bg-white rounded-3xl border border-slate-100 shadow-premium overflow-hidden">
+                            <!-- VISTA ESCRITORIO (TABLA) -->
+                            <div class="hidden md:block overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                                            <th class="p-4 pl-6">Fecha / Hora</th>
+                                            <th class="p-4">Pedido Nro</th>
+                                            <th class="p-4">Cliente</th>
+                                            <th class="p-4">Productos Detalle</th>
+                                            <th class="p-4 text-center">Total</th>
+                                            <th class="p-4 pr-6 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pedidos-tabla-body" class="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
+                                        <!-- Inyectado dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- VISTA MÓVIL (CARDS LIST) -->
+                            <div id="pedidos-movil-list" class="block md:hidden p-4 space-y-4">
+                                <!-- Inyectado dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCI&#xF3;N CONFIGURACI&#xF3;N -->
+                    <div id="admin-seccion-config" class="hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                            <!-- SEGURIDAD DEL PANEL -->
+                            <div class="lg:col-span-5 bg-white p-7 rounded-3xl border border-slate-100 shadow-premium">
+                                <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                                    <div class="w-11 h-11 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 rounded-2xl flex items-center justify-center text-lg shadow-inner"><i class="fa-solid fa-shield-halved"></i></div>
+                                    <div>
+                                        <h3 class="font-extrabold text-sm text-slate-800 uppercase tracking-tight">Seguridad</h3>
+                                        <p class="text-[9px] text-slate-400 font-extrabold uppercase">Credenciales de Acceso</p>
+                                    </div>
+                                </div>
+                                <form id="form-seguridad" onsubmit="guardarConfigSeguridad(event)" class="space-y-4">
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">Contrase&ntilde;a del Panel</label>
+                                        <div class="relative"><input type="password" id="settings-password" required class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"><button type="button" onclick="toggleShowPassword('settings-password', this)" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-eye text-xs"></i></button></div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">PIN de Recuperaci&oacute;n (6 d&iacute;gitos)</label>
+                                        <div class="relative"><input type="text" id="settings-pin" maxlength="6" required class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-black focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all tracking-widest text-center"><button type="button" onclick="toggleShowPassword('settings-pin', this)" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-eye text-xs"></i></button></div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">Pregunta de Seguridad</label>
+                                        <select id="settings-pregunta" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-600 focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                                            <option value="&#191;C&oacute;mo se llamaba tu primera mascota?">&#191;C&oacute;mo se llamaba tu primera mascota?</option>
+                                            <option value="&#191;Cu&aacute;l es el nombre de la calle donde creciste?">&#191;Cu&aacute;l es el nombre de la calle donde creciste?</option>
+                                            <option value="&#191;En qu&eacute; ciudad se conocieron tus padres?">&#191;En qu&eacute; ciudad se conocieron tus padres?</option>
+                                            <option value="&#191;Cu&aacute;l era el modelo de tu primer veh&iacute;culo (auto/moto/bici)?">&#191;Cu&aacute;l era el modelo de tu primer veh&iacute;culo (auto/moto/bici)?</option>
+                                            <option value="&#191;Cu&aacute;l era el nombre de tu profesor/a de la infancia favorito/a?">&#191;Cu&aacute;l era el nombre de tu profesor/a de la infancia favorito/a?</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">Respuesta Secreta</label>
+                                        <div class="relative"><input type="password" id="settings-respuesta" required placeholder="Respuesta de recuperaci&oacute;n" class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"><button type="button" onclick="toggleShowPassword('settings-respuesta', this)" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-eye text-xs"></i></button></div>
+                                    </div>
+                                    <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl shadow-md active:scale-95 uppercase tracking-wider text-[10px] transition-all"><i class="fa-solid fa-floppy-disk mr-2"></i> Actualizar Credenciales</button>
+                                </form>
+                            </div>
+
+                            <!-- TEMA DEL CAT&#xC1;LOGO -->
+                            <div class="lg:col-span-7 bg-white p-7 rounded-3xl border border-slate-100 shadow-premium">
+                                <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                                    <div class="w-11 h-11 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 rounded-2xl flex items-center justify-center text-lg shadow-inner"><i class="fa-solid fa-palette"></i></div>
+                                    <div>
+                                        <h3 class="font-extrabold text-sm text-slate-800 uppercase tracking-tight">Tema del Cat&aacute;logo</h3>
+                                        <p class="text-[9px] text-slate-400 font-extrabold uppercase">Personalizaci&oacute;n Visual &mdash; Se aplica a todos los visitantes</p>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500 mb-6">Elige el color principal. El cambio se guarda instant&aacute;neamente en la base de datos.</p>
+                                <div class="grid grid-cols-5 gap-x-6 gap-y-5" id="theme-selector-container">
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('emerald')" class="w-7 h-7 rounded-full bg-emerald-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Verde" id="theme-btn-emerald"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Verde</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('teal')" class="w-7 h-7 rounded-full bg-teal-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Teal" id="theme-btn-teal"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Teal</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('cyan')" class="w-7 h-7 rounded-full bg-cyan-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Cian" id="theme-btn-cyan"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Cian</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('sky')" class="w-7 h-7 rounded-full bg-sky-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Cielo" id="theme-btn-sky"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Cielo</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('blue')" class="w-7 h-7 rounded-full bg-blue-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Azul" id="theme-btn-blue"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Azul</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('indigo')" class="w-7 h-7 rounded-full bg-indigo-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="&Iacute;ndigo" id="theme-btn-indigo"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Indigo</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('violet')" class="w-7 h-7 rounded-full bg-violet-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Violeta" id="theme-btn-violet"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Violeta</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('purple')" class="w-7 h-7 rounded-full bg-purple-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Morado" id="theme-btn-purple"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Morado</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('fuchsia')" class="w-7 h-7 rounded-full bg-fuchsia-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Fucsia" id="theme-btn-fuchsia"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Fucsia</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('pink')" class="w-7 h-7 rounded-full bg-pink-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Rosa" id="theme-btn-pink"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Rosa</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('rose')" class="w-7 h-7 rounded-full bg-rose-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Rojo" id="theme-btn-rose"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Rojo</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('orange')" class="w-7 h-7 rounded-full bg-orange-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Naranja" id="theme-btn-orange"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Naranja</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('amber')" class="w-7 h-7 rounded-full bg-amber-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="&Aacute;mbar" id="theme-btn-amber"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">&Aacute;mbar</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('lime')" class="w-7 h-7 rounded-full bg-lime-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Lima" id="theme-btn-lime"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Lima</span></div>
+                                    <div class="flex flex-col items-center gap-1.5"><button onclick="guardarTema('slate')" class="w-7 h-7 rounded-full bg-slate-600 border-2 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Pizarra" id="theme-btn-slate"></button><span class="text-[7px] font-black text-slate-400 uppercase leading-none">Pizarra</span></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    </div>
+
+            </div>
+        </main>
+    </div>
+
+
+    <!-- MODALS SECTION -->
+
+    <!-- MODAL AUTENTICACION ADMIN -->
+    <div id="modal-admin-auth" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6 transition-all duration-300 hidden">
+        <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl text-center transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
+            <button onclick="cerrarAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            
+            <!-- STEP 1: INICIAR SESIÓN -->
+            <div id="auth-login-step" class="space-y-4">
+                <div class="w-16 h-16 bg-slate-100 text-slate-700 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-2">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                
+                <h2 class="text-xl font-black text-slate-800 mb-1 uppercase tracking-tight">Acceso Restringido</h2>
+                <p class="text-slate-400 text-[10px] mb-6 font-extrabold uppercase tracking-widest">Solo Administradores</p>
+                
+                <form onsubmit="verificarPassword(event)" class="space-y-4">
+                    <div>
+                        <input type="password" id="auth-password" placeholder="Contraseña de Administrador" required
+                        class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+
+                    <button type="submit"
+                        class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all">
+                        Verificar Acceso
+                    </button>
+                </form>
+                
+                <button type="button" onclick="mostrarAuthStep('recovery')" 
+                    class="text-slate-400 hover:text-primary-600 font-bold text-[10px] uppercase tracking-widest transition-colors block mx-auto mt-2">
+                    ¿Olvidaste tu contraseña?
+                </button>
+            </div>
+
+            <!-- STEP 2: RESTABLECER POR PIN -->
+            <div id="auth-recovery-step" class="space-y-4 hidden">
+                <div class="w-16 h-16 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-2">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                
+                <h2 class="text-xl font-black text-slate-800 mb-1 uppercase tracking-tight">Recuperar Acceso</h2>
+                <p class="text-slate-400 text-[10px] mb-6 font-extrabold uppercase tracking-widest">Verificación por PIN</p>
+                
+                <form onsubmit="recuperarPassword(event)" class="space-y-3 text-left">
+                    <div>
+                        <label class="block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1">PIN de Seguridad (6 dígitos)</label>
+                        <input type="text" id="recovery-pin" maxlength="6" required placeholder="PIN de 6 dígitos"
+                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-black focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all tracking-widest">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1">Nueva Contraseña</label>
+                        <input type="password" id="recovery-new-password" required placeholder="Nueva contraseña de acceso"
+                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1">Confirmar Nueva Contraseña</label>
+                        <input type="password" id="recovery-confirm-password" required placeholder="Confirma tu contraseña"
+                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+
+                    <button type="submit"
+                        class="w-full py-4 mt-2 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all">
+                        Restablecer y Entrar
+                    </button>
+                </form>
+                
+                <button type="button" onclick="mostrarAuthStep('question')" 
+                    class="text-primary-600 hover:text-primary-500 font-bold text-[10px] uppercase tracking-widest transition-colors block mx-auto mt-2">
+                    ¿Olvidaste tu PIN? Usar pregunta de seguridad
+                </button>
+                
+                <button type="button" onclick="mostrarAuthStep('login')" 
+                    class="text-slate-400 hover:text-slate-600 font-bold text-[10px] uppercase tracking-widest transition-colors block mx-auto mt-2">
+                    ← Volver al inicio
+                </button>
+            </div>
+
+            <!-- STEP 3: RESTABLECER POR PREGUNTA SECRETA -->
+            <div id="auth-question-step" class="space-y-4 hidden">
+                <div class="w-16 h-16 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-2">
+                    <i class="fa-solid fa-circle-question"></i>
+                </div>
+                
+                <h2 class="text-xl font-black text-slate-800 mb-1 uppercase tracking-tight">Recuperar Acceso</h2>
+                <p class="text-slate-400 text-[10px] mb-6 font-extrabold uppercase tracking-widest">Pregunta de Seguridad</p>
+                
+                <form onsubmit="recuperarPorPregunta(event)" class="space-y-3 text-left">
+                    <div>
+                        <span id="recovery-question-text" class="block text-xs font-bold text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100 text-center mb-3">
+                            Cargando pregunta...
+                        </span>
+                        <label class="block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1">Tu Respuesta</label>
+                        <input type="text" id="recovery-question-answer" required placeholder="Respuesta secreta"
+                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1">Nueva Contraseña</label>
+                        <input type="password" id="recovery-question-new-password" required placeholder="Nueva contraseña de acceso"
+                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1">Confirmar Nueva Contraseña</label>
+                        <input type="password" id="recovery-question-confirm-password" required placeholder="Confirma tu contraseña"
+                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+
+                    <button type="submit"
+                        class="w-full py-4 mt-2 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all">
+                        Restablecer y Entrar
+                    </button>
+                </form>
+                
+                <button type="button" onclick="mostrarAuthStep('recovery')" 
+                    class="text-slate-400 hover:text-slate-600 font-bold text-[10px] uppercase tracking-widest transition-colors block mx-auto mt-2">
+                    ← Volver al PIN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHECKOUT CLIENTE -->
+    <div id="modal-validacion" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6 transition-all duration-300 hidden">
+        <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl text-center transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
+            <button onclick="cerrarValidacion()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            
+            <div class="w-16 h-16 bg-primary-50 text-primary-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+                <i class="fa-solid fa-basket-shopping animate-bounce"></i>
+            </div>
+            
+            <!-- PASO 1: DATOS DEL CLIENTE -->
+            <div id="checkout-step-1">
+                <h2 class="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tight italic">Finalizar Pedido</h2>
+                <p class="text-slate-400 text-[10px] mb-6 font-extrabold uppercase tracking-widest">Paso 1: Datos de Contacto</p>
+                
+                <div class="space-y-3 mb-6">
+                    <div>
+                        <input type="text" id="nombre-cliente" placeholder="Tu Nombre y Apellido" 
+                        class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+                    <div>
+                        <input type="tel" id="tel-cliente" placeholder="WhatsApp (Ej: 502XXXXXXXX)" 
+                        class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-base font-black focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all tracking-wide">
+                    </div>
+                </div>
+
+                <button onclick="siguienteCheckout()" 
+                    class="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg shadow-primary-600/20 active:scale-95 uppercase tracking-wider text-xs transition-all mb-4">
+                    Continuar <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
+                </button>
+                
+                <button onclick="cerrarValidacion()" class="text-slate-400 hover:text-slate-600 font-bold text-[11px] uppercase tracking-widest transition-colors">
+                    ← Regresar al catálogo
+                </button>
+            </div>
+
+            <!-- PASO 2: DESCARGA DE PDF ANTES DE ENVIAR -->
+            <div id="checkout-step-2" class="hidden">
+                <h2 class="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tight italic">¿Descargar Recibo?</h2>
+                <p class="text-slate-400 text-[10px] mb-4 font-extrabold uppercase tracking-widest">Paso 2: Descargar PDF (Opcional)</p>
+                
+                <p class="text-slate-500 text-xs mb-6 font-medium leading-relaxed">
+                    ¿Deseas descargar tu recibo de compra en formato PDF antes de enviar el pedido por WhatsApp?
+                </p>
+
+                <button onclick="descargarYEnviar()" 
+                    class="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg shadow-primary-600/20 active:scale-95 uppercase tracking-wider text-xs transition-all mb-3 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-pdf"></i> Descargar PDF y Enviar
+                </button>
+
+                <button onclick="enviarOrden()" 
+                    class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-md active:scale-95 uppercase tracking-wider text-[10px] transition-all mb-5">
+                    No descargar, solo enviar <i class="fa-brands fa-whatsapp ml-1 text-sm"></i>
+                </button>
+                
+                <button onclick="regresarCheckoutStep1()" class="text-slate-400 hover:text-slate-600 font-bold text-[11px] uppercase tracking-widest transition-colors block mx-auto">
+                    ← Regresar a mis datos
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL FORMULARIO ADMIN (CREAR / EDITAR) -->
+    <div id="modal-admin-form" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 transition-all duration-300 hidden overflow-y-auto">
+        <div class="bg-white rounded-[2.5rem] p-6 w-full max-w-md shadow-2xl my-auto transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
+            <button onclick="cerrarAdminForm()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            
+            <div class="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100">
+                <div class="w-10 h-10 bg-primary-50 text-primary-600 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-circle-info"></i></div>
+                <div>
+                    <h2 id="admin-form-titulo" class="text-lg font-black text-slate-900 uppercase tracking-tight">Agregar Producto</h2>
+                    <p class="text-[10px] text-slate-400 font-extrabold uppercase">Guardar en Base de Datos</p>
+                </div>
+            </div>
+            
+            <form id="form-producto" onsubmit="guardarProducto(event)" class="space-y-4 text-left">
+                <input type="hidden" id="admin-id">
+                
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Nombre del Producto</label>
+                    <input type="text" id="admin-nombre" required placeholder="Ej: Manzanas Rojas"
+                    class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Categoría</label>
+                        <select id="admin-categoria" class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all text-slate-600">
+                            <option value="verduras">Verduras</option>
+                            <option value="frutas">Frutas</option>
+                            <option value="otros">Otros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Unidad</label>
+                        <input type="text" id="admin-unidad" placeholder="lb, unidad, manojo" required 
+                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Precio (Q)</label>
+                        <input type="number" step="0.01" min="0" id="admin-precio" required placeholder="0.00"
+                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Orden Visual</label>
+                        <input type="number" id="admin-orden" value="1" min="1" required
+                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+                </div>
+
+                <!-- Imagen drag & drop / preview -->
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Imagen del Producto (.webp automático)</label>
+                    <div class="flex gap-4 items-center">
+                        <div class="relative w-20 h-20 bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center">
+                            <img id="admin-foto-preview" src="https://via.placeholder.com/300?text=Subir" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-grow">
+                            <input type="file" id="admin-foto" accept="image/*" onchange="previewImagen(event)"
+                            class="w-full p-2 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-100 transition-colors">
+                            <p class="text-[9px] text-slate-400 mt-1 font-semibold">El servidor optimizará la imagen y la convertirá a formato WebP.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activo Switch -->
+                <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div>
+                        <p class="text-xs font-bold text-slate-700">Producto Activo</p>
+                        <p class="text-[9px] text-slate-400 font-semibold">Determina si es visible en el catálogo de clientes.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="admin-activo" checked class="sr-only">
+                        <div class="w-11 h-6 bg-slate-200 rounded-full border border-slate-300 toggle-bg"></div>
+                        <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full shadow-md toggle-dot border border-slate-200"></div>
+                    </label>
+                </div>
+                
+                <button type="submit" id="admin-form-submit"
+                    class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-lg active:scale-[0.98] uppercase tracking-wider text-xs transition-all">
+                    Guardar Producto
+                </button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- MODAL CONFIRMACION ELIMINAR -->
+    <div id="modal-confirm-delete" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6 transition-all duration-300 hidden">
+        <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl text-center transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
+            <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+                <i class="fa-solid fa-trash-can animate-pulse"></i>
+            </div>
+            
+            <h2 class="text-xl font-black text-slate-800 mb-2 uppercase tracking-tight">¿Eliminar Producto?</h2>
+            <p class="text-slate-500 text-xs mb-6 font-medium">Esta acción eliminará el producto de forma permanente y borrará su archivo de imagen en el servidor.</p>
+            
+            <div class="flex gap-3">
+                <button onclick="confirmarEliminar()" 
+                    class="flex-1 py-3.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-2xl shadow-md uppercase tracking-wider text-xs transition-all active:scale-95">
+                    Sí, Eliminar
+                </button>
+                <button onclick="cerrarConfirmDelete()" 
+                    class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold rounded-2xl uppercase tracking-wider text-xs transition-all active:scale-95">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL CONFIRMACION ELIMINAR PEDIDO -->
+    <div id="modal-confirm-delete-pedido" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6 transition-all duration-300 hidden">
+        <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl text-center transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
+            <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+                <i class="fa-solid fa-trash-can animate-pulse"></i>
+            </div>
+            
+            <h2 class="text-xl font-black text-slate-800 mb-2 uppercase tracking-tight">¿Eliminar Pedido?</h2>
+            <p class="text-slate-500 text-xs mb-6 font-medium">Esta acción eliminará de forma permanente este registro de pedido de la base de datos.</p>
+            
+            <div class="flex gap-3">
+                <button onclick="confirmarEliminarPedido()" 
+                    class="flex-1 py-3.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-2xl shadow-md uppercase tracking-wider text-xs transition-all active:scale-95">
+                    Sí, Eliminar
+                </button>
+                <button onclick="cerrarConfirmDeletePedido()" 
+                    class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold rounded-2xl uppercase tracking-wider text-xs transition-all active:scale-95">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL CONFIRMACION LIMPIAR HISTORIAL -->
+    <div id="modal-confirm-clear-pedidos" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6 transition-all duration-300 hidden">
+        <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl text-center transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
+            <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+                <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
+            </div>
+            
+            <h2 class="text-xl font-black text-slate-800 mb-2 uppercase tracking-tight">¿Limpiar Historial?</h2>
+            <p class="text-slate-500 text-xs mb-6 font-medium text-rose-600 font-bold">¡ADVERTENCIA! Esta acción borrará permanentemente todos los pedidos y facturas registradas en la base de datos de forma irreversible.</p>
+            
+            <div class="flex gap-3">
+                <button onclick="confirmarLimpiarPedidos()" 
+                    class="flex-1 py-3.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-2xl shadow-md uppercase tracking-wider text-xs transition-all active:scale-95">
+                    Sí, Limpiar Todo
+                </button>
+                <button onclick="cerrarConfirmLimpiarPedidos()" 
+                    class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold rounded-2xl uppercase tracking-wider text-xs transition-all active:scale-95">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SCRIPTS DE LA APLICACIÓN -->
+    <script>
+        /* ===========================
+        CONFIGURACIÓN Y VARIABLES
+        =========================== */
+        const MI_WHATSAPP = "50235387468";
+        const API_URL = `${window.location.origin}/api`;
+
+        let productos = [];
+        let adminProductos = [];
+        let adminPedidos = [];
+        let tabAdminActual = "inventario";
+        let pedido = {};
+        let filtroActual = "todos";
+        let productoIdParaEliminar = null;
+        let pedidoIdParaEliminar = null;
+
+        /* ===========================
+        TEMAS VISUALES Y APARIENCIA
+        =========================== */
+        const THEMES = {
+            emerald: {
+                name: 'Esmeralda',
+                primary900Rgb: [6, 78, 59],
+                vars: { '--color-primary-50':'#f0fdf4','--color-primary-100':'#dcfce7','--color-primary-200':'#a7f3d0','--color-primary-300':'#6ee7b7','--color-primary-400':'#34d399','--color-primary-500':'#10b981','--color-primary-600':'#059669','--color-primary-700':'#047857','--color-primary-800':'#065f46','--color-primary-900':'#064e3b','--color-primary-950':'#022c22','--color-primary-500-rgb':'16, 185, 129','--color-primary-900-rgb':'6, 78, 59' }
+            },
+            teal: {
+                name: 'Teal',
+                primary900Rgb: [19, 78, 74],
+                vars: { '--color-primary-50':'#f0fdfa','--color-primary-100':'#ccfbf1','--color-primary-200':'#99f6e4','--color-primary-300':'#5eead4','--color-primary-400':'#2dd4bf','--color-primary-500':'#14b8a6','--color-primary-600':'#0d9488','--color-primary-700':'#0f766e','--color-primary-800':'#115e59','--color-primary-900':'#134e4a','--color-primary-950':'#042f2e','--color-primary-500-rgb':'20, 184, 166','--color-primary-900-rgb':'19, 78, 74' }
+            },
+            cyan: {
+                name: 'Cian',
+                primary900Rgb: [22, 78, 99],
+                vars: { '--color-primary-50':'#ecfeff','--color-primary-100':'#cffafe','--color-primary-200':'#a5f3fc','--color-primary-300':'#67e8f9','--color-primary-400':'#22d3ee','--color-primary-500':'#06b6d4','--color-primary-600':'#0891b2','--color-primary-700':'#0e7490','--color-primary-800':'#155e75','--color-primary-900':'#164e63','--color-primary-950':'#083344','--color-primary-500-rgb':'6, 182, 212','--color-primary-900-rgb':'22, 78, 99' }
+            },
+            sky: {
+                name: 'Cielo',
+                primary900Rgb: [12, 74, 110],
+                vars: { '--color-primary-50':'#f0f9ff','--color-primary-100':'#e0f2fe','--color-primary-200':'#bae6fd','--color-primary-300':'#7dd3fc','--color-primary-400':'#38bdf8','--color-primary-500':'#0ea5e9','--color-primary-600':'#0284c7','--color-primary-700':'#0369a1','--color-primary-800':'#075985','--color-primary-900':'#0c4a6e','--color-primary-950':'#082f49','--color-primary-500-rgb':'14, 165, 233','--color-primary-900-rgb':'12, 74, 110' }
+            },
+            blue: {
+                name: 'Azul',
+                primary900Rgb: [30, 58, 138],
+                vars: { '--color-primary-50':'#eff6ff','--color-primary-100':'#dbeafe','--color-primary-200':'#bfdbfe','--color-primary-300':'#93c5fd','--color-primary-400':'#60a5fa','--color-primary-500':'#3b82f6','--color-primary-600':'#2563eb','--color-primary-700':'#1d4ed8','--color-primary-800':'#1e40af','--color-primary-900':'#1e3a8a','--color-primary-950':'#172554','--color-primary-500-rgb':'59, 130, 246','--color-primary-900-rgb':'30, 58, 138' }
+            },
+            indigo: {
+                name: 'Índigo',
+                primary900Rgb: [49, 46, 129],
+                vars: { '--color-primary-50':'#eef2ff','--color-primary-100':'#e0e7ff','--color-primary-200':'#c7d2fe','--color-primary-300':'#a5b4fc','--color-primary-400':'#818cf8','--color-primary-500':'#6366f1','--color-primary-600':'#4f46e5','--color-primary-700':'#4338ca','--color-primary-800':'#3730a3','--color-primary-900':'#312e81','--color-primary-950':'#1e1b4b','--color-primary-500-rgb':'99, 102, 241','--color-primary-900-rgb':'49, 46, 129' }
+            },
+            violet: {
+                name: 'Violeta',
+                primary900Rgb: [76, 29, 149],
+                vars: { '--color-primary-50':'#f5f3ff','--color-primary-100':'#ede9fe','--color-primary-200':'#ddd6fe','--color-primary-300':'#c4b5fd','--color-primary-400':'#a78bfa','--color-primary-500':'#8b5cf6','--color-primary-600':'#7c3aed','--color-primary-700':'#6d28d9','--color-primary-800':'#5b21b6','--color-primary-900':'#4c1d95','--color-primary-950':'#2e1065','--color-primary-500-rgb':'139, 92, 246','--color-primary-900-rgb':'76, 29, 149' }
+            },
+            purple: {
+                name: 'Amatista',
+                primary900Rgb: [88, 28, 135],
+                vars: { '--color-primary-50':'#faf5ff','--color-primary-100':'#f3e8ff','--color-primary-200':'#e9d5ff','--color-primary-300':'#d8b4fe','--color-primary-400':'#c084fc','--color-primary-500':'#a855f7','--color-primary-600':'#9333ea','--color-primary-700':'#7e22ce','--color-primary-800':'#6b21a8','--color-primary-900':'#581c87','--color-primary-950':'#3b0764','--color-primary-500-rgb':'168, 85, 247','--color-primary-900-rgb':'88, 28, 135' }
+            },
+            fuchsia: {
+                name: 'Fucsia',
+                primary900Rgb: [112, 26, 117],
+                vars: { '--color-primary-50':'#fdf4ff','--color-primary-100':'#fae8ff','--color-primary-200':'#f5d0fe','--color-primary-300':'#f0abfc','--color-primary-400':'#e879f9','--color-primary-500':'#d946ef','--color-primary-600':'#c026d3','--color-primary-700':'#a21caf','--color-primary-800':'#86198f','--color-primary-900':'#701a75','--color-primary-950':'#4a044e','--color-primary-500-rgb':'217, 70, 239','--color-primary-900-rgb':'112, 26, 117' }
+            },
+            pink: {
+                name: 'Rosa',
+                primary900Rgb: [131, 24, 67],
+                vars: { '--color-primary-50':'#fdf2f8','--color-primary-100':'#fce7f3','--color-primary-200':'#fbcfe8','--color-primary-300':'#f9a8d4','--color-primary-400':'#f472b6','--color-primary-500':'#ec4899','--color-primary-600':'#db2777','--color-primary-700':'#be185d','--color-primary-800':'#9d174d','--color-primary-900':'#831843','--color-primary-950':'#500724','--color-primary-500-rgb':'236, 72, 153','--color-primary-900-rgb':'131, 24, 67' }
+            },
+            rose: {
+                name: 'Rubí',
+                primary900Rgb: [136, 19, 55],
+                vars: { '--color-primary-50':'#fff1f2','--color-primary-100':'#ffe4e6','--color-primary-200':'#fecdd3','--color-primary-300':'#fda4af','--color-primary-400':'#fb7185','--color-primary-500':'#f43f5e','--color-primary-600':'#e11d48','--color-primary-700':'#be123c','--color-primary-800':'#9f1239','--color-primary-900':'#881337','--color-primary-950':'#4c0519','--color-primary-500-rgb':'244, 63, 94','--color-primary-900-rgb':'136, 19, 55' }
+            },
+            orange: {
+                name: 'Naranja',
+                primary900Rgb: [124, 45, 18],
+                vars: { '--color-primary-50':'#fff7ed','--color-primary-100':'#ffedd5','--color-primary-200':'#fed7aa','--color-primary-300':'#fdba74','--color-primary-400':'#fb923c','--color-primary-500':'#f97316','--color-primary-600':'#ea580c','--color-primary-700':'#c2410c','--color-primary-800':'#9a3412','--color-primary-900':'#7c2d12','--color-primary-950':'#431407','--color-primary-500-rgb':'249, 115, 22','--color-primary-900-rgb':'124, 45, 18' }
+            },
+            amber: {
+                name: 'Ámbar',
+                primary900Rgb: [120, 53, 15],
+                vars: { '--color-primary-50':'#fffbeb','--color-primary-100':'#fef3c7','--color-primary-200':'#fde68a','--color-primary-300':'#fcd34d','--color-primary-400':'#fbbf24','--color-primary-500':'#f59e0b','--color-primary-600':'#d97706','--color-primary-700':'#b45309','--color-primary-800':'#92400e','--color-primary-900':'#78350f','--color-primary-950':'#451a03','--color-primary-500-rgb':'245, 158, 11','--color-primary-900-rgb':'120, 53, 15' }
+            },
+            lime: {
+                name: 'Lima',
+                primary900Rgb: [54, 83, 20],
+                vars: { '--color-primary-50':'#f7fee7','--color-primary-100':'#ecfccb','--color-primary-200':'#d9f99d','--color-primary-300':'#bef264','--color-primary-400':'#a3e635','--color-primary-500':'#84cc16','--color-primary-600':'#65a30d','--color-primary-700':'#4d7c0f','--color-primary-800':'#3f6212','--color-primary-900':'#365314','--color-primary-950':'#1a2e05','--color-primary-500-rgb':'132, 204, 22','--color-primary-900-rgb':'54, 83, 20' }
+            },
+            slate: {
+                name: 'Pizarra',
+                primary900Rgb: [15, 23, 42],
+                vars: { '--color-primary-50':'#f8fafc','--color-primary-100':'#f1f5f9','--color-primary-200':'#e2e8f0','--color-primary-300':'#cbd5e1','--color-primary-400':'#94a3b8','--color-primary-500':'#475569','--color-primary-600':'#334155','--color-primary-700':'#1e293b','--color-primary-800':'#0f172a','--color-primary-900':'#0f172a','--color-primary-950':'#020617','--color-primary-500-rgb':'71, 85, 105','--color-primary-900-rgb':'15, 23, 42' }
+            }
+        };
+
+        window.currentThemeKey = 'emerald';
+
+        function aplicarTema(themeKey) {
+            const theme = THEMES[themeKey] || THEMES.emerald;
+            for (const [key, val] of Object.entries(theme.vars)) {
+                document.documentElement.style.setProperty(key, val);
+            }
+            window.currentThemeKey = themeKey;
+        }
+
+        function actualizarBotonTemaActivo(themeKey) {
+            document.querySelectorAll("#theme-selector-container button").forEach(btn => {
+                btn.classList.remove("ring-4", "ring-offset-2", "ring-slate-900", "scale-110");
+            });
+            const activeBtn = document.getElementById("theme-btn-" + themeKey);
+            if (activeBtn) {
+                activeBtn.classList.add("ring-4", "ring-offset-2", "ring-slate-900", "scale-110");
+            }
+        }
+
+        async function guardarTema(themeKey) {
+            try {
+                const res = await fetch(`${API_URL}/admin/config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tema: themeKey })
+                });
+                if (res.ok) {
+                    aplicarTema(themeKey);
+                    actualizarBotonTemaActivo(themeKey);
+                    showToast(`Tema ${THEMES[themeKey].name} guardado y aplicado`, "success");
+                } else {
+                    showToast("Error al intentar guardar el tema", "error");
+                }
+            } catch (err) {
+                showToast("Error al conectar con el servidor", "error");
+            }
+        }
+
+        /* ===========================
+        NOTIFICACIONES (TOASTS)
+        =========================== */
+        function showToast(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border backdrop-blur-md transform translate-y-3 opacity-0 transition-all duration-300 max-w-sm w-full pointer-events-auto`;
+            
+            if (tipo === 'success') {
+                toast.className += ' bg-primary-50/95 border-primary-200 text-primary-900';
+                toast.innerHTML = `<div class="w-7 h-7 bg-primary-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-sm"><i class="fa-solid fa-check"></i></div>`;
+            } else if (tipo === 'error') {
+                toast.className += ' bg-rose-50/95 border-rose-200 text-rose-900';
+                toast.innerHTML = `<div class="w-7 h-7 bg-rose-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-sm"><i class="fa-solid fa-exclamation"></i></div>`;
+            } else {
+                toast.className += ' bg-slate-50/95 border-slate-200 text-slate-900';
+                toast.innerHTML = `<div class="w-7 h-7 bg-slate-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-sm"><i class="fa-solid fa-info"></i></div>`;
+            }
+
+            toast.innerHTML += `<span class="text-[11px] font-black uppercase tracking-wider flex-grow">${mensaje}</span>`;
+
+            container.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-3', 'opacity-0');
+            }, 50);
+
+            // Animate out and remove
+            setTimeout(() => {
+                toast.classList.add('translate-y-3', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3500);
+        }
+
+        /* ===========================
+        CARGAR DESDE API (CLIENTE / ADMIN)
+        =========================== */
+        async function cargarDesdeAPI() {
+            try {
+                const response = await fetch(`${API_URL}/productos`);
+                if (!response.ok) throw new Error('Error de servidor');
+                const data = await response.json();
+                
+                productos = data.map(p => ({
+                    id: p._id,
+                    c: p.categoria,
+                    n: p.nombre,
+                    p: p.precio,
+                    u: p.unidad,
+                    img: p.imagen.startsWith('/') ? `${window.location.origin}${p.imagen}` : p.imagen,
+                    o: p.orden
+                }));
+
+                dibujar();
+            } catch (err) {
+                console.error(err);
+                document.getElementById("grid-productos").innerHTML = `
+                <div class="col-span-full text-center py-20">
+                    <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <p class="text-sm font-bold text-slate-800">Error al cargar el catálogo</p>
+                    <p class="text-xs text-slate-400 mt-1">Por favor verifica la conexión a la Base de Datos</p>
+                    <button onclick="cargarDesdeAPI()" class="mt-4 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold rounded-xl transition-all">Reintentar</button>
+                </div>`;
+            }
+        }
+
+        async function cargarAdminProductos() {
+            try {
+                const response = await fetch(`${API_URL}/admin/productos`);
+                if (!response.ok) throw new Error('Error al obtener productos');
+                adminProductos = await response.json();
+                
+                // Actualizar métricas del dashboard
+                document.getElementById('stat-total').innerText = adminProductos.length;
+                document.getElementById('stat-activos').innerText = adminProductos.filter(p => p.activo).length;
+                document.getElementById('stat-inactivos').innerText = adminProductos.filter(p => !p.activo).length;
+
+                dibujarAdmin();
+            } catch (err) {
+                console.error(err);
+                showToast("Error al cargar inventario para el Panel", "error");
+            }
+        }
+
+        /* ===========================
+        DIBUJAR PRODUCTOS (CLIENTE)
+        =========================== */
+        function dibujar() {
+            const container = document.getElementById("grid-productos");
+            const busqueda = document.getElementById("buscar-producto").value.trim().toLowerCase();
+
+            let lista = filtroActual === "todos" 
+                ? productos 
+                : productos.filter(p => p.c === filtroActual);
+
+            if (busqueda !== "") {
+                lista = lista.filter(p => p.n.toLowerCase().includes(busqueda));
+            }
+
+            if (lista.length === 0) {
+                container.innerHTML = `
+                <div class="col-span-full text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-premium">
+                    <div class="w-14 h-14 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center text-xl mx-auto mb-3"><i class="fa-solid fa-basket-shopping"></i></div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">No hay productos disponibles</p>
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = lista.map(prod => {
+                const badgeColor = prod.c === 'frutas' ? 'bg-amber-100 text-amber-700' : (prod.c === 'verduras' ? 'bg-primary-100 text-primary-700' : 'bg-purple-100 text-purple-700');
+                return `
+                <div id="card-${prod.id}" class="group bg-white rounded-[2rem] shadow-premium border-2 border-transparent overflow-hidden transition-all duration-300 ${pedido[prod.id] > 0 ? 'card-active' : 'hover:-translate-y-1 hover:shadow-premium-hover'}">
+                    
+                    <div class="relative h-32 md:h-36 bg-slate-50 overflow-hidden">
+                        <span class="absolute top-3 left-3 z-10 ${badgeColor} text-[8px] font-black uppercase px-2.5 py-1 rounded-full tracking-wider">
+                            ${prod.c}
+                        </span>
+                        <img src="${prod.img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://via.placeholder.com/300?text=${encodeURIComponent(prod.n)}'">
+                    </div>
+
+                    <div class="p-4 text-center">
+                        <h3 class="font-extrabold text-slate-800 text-[13px] md:text-sm truncate uppercase tracking-tight">
+                            ${prod.n}
+                        </h3>
+                        
+                        <p class="text-primary-600 font-extrabold text-xs mt-0.5 mb-4 italic">
+                            Q${prod.p.toFixed(2)} <span class="text-slate-400 font-medium not-italic text-[10px]">/ ${prod.u}</span>
+                        </p>
+
+                        <div class="flex items-center justify-between bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                            <button onclick="update('${prod.id}', -1)" 
+                                class="w-8 h-8 bg-white hover:bg-slate-100 shadow-sm rounded-xl font-black text-slate-600 active:scale-95 transition-all flex items-center justify-center">
+                                <i class="fa-solid fa-minus text-[10px]"></i>
+                            </button>
+                            <span id="cant-${prod.id}" class="font-black text-slate-800 text-sm">
+                                ${pedido[prod.id] || 0}
+                            </span>
+                            <button onclick="update('${prod.id}', 1)" 
+                                class="w-8 h-8 bg-slate-900 hover:bg-slate-800 text-white shadow-sm rounded-xl font-black active:scale-95 transition-all flex items-center justify-center">
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        /* ===========================
+        DIBUJAR PRODUCTOS (ADMIN)
+        =========================== */
+        function dibujarAdmin() {
+            const tbody = document.getElementById("admin-tabla-body");
+            const movilList = document.getElementById("admin-movil-list");
+            const busqueda = document.getElementById("admin-buscar").value.trim().toLowerCase();
+            const filtroCat = document.getElementById("admin-filtro-categoria").value;
+
+            let lista = filtroCat === "todos" 
+                ? adminProductos 
+                : adminProductos.filter(p => p.categoria === filtroCat);
+
+            if (busqueda !== "") {
+                lista = lista.filter(p => p.nombre.toLowerCase().includes(busqueda));
+            }
+
+            if (lista.length === 0) {
+                const vacioMsg = `
+                <tr>
+                    <td colspan="7" class="text-center py-16 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                        No hay productos que coincidan en el inventario
+                    </td>
+                </tr>`;
+                tbody.innerHTML = vacioMsg;
+                movilList.innerHTML = `
+                <div class="text-center py-10 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                    No hay productos que coincidan en el inventario
+                </div>`;
+                return;
+            }
+
+            // Renderizar versión Escritorio (Tabla)
+            tbody.innerHTML = lista.map(prod => {
+                const imgUrl = prod.imagen.startsWith('/') ? `${window.location.origin}${prod.imagen}` : prod.imagen;
+                const statusBadge = prod.activo 
+                    ? `<span class="bg-primary-50 border border-primary-200 text-primary-700 text-[8px] font-black uppercase px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle text-[6px] mr-1.5"></i>Activo</span>`
+                    : `<span class="bg-rose-50 border border-rose-200 text-rose-700 text-[8px] font-black uppercase px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle text-[6px] mr-1.5"></i>Inactivo</span>`;
+                
+                return `
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="p-3 pl-6">
+                        <div class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden">
+                            <img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/300?text=${encodeURIComponent(prod.nombre)}'">
+                        </div>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-extrabold text-slate-900">${prod.nombre}</div>
+                        <div class="text-[9px] text-slate-400 uppercase tracking-wide">ID: ${prod._id}</div>
+                    </td>
+                    <td class="p-3">
+                        <span class="text-xs uppercase font-extrabold px-2 py-0.5 rounded bg-slate-100 text-slate-600">${prod.categoria}</span>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-bold text-primary-600">Q${prod.precio.toFixed(2)}</div>
+                        <div class="text-[10px] text-slate-400">Por ${prod.unidad}</div>
+                    </td>
+                    <td class="p-3 text-center">
+                        <span class="bg-slate-100 text-slate-700 font-bold px-2 py-1 rounded text-xs">${prod.orden}</span>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="toggleActivo('${prod._id}')" class="transition-transform active:scale-95">
+                            ${statusBadge}
+                        </button>
+                    </td>
+                    <td class="p-3 pr-6 text-right">
+                        <div class="flex justify-end gap-1.5">
+                            <button onclick="editarProducto('${prod._id}')" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all flex items-center justify-center" title="Editar"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="abrirConfirmDelete('${prod._id}')" class="w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all flex items-center justify-center" title="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            // Renderizar versión Móvil (Tarjetas)
+            movilList.innerHTML = lista.map(prod => {
+                const imgUrl = prod.imagen.startsWith('/') ? `${window.location.origin}${prod.imagen}` : prod.imagen;
+                return `
+                <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 flex gap-3 relative">
+                    <div class="w-16 h-16 bg-white border border-slate-100 rounded-xl overflow-hidden flex-shrink-0">
+                        <img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/300?text=${encodeURIComponent(prod.nombre)}'">
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="flex justify-between items-start gap-1">
+                            <h4 class="font-extrabold text-xs text-slate-800 uppercase truncate">${prod.nombre}</h4>
+                            <span class="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-slate-200/60 text-slate-600">${prod.categoria}</span>
+                        </div>
+                        <div class="text-[10px] text-primary-600 font-extrabold mt-0.5">Q${prod.precio.toFixed(2)} / ${prod.unidad}</div>
+                        
+                        <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-200/40">
+                            <button onclick="toggleActivo('${prod._id}')" class="text-[9px] font-black uppercase text-slate-500">
+                                ${prod.activo 
+                                    ? `<span class="text-primary-600"><i class="fa-solid fa-eye mr-1"></i> Visible</span>`
+                                    : `<span class="text-rose-500"><i class="fa-solid fa-eye-slash mr-1"></i> Oculto</span>`}
+                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="editarProducto('${prod._id}')" class="text-xs bg-white text-slate-600 border border-slate-200 px-3 py-1 rounded-lg font-bold"><i class="fa-solid fa-pen mr-1"></i>Editar</button>
+                                <button onclick="abrirConfirmDelete('${prod._id}')" class="text-xs bg-rose-50 text-rose-600 border border-rose-100 px-3 py-1 rounded-lg font-bold"><i class="fa-solid fa-trash mr-1"></i>Borrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        /* ===========================
+        LÓGICA DEL CARRITO (CLIENTE)
+        =========================== */
+        function update(id, delta) {
+            pedido[id] = Math.max(0, (pedido[id] || 0) + delta);
+            
+            const span = document.getElementById(`cant-${id}`);
+            if (span) span.innerText = pedido[id];
+
+            const card = document.getElementById(`card-${id}`);
+            if (card) {
+                if (pedido[id] > 0) {
+                    card.classList.add("card-active");
+                } else {
+                    card.classList.remove("card-active");
+                }
+            }
+
+            recalcular();
+        }
+
+        function recalcular() {
+            let total = 0;
+            productos.forEach(p => {
+                if (pedido[p.id]) {
+                    total += pedido[p.id] * p.p;
+                }
+            });
+            document.getElementById("total-val").innerText = "Q" + total.toFixed(2);
+        }
+
+        function filtrar(cat) {
+            filtroActual = cat;
+            document.querySelectorAll("#client-view header button[id^='cat-']").forEach(b => b.classList.remove("category-active"));
+            
+            const selectedBtn = document.getElementById("cat-" + cat);
+            if (selectedBtn) selectedBtn.classList.add("category-active");
+            
+            dibujar();
+        }
+
+        /* ===========================
+        VISTAS / NAVEGACIÓN
+        =========================== */
+        let adminAutenticado = sessionStorage.getItem('admin_auth') === 'true';
+        let clicksAdmin = 0;
+        let clicksTimeout = null;
+
+        function detectarClickAdmin() {
+            clicksAdmin++;
+            clearTimeout(clicksTimeout);
+            clicksTimeout = setTimeout(() => {
+                clicksAdmin = 0;
+            }, 2000);
+
+            if (clicksAdmin >= 5) {
+                clicksAdmin = 0;
+                switchView('admin');
+            }
+        }
+
+        function abrirAuthModal() {
+            const modal = document.getElementById("modal-admin-auth");
+            modal.classList.remove("hidden");
+            document.getElementById("auth-password").value = "";
+            mostrarAuthStep('login');
+            setTimeout(() => {
+                modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+                document.getElementById("auth-password").focus();
+            }, 10);
+        }
+
+        function cerrarAuthModal() {
+            const modal = document.getElementById("modal-admin-auth");
+            modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add("hidden");
+            }, 300);
+        }
+
+        async function mostrarAuthStep(step) {
+            if (step === 'login') {
+                document.getElementById('auth-login-step').classList.remove('hidden');
+                document.getElementById('auth-recovery-step').classList.add('hidden');
+                document.getElementById('auth-question-step').classList.add('hidden');
+                document.getElementById("auth-password").focus();
+            } else if (step === 'recovery') {
+                document.getElementById('auth-login-step').classList.add('hidden');
+                document.getElementById('auth-recovery-step').classList.remove('hidden');
+                document.getElementById('auth-question-step').classList.add('hidden');
+                document.getElementById('recovery-pin').value = '';
+                document.getElementById('recovery-new-password').value = '';
+                document.getElementById('recovery-confirm-password').value = '';
+                document.getElementById('recovery-pin').focus();
+            } else if (step === 'question') {
+                document.getElementById('auth-login-step').classList.add('hidden');
+                document.getElementById('auth-recovery-step').classList.add('hidden');
+                document.getElementById('auth-question-step').classList.remove('hidden');
+                document.getElementById('recovery-question-answer').value = '';
+                document.getElementById('recovery-question-new-password').value = '';
+                document.getElementById('recovery-question-confirm-password').value = '';
+                
+                // Cargar la pregunta secreta de la API
+                try {
+                    const res = await fetch(`${API_URL}/admin/auth/recovery-question`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        document.getElementById('recovery-question-text').innerText = data.pregunta;
+                    } else {
+                        document.getElementById('recovery-question-text').innerText = "Error al cargar la pregunta secreta.";
+                    }
+                } catch (err) {
+                    document.getElementById('recovery-question-text').innerText = "Error de conexión.";
+                }
+                document.getElementById('recovery-question-answer').focus();
+            }
+        }
+
+        async function verificarPassword(e) {
+            if (e) e.preventDefault();
+            const password = document.getElementById("auth-password").value;
+            
+            try {
+                const res = await fetch(`${API_URL}/admin/auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                if (res.ok) {
+                    adminAutenticado = true;
+                    sessionStorage.setItem('admin_auth', 'true');
+                    cerrarAuthModal();
+                    showToast("Acceso concedido", "success");
+                    switchView('admin');
+                } else {
+                    const data = await res.json();
+                    showToast(data.error || "Contraseña incorrecta", "error");
+                    document.getElementById("auth-password").value = "";
+                    document.getElementById("auth-password").focus();
+                }
+            } catch (err) {
+                showToast("Error de conexión al verificar", "error");
+            }
+        }
+
+        async function recuperarPassword(e) {
+            if (e) e.preventDefault();
+            const pin = document.getElementById("recovery-pin").value.trim();
+            const newPassword = document.getElementById("recovery-new-password").value;
+            const confirmPass = document.getElementById("recovery-confirm-password").value;
+
+            if (pin.length < 6 || isNaN(pin)) {
+                showToast("El PIN de seguridad debe tener 6 dígitos", "error");
+                return;
+            }
+
+            if (newPassword !== confirmPass) {
+                showToast("Las contraseñas nuevas no coinciden", "error");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/admin/auth/recovery`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin, newPassword })
+                });
+
+                if (res.ok) {
+                    adminAutenticado = true;
+                    sessionStorage.setItem('admin_auth', 'true');
+                    cerrarAuthModal();
+                    showToast("Contraseña restablecida y acceso concedido", "success");
+                    switchView('admin');
+                } else {
+                    const data = await res.json();
+                    showToast(data.error || "PIN de recuperación inválido", "error");
+                }
+            } catch (err) {
+                showToast("Error de conexión al recuperar", "error");
+            }
+        }
+
+        async function recuperarPorPregunta(e) {
+            if (e) e.preventDefault();
+            const answer = document.getElementById("recovery-question-answer").value.trim();
+            const newPassword = document.getElementById("recovery-question-new-password").value;
+            const confirmPass = document.getElementById("recovery-question-confirm-password").value;
+
+            if (newPassword !== confirmPass) {
+                showToast("Las contraseñas nuevas no coinciden", "error");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/admin/auth/recovery-question`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ answer, newPassword })
+                });
+
+                if (res.ok) {
+                    adminAutenticado = true;
+                    sessionStorage.setItem('admin_auth', 'true');
+                    cerrarAuthModal();
+                    showToast("Contraseña restablecida y acceso concedido", "success");
+                    switchView('admin');
+                } else {
+                    const data = await res.json();
+                    showToast(data.error || "Respuesta secreta incorrecta", "error");
+                }
+            } catch (err) {
+                showToast("Error de conexión al recuperar", "error");
+            }
+        }
+
+        function switchView(view) {
+            if (view === 'admin') {
+                if (!adminAutenticado) {
+                    abrirAuthModal();
+                    return;
+                }
+                document.getElementById('client-view').classList.add('hidden');
+                document.getElementById('admin-view').classList.remove('hidden');
+                switchAdminTab(tabAdminActual);
+            } else {
+                document.getElementById('admin-view').classList.add('hidden');
+                document.getElementById('client-view').classList.remove('hidden');
+                cargarDesdeAPI();
+            }
+        }
+
+
+
+        function cerrarSesion() {
+            adminAutenticado = false;
+            sessionStorage.removeItem('admin_auth');
+            showToast("Sesión cerrada. Acceso protegido.", "info");
+            switchView('client');
+        }
+
+        /* ===========================
+        AJUSTES DE SEGURIDAD (ADMIN)
+        =========================== */
+        async function cargarConfigSeguridad() {
+            try {
+                const res = await fetch(`${API_URL}/admin/config`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('settings-password').value = data.password;
+                    document.getElementById('settings-pin').value = data.recoveryPin;
+                    document.getElementById('settings-pregunta').value = data.preguntaSeguridad || "¿Cómo se llamaba tu primera mascota?";
+                    document.getElementById('settings-respuesta').value = data.respuestaSeguridad || "";
+                    if (data.tema) {
+                        aplicarTema(data.tema);
+                        actualizarBotonTemaActivo(data.tema);
+                    }
+                }
+            } catch (err) {
+                console.error("Error al cargar la configuración de seguridad", err);
+            }
+        }
+
+        async function guardarConfigSeguridad(e) {
+            if (e) e.preventDefault();
+            const password = document.getElementById('settings-password').value;
+            const recoveryPin = document.getElementById('settings-pin').value.trim();
+            const preguntaSeguridad = document.getElementById('settings-pregunta').value;
+            const respuestaSeguridad = document.getElementById('settings-respuesta').value.trim();
+
+            if (recoveryPin.length !== 6 || isNaN(recoveryPin)) {
+                showToast("El PIN de recuperación debe ser un número de 6 dígitos", "error");
+                return;
+            }
+
+            if (respuestaSeguridad === "") {
+                showToast("La respuesta secreta no puede estar vacía", "error");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/admin/config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password, recoveryPin, preguntaSeguridad, respuestaSeguridad })
+                });
+
+                if (res.ok) {
+                    showToast("Credenciales de seguridad actualizadas con éxito", "success");
+                    cargarConfigSeguridad();
+                } else {
+                    showToast("Error al guardar la configuración de seguridad", "error");
+                }
+            } catch (err) {
+                showToast("Error de conexión al guardar cambios", "error");
+            }
+        }
+
+        function toggleShowPassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        /* ===========================
+        MODALES ACCIONES
+        =========================== */
+        function abrirValidacion() {
+            if (!Object.values(pedido).some(v => v > 0)) {
+                showToast("Agrega al menos un producto al carrito.", "error");
+                return;
+            }
+            
+            // Cargar datos guardados del cliente
+            const nombreGuardado = localStorage.getItem('cliente_nombre');
+            const telGuardado = localStorage.getItem('cliente_tel');
+            
+            if (nombreGuardado) document.getElementById("nombre-cliente").value = nombreGuardado;
+            if (telGuardado) document.getElementById("tel-cliente").value = telGuardado;
+
+            // Restablecer el modal al paso 1
+            document.getElementById("checkout-step-1").classList.remove("hidden");
+            document.getElementById("checkout-step-2").classList.add("hidden");
+
+            const modal = document.getElementById("modal-validacion");
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function siguienteCheckout() {
+            const nombre = document.getElementById("nombre-cliente").value.trim();
+            const tel = document.getElementById("tel-cliente").value.trim();
+            
+            if (!nombre || !tel) {
+                showToast("Por favor, completa tus datos.", "error");
+                return;
+            }
+
+            document.getElementById("checkout-step-1").classList.add("hidden");
+            document.getElementById("checkout-step-2").classList.remove("hidden");
+        }
+
+        function regresarCheckoutStep1() {
+            document.getElementById("checkout-step-2").classList.add("hidden");
+            document.getElementById("checkout-step-1").classList.remove("hidden");
+        }
+
+        async function descargarYEnviar() {
+            const btnDescargar = document.querySelector("#modal-validacion button[onclick='descargarYEnviar()']");
+            const btnSoloEnviar = document.querySelector("#modal-validacion button[onclick='enviarOrden()']");
+            if (!btnDescargar || !btnSoloEnviar) return;
+
+            const originalDescargarText = btnDescargar.innerHTML;
+            btnDescargar.disabled = true;
+            btnSoloEnviar.disabled = true;
+            btnDescargar.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Generando PDF...`;
+            
+            try {
+                // Descargar PDF de forma manual y local
+                descargarPDFCliente();
+                
+                // Enviar la orden
+                await enviarOrden();
+            } catch (err) {
+                console.error(err);
+            } finally {
+                btnDescargar.disabled = false;
+                btnSoloEnviar.disabled = false;
+                btnDescargar.innerHTML = originalDescargarText;
+            }
+        }
+
+        function cerrarValidacion() {
+            const modal = document.getElementById("modal-validacion");
+            modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add("hidden");
+            }, 300);
+        }
+
+        function abrirAdminForm(esEdicion = false) {
+            if (!esEdicion) {
+                document.getElementById('admin-form-titulo').innerText = "Agregar Producto";
+                document.getElementById('form-producto').reset();
+                document.getElementById('admin-id').value = '';
+                document.getElementById('admin-foto-preview').src = 'https://via.placeholder.com/300?text=Subir';
+                document.getElementById('admin-foto').required = true;
+                document.getElementById('admin-activo').checked = true;
+            }
+
+            const modal = document.getElementById("modal-admin-form");
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function cerrarAdminForm() {
+            const modal = document.getElementById("modal-admin-form");
+            modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add("hidden");
+            }, 300);
+        }
+
+        function abrirConfirmDelete(id) {
+            productoIdParaEliminar = id;
+            const modal = document.getElementById("modal-confirm-delete");
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function cerrarConfirmDelete() {
+            productoIdParaEliminar = null;
+            const modal = document.getElementById("modal-confirm-delete");
+            modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add("hidden");
+            }, 300);
+        }
+
+        /* ===========================
+        OPERACIONES CRUD (ADMIN)
+        =========================== */
+        function previewImagen(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('admin-foto-preview').src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function toggleActivo(id) {
+            try {
+                const res = await fetch(`${API_URL}/admin/productos/${id}/toggle`, { method: 'PATCH' });
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast(data.mensaje, "success");
+                    cargarAdminProductos();
+                } else {
+                    throw new Error('Error al cambiar el estado');
+                }
+            } catch (err) {
+                showToast("No se pudo cambiar el estado del producto", "error");
+            }
+        }
+
+        async function editarProducto(id) {
+            const prod = adminProductos.find(p => p._id === id);
+            if (!prod) return;
+
+            document.getElementById('admin-form-titulo').innerText = "Editar Producto";
+            document.getElementById('admin-id').value = prod._id;
+            document.getElementById('admin-nombre').value = prod.nombre;
+            document.getElementById('admin-categoria').value = prod.categoria;
+            document.getElementById('admin-unidad').value = prod.unidad;
+            document.getElementById('admin-precio').value = prod.precio;
+            document.getElementById('admin-orden').value = prod.orden;
+            document.getElementById('admin-activo').checked = prod.activo;
+            
+            const imgUrl = prod.imagen.startsWith('/') ? `${window.location.origin}${prod.imagen}` : prod.imagen;
+            document.getElementById('admin-foto-preview').src = imgUrl;
+            
+            // Al editar, la imagen no es requerida de forma obligatoria
+            document.getElementById('admin-foto').required = false;
+
+            abrirAdminForm(true);
+        }
+
+        async function guardarProducto(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('admin-id').value;
+            const isEdit = id && id.trim() !== "";
+            
+            const formData = new FormData();
+            formData.append('nombre', document.getElementById('admin-nombre').value);
+            formData.append('categoria', document.getElementById('admin-categoria').value);
+            formData.append('unidad', document.getElementById('admin-unidad').value);
+            formData.append('precio', document.getElementById('admin-precio').value);
+            formData.append('orden', document.getElementById('admin-orden').value);
+            formData.append('activo', document.getElementById('admin-activo').checked);
+            
+            const fileInput = document.getElementById('admin-foto');
+            if (fileInput.files[0]) {
+                formData.append('foto', fileInput.files[0]);
+            }
+
+            try {
+                let res;
+                if (isEdit) {
+                    res = await fetch(`${API_URL}/admin/productos/${id}`, { method: 'PUT', body: formData });
+                } else {
+                    res = await fetch(`${API_URL}/admin/productos`, { method: 'POST', body: formData });
+                }
+
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast(isEdit ? "¡Producto actualizado con éxito!" : "¡Producto añadido e indexado con éxito!", "success");
+                    document.getElementById('form-producto').reset();
+                    cerrarAdminForm();
+                    cargarAdminProductos();
+                } else {
+                    const errData = await res.json();
+                    showToast(errData.error || "Error al procesar el producto", "error");
+                }
+            } catch (err) {
+                showToast("Ocurrió un error al conectar con el servidor", "error");
+            }
+        }
+
+        async function confirmarEliminar() {
+            if (!productoIdParaEliminar) return;
+
+            try {
+                const res = await fetch(`${API_URL}/admin/productos/${productoIdParaEliminar}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast("¡Producto eliminado exitosamente!", "success");
+                    cerrarConfirmDelete();
+                    cargarAdminProductos();
+                } else {
+                    showToast("Error al intentar eliminar el producto", "error");
+                }
+            } catch (err) {
+                showToast("Error al conectar con el servidor", "error");
+            }
+        }
+
+        function abrirConfirmDeletePedido(id) {
+            pedidoIdParaEliminar = id;
+            const modal = document.getElementById("modal-confirm-delete-pedido");
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function cerrarConfirmDeletePedido() {
+            pedidoIdParaEliminar = null;
+            const modal = document.getElementById("modal-confirm-delete-pedido");
+            modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add("hidden");
+            }, 300);
+        }
+
+        async function confirmarEliminarPedido() {
+            if (!pedidoIdParaEliminar) return;
+
+            try {
+                const res = await fetch(`${API_URL}/admin/pedidos/${pedidoIdParaEliminar}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast("¡Pedido eliminado del historial!", "success");
+                    cerrarConfirmDeletePedido();
+                    cargarAdminPedidos();
+                } else {
+                    const data = await res.json();
+                    showToast(data.error || "Error al intentar eliminar el pedido", "error");
+                }
+            } catch (err) {
+                showToast("Error al conectar con el servidor", "error");
+            }
+        }
+
+        function abrirConfirmLimpiarPedidos() {
+            const modal = document.getElementById("modal-confirm-clear-pedidos");
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function cerrarConfirmLimpiarPedidos() {
+            const modal = document.getElementById("modal-confirm-clear-pedidos");
+            modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add("hidden");
+            }, 300);
+        }
+
+        async function confirmarLimpiarPedidos() {
+            try {
+                const res = await fetch(`${API_URL}/admin/pedidos`, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast("¡Historial de pedidos limpiado por completo!", "success");
+                    cerrarConfirmLimpiarPedidos();
+                    cargarAdminPedidos();
+                } else {
+                    const data = await res.json();
+                    showToast(data.error || "Error al limpiar el historial", "error");
+                }
+            } catch (err) {
+                showToast("Error al conectar con el servidor", "error");
+            }
+        }
+
+        /* ===========================
+        ENVIO POR WHATSAPP
+        =========================== */
+        async function enviarOrden() {
+            const nombre = document.getElementById("nombre-cliente").value.trim();
+            const tel = document.getElementById("tel-cliente").value.trim();
+            
+            if (!nombre || !tel) {
+                showToast("Por favor, completa tus datos.", "error");
+                return;
+            }
+
+            // Deshabilitar botón temporalmente para evitar doble envío
+            const btnWhatsApp = document.querySelector("#modal-validacion button[onclick='enviarOrden()']");
+            const originalText = btnWhatsApp.innerHTML;
+            btnWhatsApp.disabled = true;
+            btnWhatsApp.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Guardando Pedido...`;
+
+            // Guardar datos en localStorage para compras futuras
+            localStorage.setItem('cliente_nombre', nombre);
+            localStorage.setItem('cliente_tel', tel);
+
+            // Estructurar ítems para guardar
+            const items = [];
+            let total = 0;
+            let msg = `*NUEVA ORDEN DE PEDIDO*%0A`;
+            msg += `---------------------------%0A`;
+            msg += `*Cliente:* ${nombre}%0A`;
+            msg += `*Teléfono:* ${tel}%0A`;
+            msg += `---------------------------%0A%0A`;
+
+            productos.forEach(p => {
+                if (pedido[p.id] > 0) {
+                    const sub = p.p * pedido[p.id];
+                    msg += `• *${p.n}* (${pedido[p.id]} ${p.u}) -> _Q${sub.toFixed(2)}_%0A`;
+                    items.push({
+                        nombre: p.n,
+                        precio: p.p,
+                        cantidad: pedido[p.id],
+                        unidad: p.u
+                    });
+                    total += sub;
+                }
+            });
+
+            msg += `%0A---------------------------%0A`;
+            msg += `*TOTAL DE LA ORDEN: Q${total.toFixed(2)}*%0A`;
+            msg += `---------------------------%0A`;
+            msg += `_¡Muchas gracias por su preferencia!_`;
+
+            try {
+                // Registrar pedido en la base de datos de MongoDB
+                const res = await fetch(`${API_URL}/pedidos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cliente: { nombre, telefono: tel },
+                        productos: items,
+                        total: total
+                    })
+                });
+
+                if (!res.ok) throw new Error('Error al registrar pedido');
+
+                // Abrir la ventana de WhatsApp
+                window.open(`https://wa.me/${MI_WHATSAPP}?text=${msg}`, "_blank");
+                
+                // Limpiar pedido local y refrescar
+                pedido = {};
+                dibujar();
+                recalcular();
+                cerrarValidacion();
+                showToast("¡Pedido registrado! Redirigiendo a WhatsApp...", "success");
+            } catch (err) {
+                console.error(err);
+                showToast("Error al guardar pedido en base de datos. Redirigiendo a WhatsApp...", "warning");
+                // Abrir WhatsApp de todos modos para que no se pierda la venta
+                window.open(`https://wa.me/${MI_WHATSAPP}?text=${msg}`, "_blank");
+            } finally {
+                btnWhatsApp.disabled = false;
+                btnWhatsApp.innerHTML = originalText;
+            }
+        }
+
+        function switchAdminTab(tab) {
+            tabAdminActual = tab;
+            const btnInventario = document.getElementById('admin-tab-inventario');
+            const btnPedidos = document.getElementById('admin-tab-pedidos');
+            const btnConfig = document.getElementById('admin-tab-config');
+            const seccionInventario = document.getElementById('admin-seccion-inventario');
+            const seccionPedidos = document.getElementById('admin-seccion-pedidos');
+            const seccionConfig = document.getElementById('admin-seccion-config');
+
+            // Reset all tabs to inactive style
+            const inactiveClass = "whitespace-nowrap text-xs font-black uppercase text-slate-400 hover:text-slate-600 pb-2 transition-all";
+            const activeClass = "whitespace-nowrap text-xs font-black uppercase text-primary-600 border-b-2 border-primary-500 pb-2 transition-all";
+
+            btnInventario.className = inactiveClass;
+            btnPedidos.className = inactiveClass;
+            btnConfig.className = inactiveClass;
+
+            // Hide all sections
+            seccionInventario.classList.add('hidden');
+            seccionPedidos.classList.add('hidden');
+            seccionConfig.classList.add('hidden');
+
+            if (tab === 'inventario') {
+                btnInventario.className = activeClass;
+                seccionInventario.classList.remove('hidden');
+                cargarAdminProductos();
+            } else if (tab === 'pedidos') {
+                btnPedidos.className = activeClass;
+                seccionPedidos.classList.remove('hidden');
+                cargarAdminPedidos();
+            } else if (tab === 'config') {
+                btnConfig.className = activeClass;
+                seccionConfig.classList.remove('hidden');
+                cargarConfigSeguridad();
+            }
+        }
+
+        async function cargarAdminPedidos() {
+            try {
+                const response = await fetch(`${API_URL}/admin/pedidos`);
+                if (!response.ok) throw new Error('Error al obtener pedidos');
+                adminPedidos = await response.json();
+                dibujarPedidos();
+            } catch (err) {
+                console.error(err);
+                showToast("Error al cargar el historial de pedidos", "error");
+            }
+        }
+
+        function dibujarPedidos() {
+            const tbody = document.getElementById("pedidos-tabla-body");
+            const movilList = document.getElementById("pedidos-movil-list");
+            const busqueda = document.getElementById("pedidos-buscar").value.trim().toLowerCase();
+            const sumaEl = document.getElementById("pedidos-suma-total");
+
+            let lista = adminPedidos;
+            if (busqueda !== "") {
+                lista = adminPedidos.filter(p => 
+                    p.cliente.nombre.toLowerCase().includes(busqueda) ||
+                    (p._id && p._id.toLowerCase().includes(busqueda))
+                );
+            }
+
+            // Calcular suma total de facturas
+            const totalSuma = lista.reduce((acc, p) => acc + p.total, 0);
+            if (sumaEl) {
+                sumaEl.innerText = "Q" + totalSuma.toFixed(2);
+            }
+
+            if (lista.length === 0) {
+                const vacioMsg = `
+                <tr>
+                    <td colspan="6" class="text-center py-16 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                        No hay pedidos en el historial
+                    </td>
+                </tr>`;
+                tbody.innerHTML = vacioMsg;
+                movilList.innerHTML = `
+                <div class="text-center py-10 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                    No hay pedidos en el historial
+                </div>`;
+                return;
+            }
+
+            // Renderizar versión Escritorio (Tabla)
+            tbody.innerHTML = lista.map(ped => {
+                const fecha = new Date(ped.fecha);
+                const fechaStr = fecha.toLocaleDateString() + ' ' + fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const nroPedido = `PED-${fecha.getFullYear()}${(fecha.getMonth()+1).toString().padStart(2, '0')}${fecha.getDate().toString().padStart(2, '0')}-${ped._id.substring(ped._id.length - 4).toUpperCase()}`;
+                
+                // Detalle compacto de productos
+                const detalleProductos = ped.productos.map(p => `${p.cantidad} ${p.unidad} de ${p.nombre}`).join(', ');
+
+                return `
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="p-4 pl-6 text-xs text-slate-500">${fechaStr}</td>
+                    <td class="p-4 font-extrabold text-slate-900">${nroPedido}</td>
+                    <td class="p-4">
+                        <div class="font-bold text-slate-800">${ped.cliente.nombre}</div>
+                        <div class="text-[9px] text-slate-400">${ped.cliente.telefono}</div>
+                    </td>
+                    <td class="p-4 text-xs text-slate-600 max-w-xs truncate" title="${detalleProductos}">${detalleProductos}</td>
+                    <td class="p-4 text-center font-bold text-primary-600">Q${ped.total.toFixed(2)}</td>
+                    <td class="p-4 pr-6 text-right">
+                        <div class="flex justify-end gap-1.5">
+                            <button onclick="descargarPDFPedido('${ped._id}')" class="w-8 h-8 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all flex items-center justify-center" title="Descargar Recibo PDF">
+                                <i class="fa-solid fa-file-pdf text-xs"></i>
+                            </button>
+                            <button onclick="abrirConfirmDeletePedido('${ped._id}')" class="w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all flex items-center justify-center" title="Eliminar Pedido del Historial">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            // Renderizar versión Móvil (Tarjetas)
+            movilList.innerHTML = lista.map(ped => {
+                const fecha = new Date(ped.fecha);
+                const fechaStr = fecha.toLocaleDateString() + ' ' + fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const nroPedido = `PED-${fecha.getFullYear()}${(fecha.getMonth()+1).toString().padStart(2, '0')}${fecha.getDate().toString().padStart(2, '0')}-${ped._id.substring(ped._id.length - 4).toUpperCase()}`;
+                const detalleProductos = ped.productos.map(p => `${p.cantidad} ${p.unidad} de ${p.nombre}`).join(', ');
+
+                return `
+                <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] text-slate-400 font-bold">${fechaStr}</span>
+                        <span class="font-extrabold text-xs text-slate-800">${nroPedido}</span>
+                    </div>
+                    <div class="border-t border-slate-200/40 pt-2">
+                        <div class="font-extrabold text-xs text-slate-800">${ped.cliente.nombre}</div>
+                        <div class="text-[9px] text-slate-400">${ped.cliente.telefono}</div>
+                        <p class="text-[11px] text-slate-600 mt-1 italic line-clamp-2">${detalleProductos}</p>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-200/40">
+                        <div class="text-xs font-black text-primary-600">Q${ped.total.toFixed(2)}</div>
+                        <div class="flex gap-2">
+                            <button onclick="descargarPDFPedido('${ped._id}')" class="text-xs bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-pdf"></i> Recibo
+                            </button>
+                            <button onclick="abrirConfirmDeletePedido('${ped._id}')" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-trash-can"></i> Borrar
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function generarPDFDesdeDatos(cliente, items, total, fecha, nroPedido) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const fechaStr = new Date(fecha).toLocaleDateString() + ' ' + new Date(fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // Cabecera del PDF (Estilo premium adaptativo)
+            const activeThemeKey = window.currentThemeKey || 'emerald';
+            const activeTheme = THEMES[activeThemeKey] || THEMES.emerald;
+            const pdfColor = activeTheme.primary900Rgb;
+
+            doc.setFillColor(pdfColor[0], pdfColor[1], pdfColor[2]);
+            doc.rect(0, 0, 210, 40, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(20);
+            doc.text("RECIBO DE PEDIDO", 15, 25);
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Catálogo de Productos", 15, 32);
+
+            // Detalles del pedido a la derecha
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text(`NRO: ${nroPedido}`, 145, 20);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Fecha: ${fechaStr}`, 145, 27);
+
+            // Información del Cliente
+            doc.setTextColor(30, 41, 59); // slate-800
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("DATOS DEL CLIENTE", 15, 55);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Nombre: ${cliente.nombre}`, 15, 63);
+            doc.text(`Teléfono / WhatsApp: ${cliente.telefono}`, 15, 69);
+
+            // Filas de productos
+            const tableRows = items.map(item => [
+                item.nombre.toUpperCase(),
+                `${item.cantidad} ${item.unidad}`,
+                `Q${item.precio.toFixed(2)}`,
+                `Q${(item.cantidad * item.precio).toFixed(2)}`
+            ]);
+
+            // Dibujar tabla con jsPDF-AutoTable
+            doc.autoTable({
+                startY: 78,
+                head: [['Producto', 'Cantidad', 'Precio Unitario', 'Subtotal']],
+                body: tableRows,
+                headStyles: {
+                    fillColor: pdfColor,
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
+                bodyStyles: {
+                    textColor: [51, 65, 85], // slate-700
+                    fontSize: 9,
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { halign: 'left', fontStyle: 'bold' } // Nombre del producto alineado a la izquierda
+                },
+                alternateRowStyles: {
+                    fillColor: [248, 250, 252] // slate-50
+                },
+                margin: { left: 15, right: 15 }
+            });
+
+            const finalY = doc.lastAutoTable.finalY + 12;
+
+            // Total
+            doc.setTextColor(30, 41, 59);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text(`TOTAL A PAGAR: Q${total.toFixed(2)}`, 140, finalY);
+
+            // Message
+            doc.setTextColor(148, 163, 184); // slate-400
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(9);
+            doc.text("¡Muchas gracias por su preferencia!", 15, finalY + 15);
+
+            // Descargar el archivo
+            const cleanName = cliente.nombre.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            doc.save(`recibo_${cleanName}_${nroPedido}.pdf`);
+            showToast("Recibo PDF descargado con éxito", "success");
+        }
+
+        function descargarPDFCliente() {
+            const nombre = document.getElementById("nombre-cliente").value.trim() || "Cliente Genérico";
+            const tel = document.getElementById("tel-cliente").value.trim() || "N/A";
+            const fecha = new Date();
+            const nroPedido = `PED-${fecha.getFullYear()}${(fecha.getMonth()+1).toString().padStart(2, '0')}${fecha.getDate().toString().padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            const items = [];
+            let total = 0;
+            productos.forEach(prod => {
+                const cant = pedido[prod.id] || 0;
+                if (cant > 0) {
+                    items.push({
+                        nombre: prod.n,
+                        precio: prod.p,
+                        cantidad: cant,
+                        unidad: prod.u
+                    });
+                    total += cant * prod.p;
+                }
+            });
+
+            if (items.length === 0) {
+                showToast("Agrega al menos un producto al carrito.", "error");
+                return;
+            }
+
+            generarPDFDesdeDatos({ nombre, telefono: tel }, items, total, fecha, nroPedido);
+        }
+
+        function descargarPDFPedido(pedidoId) {
+            const ped = adminPedidos.find(p => p._id === pedidoId);
+            if (!ped) return;
+            const fecha = new Date(ped.fecha);
+            const nroPedido = `PED-${fecha.getFullYear()}${(fecha.getMonth()+1).toString().padStart(2, '0')}${fecha.getDate().toString().padStart(2, '0')}-${ped._id.substring(ped._id.length - 4).toUpperCase()}`;
+            generarPDFDesdeDatos(ped.cliente, ped.productos, ped.total, ped.fecha, nroPedido);
+        }
+
+        async function cargarConfiguracionPublica() {
+            try {
+                const res = await fetch(`${API_URL}/config`);
+                if (res.ok) {
+                    const data = await res.json();
+                    aplicarTema(data.tema);
+                    actualizarBotonTemaActivo(data.tema);
+                }
+            } catch (err) {
+                console.error("Error al cargar la configuración pública:", err);
+            }
+        }
+
+        // INICIAR LOCAL
+        cargarConfiguracionPublica();
+        cargarDesdeAPI();
+    </script>
+</body>
+</html>

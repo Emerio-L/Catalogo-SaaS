@@ -1,0 +1,145 @@
+﻿                    <!-- SECCIÃ“N CONFIGURACIÃ“N -->
+                    <div id="admin-seccion-config" class="space-y-6 hidden">
+
+                        <!-- APARIENCIA DEL SITIO (primero, mÃ¡s visual) -->
+                        <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-premium">
+                            <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                                <div class="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                                    <i class="fa-solid fa-palette"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-extrabold text-base text-slate-800 uppercase tracking-tight">Tema del CatÃ¡logo</h3>
+                                    <p class="text-[10px] text-slate-400 font-extrabold uppercase">PersonalizaciÃ³n Visual &mdash; Se aplica a todos los visitantes</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-500 mb-6">Elige el color principal del catÃ¡logo. El cambio se aplica instantÃ¡neamente y se guarda en la base de datos.</p>
+                            <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-3" id="theme-selector-container">
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('emerald')" class="w-8 h-8 rounded-full bg-emerald-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Esmeralda" id="theme-btn-emerald"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Verde</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('teal')" class="w-8 h-8 rounded-full bg-teal-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Teal" id="theme-btn-teal"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Teal</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('cyan')" class="w-8 h-8 rounded-full bg-cyan-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Cian" id="theme-btn-cyan"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Cian</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('sky')" class="w-8 h-8 rounded-full bg-sky-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Cielo" id="theme-btn-sky"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Cielo</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('blue')" class="w-8 h-8 rounded-full bg-blue-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Azul" id="theme-btn-blue"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Azul</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('indigo')" class="w-8 h-8 rounded-full bg-indigo-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Ãndigo" id="theme-btn-indigo"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Indigo</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('violet')" class="w-8 h-8 rounded-full bg-violet-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Violeta" id="theme-btn-violet"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Violeta</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('purple')" class="w-8 h-8 rounded-full bg-purple-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Morado" id="theme-btn-purple"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Morado</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('fuchsia')" class="w-8 h-8 rounded-full bg-fuchsia-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Fucsia" id="theme-btn-fuchsia"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Fucsia</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('pink')" class="w-8 h-8 rounded-full bg-pink-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Rosa" id="theme-btn-pink"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Rosa</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('rose')" class="w-8 h-8 rounded-full bg-rose-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Rojo" id="theme-btn-rose"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Rojo</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('orange')" class="w-8 h-8 rounded-full bg-orange-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Naranja" id="theme-btn-orange"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Naranja</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('amber')" class="w-8 h-8 rounded-full bg-amber-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Ãmbar" id="theme-btn-amber"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Ãmbar</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('lime')" class="w-8 h-8 rounded-full bg-lime-500 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Lima" id="theme-btn-lime"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Lima</span>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <button onclick="guardarTema('slate')" class="w-8 h-8 rounded-full bg-slate-600 border-3 border-transparent hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer" title="Pizarra" id="theme-btn-slate"></button>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase leading-none">Pizarra</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SEGURIDAD DEL PANEL -->
+                        <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-premium">
+                            <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                                <div class="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-extrabold text-base text-slate-800 uppercase tracking-tight">Seguridad del Panel</h3>
+                                    <p class="text-[10px] text-slate-400 font-extrabold uppercase">Credenciales de Acceso &mdash; Cambia tu contraseÃ±a y PIN</p>
+                                </div>
+                            </div>
+                            <form id="form-seguridad" onsubmit="guardarConfigSeguridad(event)" class="space-y-5">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">ContraseÃ±a del Panel</label>
+                                        <div class="relative">
+                                            <input type="password" id="settings-password" required
+                                            class="w-full pl-4 pr-10 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                                            <button type="button" onclick="toggleShowPassword('settings-password', this)" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
+                                                <i class="fa-solid fa-eye text-xs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">PIN de RecuperaciÃ³n (6 dÃ­gitos)</label>
+                                        <div class="relative">
+                                            <input type="text" id="settings-pin" maxlength="6" required
+                                            class="w-full pl-4 pr-10 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-black focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all tracking-widest text-center">
+                                            <button type="button" onclick="toggleShowPassword('settings-pin', this)" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
+                                                <i class="fa-solid fa-eye text-xs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">Pregunta de Seguridad</label>
+                                        <select id="settings-pregunta" required
+                                        class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-600 focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                                            <option value="Â¿CÃ³mo se llamaba tu primera mascota?">Â¿CÃ³mo se llamaba tu primera mascota?</option>
+                                            <option value="Â¿CuÃ¡l es el nombre de la calle donde creciste?">Â¿CuÃ¡l es el nombre de la calle donde creciste?</option>
+                                            <option value="Â¿En quÃ© ciudad se conocieron tus padres?">Â¿En quÃ© ciudad se conocieron tus padres?</option>
+                                            <option value="Â¿CuÃ¡l era el modelo de tu primer vehÃ­culo (auto/moto/bici)?">Â¿CuÃ¡l era el modelo de tu primer vehÃ­culo (auto/moto/bici)?</option>
+                                            <option value="Â¿CuÃ¡l era el nombre de tu profesor/a de la infancia favorito/a?">Â¿CuÃ¡l era el nombre de tu profesor/a de la infancia favorito/a?</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">Respuesta Secreta</label>
+                                        <div class="relative">
+                                            <input type="password" id="settings-respuesta" required placeholder="Respuesta de recuperaciÃ³n"
+                                            class="w-full pl-4 pr-10 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                                            <button type="button" onclick="toggleShowPassword('settings-respuesta', this)" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
+                                                <i class="fa-solid fa-eye text-xs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full md:w-auto px-10 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl shadow-md active:scale-95 uppercase tracking-wider text-[10px] transition-all">
+                                    <i class="fa-solid fa-floppy-disk mr-2"></i> Actualizar Credenciales
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+
+            </div>
