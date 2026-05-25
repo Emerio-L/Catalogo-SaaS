@@ -21,7 +21,8 @@ app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Conexión a MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/catalogo_db')
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/catalogo_db';
+mongoose.connect(MONGODB_URI)
     .then(() => {
         console.log('Conectado a MongoDB');
         inicializarConfiguracion();
