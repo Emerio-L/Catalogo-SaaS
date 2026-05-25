@@ -56,7 +56,8 @@ const ConfiguracionSchema = new mongoose.Schema({
     recoveryPin: { type: String, default: '987654' },
     preguntaSeguridad: { type: String, default: '¿Cómo se llamaba tu primera mascota?' },
     respuestaSeguridad: { type: String, default: 'mascota123' },
-    tema: { type: String, default: 'emerald' }
+    tema: { type: String, default: 'emerald' },
+    telefonoWhatsApp: { type: String, default: '50235387468' }
 });
 
 const Configuracion = mongoose.model('Configuracion', ConfiguracionSchema);
@@ -100,6 +101,10 @@ async function inicializarConfiguracion() {
             }
             if (!config.tema) {
                 config.tema = 'emerald';
+                modificado = true;
+            }
+            if (!config.telefonoWhatsApp) {
+                config.telefonoWhatsApp = '50235387468';
                 modificado = true;
             }
             if (modificado) {
@@ -207,11 +212,14 @@ app.post('/api/admin/auth/recovery-question', async (req, res) => {
     }
 });
 
-// Obtener configuración pública (tema visual)
+// Obtener configuración pública (tema visual y teléfono WhatsApp)
 app.get('/api/config', async (req, res) => {
     try {
         const config = await Configuracion.findOne({ clave: 'admin_config' });
-        res.json({ tema: config ? config.tema : 'emerald' });
+        res.json({ 
+            tema: config ? config.tema : 'emerald',
+            telefonoWhatsApp: config ? config.telefonoWhatsApp : '50235387468'
+        });
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener la configuración pública' });
     }
@@ -229,7 +237,8 @@ app.get('/api/admin/config', async (req, res) => {
             recoveryPin: config.recoveryPin,
             preguntaSeguridad: config.preguntaSeguridad,
             respuestaSeguridad: config.respuestaSeguridad,
-            tema: config.tema || 'emerald'
+            tema: config.tema || 'emerald',
+            telefonoWhatsApp: config.telefonoWhatsApp || '50235387468'
         });
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener la configuración de seguridad' });
@@ -239,7 +248,7 @@ app.get('/api/admin/config', async (req, res) => {
 // Modificar configuración de seguridad y apariencia
 app.put('/api/admin/config', async (req, res) => {
     try {
-        const { password, recoveryPin, preguntaSeguridad, respuestaSeguridad, tema } = req.body;
+        const { password, recoveryPin, preguntaSeguridad, respuestaSeguridad, tema, telefonoWhatsApp } = req.body;
         const config = await Configuracion.findOne({ clave: 'admin_config' });
         
         if (!config) {
@@ -251,6 +260,7 @@ app.put('/api/admin/config', async (req, res) => {
         if (preguntaSeguridad) config.preguntaSeguridad = preguntaSeguridad;
         if (respuestaSeguridad) config.respuestaSeguridad = respuestaSeguridad;
         if (tema) config.tema = tema;
+        if (telefonoWhatsApp) config.telefonoWhatsApp = telefonoWhatsApp;
 
         await config.save();
         res.json({ success: true, mensaje: 'Ajustes actualizados correctamente' });

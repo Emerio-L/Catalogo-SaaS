@@ -401,6 +401,10 @@
                                         <div class="relative"><input type="password" id="settings-password" required class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"><button type="button" onclick="toggleShowPassword('settings-password', this)" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-eye text-xs"></i></button></div>
                                     </div>
                                     <div>
+                                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">WhatsApp para Pedidos (Ej: 502XXXXXXXX)</label>
+                                        <input type="text" id="settings-whatsapp" required placeholder="Número de WhatsApp" class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                                    </div>
+                                    <div>
                                         <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">PIN de Recuperaci&oacute;n (6 d&iacute;gitos)</label>
                                         <div class="relative"><input type="text" id="settings-pin" maxlength="6" required class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-black focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all tracking-widest text-center"><button type="button" onclick="toggleShowPassword('settings-pin', this)" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-eye text-xs"></i></button></div>
                                     </div>
@@ -807,7 +811,7 @@
         /* ===========================
         CONFIGURACIÓN Y VARIABLES
         =========================== */
-        const MI_WHATSAPP = "50235387468";
+        let MI_WHATSAPP = "50235387468";
         const API_URL = `${window.location.origin}/api`;
 
         let productos = [];
@@ -1447,6 +1451,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     document.getElementById('settings-password').value = data.password;
+                    document.getElementById('settings-whatsapp').value = data.telefonoWhatsApp || "50235387468";
                     document.getElementById('settings-pin').value = data.recoveryPin;
                     document.getElementById('settings-pregunta').value = data.preguntaSeguridad || "¿Cómo se llamaba tu primera mascota?";
                     document.getElementById('settings-respuesta').value = data.respuestaSeguridad || "";
@@ -1463,9 +1468,15 @@
         async function guardarConfigSeguridad(e) {
             if (e) e.preventDefault();
             const password = document.getElementById('settings-password').value;
+            const telefonoWhatsApp = document.getElementById('settings-whatsapp').value.trim();
             const recoveryPin = document.getElementById('settings-pin').value.trim();
             const preguntaSeguridad = document.getElementById('settings-pregunta').value;
             const respuestaSeguridad = document.getElementById('settings-respuesta').value.trim();
+
+            if (telefonoWhatsApp === "") {
+                showToast("El número de WhatsApp no puede estar vacío", "error");
+                return;
+            }
 
             if (recoveryPin.length !== 6 || isNaN(recoveryPin)) {
                 showToast("El PIN de recuperación debe ser un número de 6 dígitos", "error");
@@ -1481,7 +1492,7 @@
                 const res = await fetch(`${API_URL}/admin/config`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password, recoveryPin, preguntaSeguridad, respuestaSeguridad })
+                    body: JSON.stringify({ password, recoveryPin, preguntaSeguridad, respuestaSeguridad, telefonoWhatsApp })
                 });
 
                 if (res.ok) {
@@ -2179,6 +2190,9 @@
                     const data = await res.json();
                     aplicarTema(data.tema);
                     actualizarBotonTemaActivo(data.tema);
+                    if (data.telefonoWhatsApp) {
+                        MI_WHATSAPP = data.telefonoWhatsApp;
+                    }
                 }
             } catch (err) {
                 console.error("Error al cargar la configuración pública:", err);
