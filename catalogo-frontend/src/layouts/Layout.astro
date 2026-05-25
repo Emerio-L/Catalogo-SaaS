@@ -1,0 +1,142 @@
+---
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    
+    <!-- Tailwind CSS -->
+    <script is:inline src="https://cdn.tailwindcss.com"></script>
+    <script is:inline>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: 'var(--color-primary-50)',
+                            100: 'var(--color-primary-100)',
+                            200: 'var(--color-primary-200)',
+                            300: 'var(--color-primary-300)',
+                            400: 'var(--color-primary-400)',
+                            500: 'var(--color-primary-500)',
+                            600: 'var(--color-primary-600)',
+                            700: 'var(--color-primary-700)',
+                            800: 'var(--color-primary-800)',
+                            900: 'var(--color-primary-900)',
+                            950: 'var(--color-primary-950)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF and jsPDF-AutoTable for PDF generation -->
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+    
+    <style is:inline>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Glassmorphism classes */
+        .glass-header {
+            background: rgba(var(--color-primary-900-rgb), 0.85); /* primary-900 with opacity */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        
+        /* Custom shadows and glow */
+        .shadow-premium {
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 1px 0 rgba(0, 0, 0, 0.01);
+        }
+
+        .shadow-premium-hover {
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+        }
+
+        .glow-primary {
+            box-shadow: 0 10px 25px -5px rgba(var(--color-primary-500-rgb), 0.15), 0 8px 10px -6px rgba(var(--color-primary-500-rgb), 0.15);
+        }
+
+        /* Custom active states */
+        .card-active {
+            border-color: var(--color-primary-500) !important; /* primary-500 */
+            background-color: var(--color-primary-50); /* primary-50 */
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 15px 30px -10px rgba(var(--color-primary-500-rgb), 0.12);
+        }
+
+        .category-active {
+            background-color: var(--color-primary-500) !important;
+            color: white !important;
+            box-shadow: 0 4px 14px rgba(var(--color-primary-500-rgb), 0.35);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Toggle switch */
+        .toggle-dot {
+            transition: transform 0.3s ease-in-out;
+        }
+        input:checked ~ .toggle-dot {
+            transform: translateX(100%);
+            background-color: var(--color-primary-500);
+        }
+        input:checked ~ .toggle-bg {
+            background-color: var(--color-primary-50);
+            border-color: var(--color-primary-200);
+        }
+    </style>
+</head>
+<body class="pb-36 transition-all duration-300">
+	<slot />
+</body>
+</html>
