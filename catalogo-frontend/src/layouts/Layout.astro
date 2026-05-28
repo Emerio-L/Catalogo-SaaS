@@ -46,6 +46,22 @@ const { title } = Astro.props;
     
     <style is:inline>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --color-primary-50: #f0fdf4;
+            --color-primary-100: #dcfce7;
+            --color-primary-200: #a7f3d0;
+            --color-primary-300: #6ee7b7;
+            --color-primary-400: #34d399;
+            --color-primary-500: #10b981;
+            --color-primary-600: #059669;
+            --color-primary-700: #047857;
+            --color-primary-800: #065f46;
+            --color-primary-900: #064e3b;
+            --color-primary-950: #022c22;
+            --color-primary-500-rgb: 16, 185, 129;
+            --color-primary-900-rgb: 6, 78, 59;
+        }
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -133,6 +149,29 @@ const { title } = Astro.props;
         input:checked ~ .toggle-bg {
             background-color: var(--color-primary-50);
             border-color: var(--color-primary-200);
+        }
+
+        .admin-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            border-radius: 1.1rem;
+            padding: 0.9rem 1rem;
+            color: #dbeafe;
+            font-size: 0.82rem;
+            font-weight: 800;
+            transition: all 0.2s ease;
+        }
+
+        .admin-nav-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .admin-nav-active {
+            background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-500));
+            color: #ffffff !important;
+            box-shadow: 0 14px 28px -16px rgba(var(--color-primary-500-rgb), 0.85);
         }
     </style>
 </head>

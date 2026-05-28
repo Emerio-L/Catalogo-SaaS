@@ -12,6 +12,10 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/vercel": "^10.0.8",
     "astro": "^6.3.7"
+  },
+  "overrides": {
+    "@vercel/routing-utils": "4.0.0"
   }
 }
