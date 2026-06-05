@@ -7,6 +7,7 @@ const SettingsSchema = new mongoose.Schema({
     logo: { type: String, default: '' },
     logoCloudinaryPublicId: { type: String, default: '' },
     logoShape: { type: String, enum: ['rectangle', 'circle'], default: 'rectangle' },
+    catalogTitle: { type: String, default: 'Catalogo de productos', trim: true },
     tema: { type: String, default: 'emerald' },
     theme: { type: mongoose.Schema.Types.Mixed, default: null },
     mostrarBuscador: { type: Boolean, default: true },

@@ -20,6 +20,10 @@ const User = require('./models/User');
 const Session = require('./models/Session');
 const PasswordResetToken = require('./models/PasswordResetToken');
 const AuditLog = require('./models/AuditLog');
+const Plan = require('./models/Plan');
+const Payment = require('./models/Payment');
+const AccountStatusLog = require('./models/AccountStatusLog');
+const SaasSettings = require('./models/SaasSettings');
 const tenantMiddleware = require('./middleware/tenant.middleware');
 
 const app = express();
@@ -52,6 +56,10 @@ const cloudinaryEnabled = Boolean(
     process.env.CLOUDINARY_API_SECRET
 );
 const ADMIN_IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+const ACCOUNT_STATUSES = ['trial', 'active', 'pending_payment', 'suspended', 'deleted'];
+const PAYMENT_STATUSES = ['pendiente', 'aprobado', 'rechazado'];
+const SUPER_ADMIN_COOKIE = 'catalogo_super_admin_session';
+const DELETED_ACCOUNT_RETENTION_DAYS = 30;
 const DEFAULT_TENANT_THEME = {
     mode: 'default',
     selectedColor: '#3B82F6',
@@ -190,8 +198,248 @@ function cookieName(tenantSlug) {
     return `catalogo_session_${tenantSlug}`;
 }
 
+function superAdminCookieOptions() {
+    return cookieOptions();
+}
+
 function nuevaExpiracionSesion() {
     return new Date(Date.now() + ADMIN_IDLE_TIMEOUT_MS);
+}
+
+function startOfDay(date = new Date()) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function addDays(date, days) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + Number(days || 0));
+    return d;
+}
+
+function clampBillingDay(year, month, billingDay) {
+    return Math.min(Number(billingDay || 1), new Date(year, month + 1, 0).getDate());
+}
+
+function nextBillingDate(fromDate, billingDay) {
+    const from = new Date(fromDate);
+    const day = Number(billingDay || from.getDate() || 1);
+    const currentMonthDate = new Date(from.getFullYear(), from.getMonth(), clampBillingDay(from.getFullYear(), from.getMonth(), day));
+    if (currentMonthDate > from) return currentMonthDate;
+    const nextMonth = new Date(from.getFullYear(), from.getMonth() + 1, 1);
+    return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), clampBillingDay(nextMonth.getFullYear(), nextMonth.getMonth(), day));
+}
+
+function money(value) {
+    const number = Number(value || 0);
+    return Number.isFinite(number) ? Math.round(number * 100) / 100 : 0;
+}
+
+function accountStatusLabel(status) {
+    return {
+        trial: 'En prueba gratis',
+        active: 'Al dia',
+        pending_payment: 'Pendiente de pago',
+        suspended: 'Suspendida',
+        deleted: 'Eliminada'
+    }[status] || status;
+}
+
+function daysRemainingUntil(date) {
+    if (!date) return null;
+    return Math.ceil((startOfDay(date).getTime() - startOfDay().getTime()) / (24 * 60 * 60 * 1000));
+}
+
+async function logAccountStatus(tenant, previousStatus, newStatus, reason, changedBy = null) {
+    if (!tenant?._id || previousStatus === newStatus) return;
+    await AccountStatusLog.create({
+        tenantId: tenant._id,
+        previousStatus,
+        newStatus,
+        reason,
+        changedBy
+    });
+}
+
+async function ensureTenantBillingDefaults(tenant) {
+    if (!tenant) return tenant;
+    let changed = false;
+    const now = new Date();
+
+    if (!tenant.status) {
+        tenant.status = tenant.activo === false ? 'suspended' : 'trial';
+        changed = true;
+    }
+    if (!tenant.trialStartDate && tenant.status === 'trial') {
+        tenant.trialStartDate = tenant.creadoEn || now;
+        changed = true;
+    }
+    if (!tenant.billingDay) {
+        tenant.billingDay = (tenant.creadoEn || now).getDate();
+        changed = true;
+    }
+    if (!tenant.currentPeriodStart && tenant.status !== 'trial') {
+        tenant.currentPeriodStart = tenant.lastPaymentAt || tenant.creadoEn || now;
+        changed = true;
+    }
+    if (!tenant.currentPeriodEnd && tenant.currentPeriodStart) {
+        tenant.currentPeriodEnd = nextBillingDate(tenant.currentPeriodStart, tenant.billingDay);
+        changed = true;
+    }
+    if (!tenant.paymentDueDate && tenant.currentPeriodEnd) {
+        const plan = tenant.planId ? await Plan.findById(tenant.planId) : null;
+        tenant.paymentDueDate = addDays(tenant.currentPeriodEnd, plan?.graceDays || 0);
+        changed = true;
+    }
+    if (tenant.status === 'deleted' && !tenant.deletedAt) {
+        tenant.deletedAt = now;
+        changed = true;
+    }
+    if (changed) await tenant.save();
+    return tenant;
+}
+
+async function applyAccountTransitions(tenantsInput) {
+    const tenants = Array.isArray(tenantsInput) ? tenantsInput : [tenantsInput].filter(Boolean);
+    const now = startOfDay();
+
+    for (const tenant of tenants) {
+        await ensureTenantBillingDefaults(tenant);
+        if (!tenant || tenant.status === 'deleted') continue;
+
+        const previousStatus = tenant.status;
+        if (tenant.status === 'trial' && tenant.trialEndDate && startOfDay(tenant.trialEndDate) < now) {
+            tenant.status = 'pending_payment';
+        }
+
+        const approvedAfterPeriod = tenant.currentPeriodEnd
+            ? await Payment.exists({
+                tenantId: tenant._id,
+                status: 'aprobado',
+                approvedAt: { $gte: tenant.currentPeriodEnd }
+            })
+            : null;
+
+        if (
+            ['active', 'pending_payment'].includes(tenant.status) &&
+            tenant.paymentDueDate &&
+            startOfDay(tenant.paymentDueDate) < now &&
+            !approvedAfterPeriod
+        ) {
+            tenant.status = 'suspended';
+            tenant.suspendedAt = tenant.suspendedAt || new Date();
+        }
+
+        if (tenant.status !== previousStatus) {
+            tenant.activo = tenant.status !== 'suspended' && tenant.status !== 'deleted';
+            await tenant.save();
+            await logAccountStatus(tenant, previousStatus, tenant.status, 'Cambio automatico por ciclo de facturacion');
+        }
+    }
+}
+
+function tenantBillingPayload(tenant, plan = null) {
+    return {
+        status: tenant.status,
+        statusLabel: accountStatusLabel(tenant.status),
+        plan: plan ? {
+            id: plan._id,
+            name: plan.name,
+            monthlyPrice: plan.monthlyPrice,
+            trialDays: plan.trialDays,
+            graceDays: plan.graceDays,
+            productLimit: plan.productLimit,
+            features: plan.features || [],
+            isActive: plan.isActive
+        } : null,
+        planName: plan?.name || 'Sin plan',
+        monthlyPrice: money(tenant.monthlyPrice || plan?.monthlyPrice || 0),
+        trialStartDate: tenant.trialStartDate,
+        trialEndDate: tenant.trialEndDate,
+        trialDaysRemaining: daysRemainingUntil(tenant.trialEndDate),
+        billingDay: tenant.billingDay,
+        currentPeriodStart: tenant.currentPeriodStart,
+        currentPeriodEnd: tenant.currentPeriodEnd,
+        paymentDueDate: tenant.paymentDueDate,
+        lastPaymentAt: tenant.lastPaymentAt,
+        suspendedAt: tenant.suspendedAt,
+        deletedAt: tenant.deletedAt,
+        deletedReason: tenant.deletedReason || ''
+    };
+}
+
+async function serializeTenantForSuperAdmin(tenant) {
+    const plan = tenant.planId && tenant.planId.name ? tenant.planId : (tenant.planId ? await Plan.findById(tenant.planId) : null);
+    const owner = await User.findOne({ tenantId: tenant._id, rol: { $ne: 'super_admin' } }).sort({ creadoEn: 1 }).lean();
+    const lastPayment = await Payment.findOne({ tenantId: tenant._id, status: 'aprobado' }).sort({ approvedAt: -1, paidAt: -1 }).lean();
+    return {
+        id: tenant._id,
+        slug: tenant.slug,
+        businessName: tenant.nombre,
+        ownerName: tenant.ownerName || owner?.nombre || '',
+        whatsapp: tenant.whatsapp,
+        email: tenant.email || owner?.email || '',
+        logoUrl: tenant.logo,
+        createdAt: tenant.creadoEn,
+        updatedAt: tenant.updatedAt,
+        adminUrl: `/c/${tenant.slug}/p/${tenant.adminAccessKey}`,
+        publicUrl: `/c/${tenant.slug}`,
+        lastPayment,
+        ...tenantBillingPayload(tenant, plan)
+    };
+}
+
+async function saasSettings() {
+    return SaasSettings.findOneAndUpdate(
+        { key: 'global' },
+        { $setOnInsert: { key: 'global' } },
+        { upsert: true, new: true }
+    );
+}
+
+function saasSettingsPayload(settings) {
+    return {
+        supportWhatsapp: settings.supportWhatsapp || '',
+        supportMessage: settings.supportMessage || 'Hola, necesito ayuda con mi catalogo.',
+        emulatorUrl: settings.emulatorUrl || '',
+        emulatorEnabled: Boolean(settings.emulatorEnabled),
+        logoUrl: settings.logoUrl || '',
+        updatedAt: settings.updatedAt
+    };
+}
+
+async function purgeDeletedTenants() {
+    const cutoff = new Date(Date.now() - DELETED_ACCOUNT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const tenants = await Tenant.find({ status: 'deleted', deletedAt: { $lte: cutoff } });
+    for (const tenant of tenants) {
+        await Promise.allSettled([
+            Category.deleteMany({ tenantId: tenant._id }),
+            Producto.deleteMany({ tenantId: tenant._id }),
+            Settings.deleteOne({ tenantId: tenant._id }),
+            Pedido.deleteMany({ tenantId: tenant._id }),
+            User.deleteMany({ tenantId: tenant._id, rol: { $ne: 'super_admin' } }),
+            Session.deleteMany({ tenantId: tenant._id }),
+            Payment.deleteMany({ tenantId: tenant._id }),
+            AccountStatusLog.deleteMany({ tenantId: tenant._id })
+        ]);
+        await Tenant.deleteOne({ _id: tenant._id });
+    }
+    return tenants.length;
+}
+
+function requireTenantOperational(req, res, next) {
+    if (req.tenant.status === 'deleted') {
+        return res.status(404).json({ error: 'Catalogo no encontrado', status: req.tenant.status });
+    }
+    if (req.tenant.status === 'suspended') {
+        return res.status(403).json({
+            error: 'Cuenta suspendida. Realiza el pago para reactivar el catalogo.',
+            status: req.tenant.status,
+            statusLabel: accountStatusLabel(req.tenant.status)
+        });
+    }
+    next();
 }
 
 function esHexColor(valor) {
@@ -347,12 +595,17 @@ async function asegurarTenantDefault() {
             descripcion: 'Selecciona tus productos y confirma tu pedido.',
             whatsapp,
             adminAccessKey: crearAdminAccessKey(),
-            activo: true
+            activo: true,
+            status: 'trial',
+            trialStartDate: new Date(),
+            billingDay: new Date().getDate()
         });
     } else if (!tenant.adminAccessKey) {
         tenant.adminAccessKey = crearAdminAccessKey();
         await tenant.save();
     }
+
+    await ensureTenantBillingDefaults(tenant);
 
     await Settings.updateOne(
         { tenantId: tenant._id },
@@ -363,6 +616,7 @@ async function asegurarTenantDefault() {
                 tema,
                 logo: tenant.logo || '',
                 logoShape: 'rectangle',
+                catalogTitle: 'Catalogo de productos',
                 colorPrimario: tenant.colorPrimario || '#10b981',
                 mostrarBuscador: true,
                 mostrarCategorias: true,
@@ -410,16 +664,47 @@ async function asegurarTenantDefault() {
             email: 'admin@example.com',
             usuario: 'admin',
             passwordHash: await bcrypt.hash(config?.password || 'admin123', 12),
-            rol: 'owner',
+            rol: 'tenant_admin',
             activo: true
         });
         console.log('Usuario admin inicial creado: admin / contraseña de configuración anterior.');
     }
+
+    await User.updateMany(
+        { tenantId: tenant._id, rol: { $in: ['owner', 'admin'] } },
+        { $set: { rol: 'tenant_admin' } }
+    );
+}
+
+async function asegurarSuperAdminBootstrap() {
+    const tenant = await tenantDefault();
+    if (!tenant) return;
+
+    const existing = await User.findOne({ rol: 'super_admin' });
+    if (existing) return;
+
+    const usuario = (process.env.SUPER_ADMIN_USER || 'superadmin').toLowerCase().trim();
+    const email = (process.env.SUPER_ADMIN_EMAIL || 'superadmin@local.test').toLowerCase().trim();
+    const password = process.env.SUPER_ADMIN_PASSWORD || 'Super-Admin-2026!';
+
+    await User.create({
+        tenantId: tenant._id,
+        nombre: process.env.SUPER_ADMIN_NAME || 'Super Administrador',
+        email,
+        usuario,
+        passwordHash: await bcrypt.hash(password, 12),
+        rol: 'super_admin',
+        activo: true
+    });
+    console.log(`Usuario super_admin inicial creado: ${usuario}`);
 }
 
 async function inicializarBase() {
     await inicializarConfiguracion();
     await asegurarTenantDefault();
+    await asegurarSuperAdminBootstrap();
+    const purged = await purgeDeletedTenants();
+    if (purged > 0) console.log(`Cuentas eliminadas purgadas definitivamente: ${purged}`);
 }
 
 async function tenantDefault() {
@@ -492,6 +777,44 @@ async function requireAdminAuth(req, res, next) {
         session.expiresAt = nuevaExpiracionSesion();
         await session.save();
         res.cookie(cookieName(req.tenant.slug), token, cookieOptions());
+        next();
+    } catch (err) {
+        next(err);
+    }
+}
+
+async function requireSuperAdminAuth(req, res, next) {
+    try {
+        const bearerToken = String(req.headers.authorization || '').startsWith('Bearer ')
+            ? String(req.headers.authorization).slice(7).trim()
+            : '';
+        const token = req.cookies[SUPER_ADMIN_COOKIE] || bearerToken;
+        if (!token) {
+            return res.status(401).json({ error: 'Sesion super admin requerida' });
+        }
+
+        const session = await Session.findOne({ tokenHash: sha256(token) });
+        const ahora = new Date();
+        const ultimaActividad = session?.lastActivityAt || session?.creadoEn || session?.expiresAt;
+        const sesionInactiva = ultimaActividad && (ahora.getTime() - new Date(ultimaActividad).getTime() > ADMIN_IDLE_TIMEOUT_MS);
+
+        if (!session || session.expiresAt <= ahora || sesionInactiva) {
+            if (session) await Session.deleteOne({ _id: session._id });
+            res.clearCookie(SUPER_ADMIN_COOKIE, clearCookieOptions());
+            return res.status(401).json({ error: 'Sesion invalida o expirada' });
+        }
+
+        const user = await User.findOne({ _id: session.userId, rol: 'super_admin', activo: true });
+        if (!user) {
+            return res.status(403).json({ error: 'Rol super_admin requerido' });
+        }
+
+        req.session = session;
+        req.user = user;
+        session.lastActivityAt = ahora;
+        session.expiresAt = nuevaExpiracionSesion();
+        await session.save();
+        res.cookie(SUPER_ADMIN_COOKIE, token, superAdminCookieOptions());
         next();
     } catch (err) {
         next(err);
@@ -610,6 +933,43 @@ async function guardarImagenCatalogo(file, tenantSlug) {
     return { url: `/uploads/${nombreArchivo}`, publicId: '' };
 }
 
+async function guardarArchivoGeneral(file, folder, prefix) {
+    if (!file) return { url: '', publicId: '' };
+
+    if (cloudinaryEnabled) {
+        const dataUri = `data:${file.mimetype || 'application/octet-stream'};base64,${file.buffer.toString('base64')}`;
+        const result = await cloudinary.uploader.upload(dataUri, {
+            folder,
+            resource_type: 'auto'
+        });
+        return { url: result.secure_url, publicId: result.public_id };
+    }
+
+    const safeExt = path.extname(file.originalname || '').replace(/[^a-zA-Z0-9.]/g, '').slice(0, 12) || '.bin';
+    const nombreArchivo = `${prefix}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}${safeExt}`;
+    const rutaDestino = path.join(uploadsDir, nombreArchivo);
+    await fs.promises.writeFile(rutaDestino, file.buffer);
+    return { url: `/uploads/${nombreArchivo}`, publicId: '' };
+}
+
+async function guardarLogoSaas(file) {
+    if (!file) return { url: '', publicId: '' };
+    const webpBuffer = await sharp(file.buffer)
+        .resize({ width: 512, height: 512, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 84 })
+        .toBuffer();
+
+    if (cloudinaryEnabled) {
+        const result = await subirBufferCloudinary(webpBuffer, 'saas/branding');
+        return { url: result.secure_url, publicId: result.public_id };
+    }
+
+    const nombreArchivo = `saas-logo-${Date.now()}.webp`;
+    const rutaDestino = path.join(uploadsDir, nombreArchivo);
+    await fs.promises.writeFile(rutaDestino, webpBuffer);
+    return { url: `/uploads/${nombreArchivo}`, publicId: '' };
+}
+
 async function eliminarImagen(rutaImagen, publicId = '') {
     if (publicId && cloudinaryEnabled) {
         try {
@@ -662,7 +1022,8 @@ app.get('/api/config', async (req, res) => {
             whatsapp: settings.whatsapp,
             colorPrimario: settings.colorPrimario,
             logo: settings.logo,
-            logoShape: settings.logoShape || 'rectangle'
+            logoShape: settings.logoShape || 'rectangle',
+            catalogTitle: settings.catalogTitle || 'Catalogo de productos'
         });
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener la configuración pública' });
@@ -680,6 +1041,7 @@ app.get('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (r
             colorPrimario: settings.colorPrimario || req.tenant.colorPrimario,
             logo: settings.logo || req.tenant.logo,
             logoShape: settings.logoShape || 'rectangle',
+            catalogTitle: settings.catalogTitle || 'Catalogo de productos',
             nombreNegocio: settings.nombreNegocio || req.tenant.nombre,
             descripcionNegocio: settings.descripcionNegocio || ''
         });
@@ -691,13 +1053,14 @@ app.get('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (r
 // Modificar configuración legacy del tenant default.
 app.put('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (req, res) => {
     try {
-        const { tema, telefonoWhatsApp, whatsapp, colorPrimario, logo, logoShape, nombreNegocio, descripcionNegocio } = req.body;
+        const { tema, telefonoWhatsApp, whatsapp, colorPrimario, logo, logoShape, catalogTitle, nombreNegocio, descripcionNegocio } = req.body;
         const settings = await settingsTenant(req.tenant);
         if (tema) settings.tema = tema;
         if (telefonoWhatsApp || whatsapp) settings.whatsapp = telefonoWhatsApp || whatsapp;
         if (colorPrimario) settings.colorPrimario = colorPrimario;
         if (logo) settings.logo = logo;
         if (logoShape) settings.logoShape = logoShape;
+        if (catalogTitle !== undefined) settings.catalogTitle = String(catalogTitle).trim() || settings.catalogTitle;
         if (nombreNegocio) settings.nombreNegocio = nombreNegocio;
         if (descripcionNegocio !== undefined) settings.descripcionNegocio = descripcionNegocio;
         await settings.save();
@@ -707,15 +1070,522 @@ app.put('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (r
     }
 });
 
+/* ==========================================================================
+   RUTAS SUPER ADMIN - CONTROL DEL SAAS
+   ========================================================================== */
+
+const superAdminLoginSchema = z.object({
+    identifier: z.string().trim().min(1),
+    password: z.string().min(1)
+});
+
+app.post('/api/super-admin/auth/login', authLimiter, async (req, res) => {
+    try {
+        const { identifier, password } = superAdminLoginSchema.parse(req.body);
+        const normalized = identifier.toLowerCase().trim();
+        const user = await User.findOne({
+            rol: 'super_admin',
+            activo: true,
+            $or: [{ email: normalized }, { usuario: normalized }]
+        });
+
+        if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+            return res.status(401).json({ error: 'Credenciales invalidas' });
+        }
+
+        user.failedLoginAttempts = 0;
+        user.lockedUntil = undefined;
+        user.ultimoLogin = new Date();
+        await user.save();
+
+        const token = crearTokenSeguro();
+        await Session.create({
+            tenantId: user.tenantId,
+            userId: user._id,
+            tokenHash: sha256(token),
+            expiresAt: nuevaExpiracionSesion(),
+            lastActivityAt: new Date(),
+            ip: req.ip,
+            userAgent: req.get('user-agent') || ''
+        });
+
+        res.cookie(SUPER_ADMIN_COOKIE, token, superAdminCookieOptions());
+        const response = {
+            success: true,
+            user: {
+                nombre: user.nombre,
+                email: user.email,
+                usuario: user.usuario,
+                rol: user.rol
+            }
+        };
+        if (process.env.NODE_ENV !== 'production') {
+            response.devSessionToken = token;
+        }
+        res.json(response);
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Datos invalidos' });
+        }
+        res.status(500).json({ error: 'Error en autenticacion super admin' });
+    }
+});
+
+app.get('/api/super-admin/auth/me', requireSuperAdminAuth, async (req, res) => {
+    res.json({
+        user: {
+            nombre: req.user.nombre,
+            email: req.user.email,
+            usuario: req.user.usuario,
+            rol: req.user.rol
+        }
+    });
+});
+
+app.post('/api/super-admin/auth/logout', requireSuperAdminAuth, async (req, res) => {
+    await Session.deleteOne({ _id: req.session._id });
+    res.clearCookie(SUPER_ADMIN_COOKIE, clearCookieOptions());
+    res.json({ success: true });
+});
+
+app.get('/api/saas/settings', async (req, res) => {
+    try {
+        res.json(saasSettingsPayload(await saasSettings()));
+    } catch (err) {
+        res.status(500).json({ error: 'Error al cargar configuracion del SaaS' });
+    }
+});
+
+app.get('/api/super-admin/settings', requireSuperAdminAuth, async (req, res) => {
+    try {
+        res.json(saasSettingsPayload(await saasSettings()));
+    } catch (err) {
+        res.status(500).json({ error: 'Error al cargar configuracion del SaaS' });
+    }
+});
+
+const saasSettingsSchema = z.object({
+    supportWhatsapp: z.string().trim().max(30).optional(),
+    supportMessage: z.string().trim().max(180).optional(),
+    emulatorUrl: z.string().trim().max(300).optional(),
+    emulatorEnabled: z.boolean().optional()
+});
+
+app.patch('/api/super-admin/settings', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const data = saasSettingsSchema.parse(req.body);
+        const settings = await saasSettings();
+        if (data.supportWhatsapp !== undefined) settings.supportWhatsapp = data.supportWhatsapp.replace(/\D/g, '');
+        if (data.supportMessage !== undefined) settings.supportMessage = data.supportMessage;
+        if (data.emulatorUrl !== undefined) settings.emulatorUrl = data.emulatorUrl;
+        if (data.emulatorEnabled !== undefined) settings.emulatorEnabled = data.emulatorEnabled;
+        await settings.save();
+        res.json(saasSettingsPayload(settings));
+    } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Configuracion invalida' });
+        res.status(500).json({ error: 'Error al guardar configuracion del SaaS' });
+    }
+});
+
+app.post('/api/super-admin/settings/logo', requireSuperAdminAuth, upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'Selecciona un logo' });
+        const settings = await saasSettings();
+        if (settings.logoUrl) {
+            await eliminarImagen(settings.logoUrl, settings.logoCloudinaryPublicId);
+        }
+        const logo = await guardarLogoSaas(req.file);
+        settings.logoUrl = logo.url;
+        settings.logoCloudinaryPublicId = logo.publicId;
+        await settings.save();
+        res.json(saasSettingsPayload(settings));
+    } catch (err) {
+        console.error('Error guardando logo SaaS:', err);
+        res.status(500).json({ error: 'Error al guardar logo del SaaS' });
+    }
+});
+
+app.get('/api/super-admin/dashboard', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenants = await Tenant.find({});
+        await applyAccountTransitions(tenants);
+        const counts = await Tenant.aggregate([
+            { $group: { _id: '$status', total: { $sum: 1 } } }
+        ]);
+        const byStatus = Object.fromEntries(ACCOUNT_STATUSES.map(status => [status, 0]));
+        for (const item of counts) byStatus[item._id || 'trial'] = item.total;
+        res.json({
+            clientesActivos: byStatus.active,
+            clientesPruebaGratis: byStatus.trial,
+            pagosPendientes: byStatus.pending_payment,
+            cuentasSuspendidas: byStatus.suspended,
+            cuentasEliminadas: byStatus.deleted,
+            byStatus
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al cargar dashboard super admin' });
+    }
+});
+
+app.get('/api/super-admin/tenants', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const status = String(req.query.status || '').trim();
+        const query = ACCOUNT_STATUSES.includes(status)
+            ? { status }
+            : { status: { $ne: 'deleted' } };
+        const tenants = await Tenant.find(query).populate('planId').sort({ creadoEn: -1 });
+        await applyAccountTransitions(tenants);
+        res.json(await Promise.all(tenants.map(serializeTenantForSuperAdmin)));
+    } catch (err) {
+        res.status(500).json({ error: 'Error al obtener clientes' });
+    }
+});
+
+app.get('/api/super-admin/trash', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenants = await Tenant.find({ status: 'deleted' }).populate('planId').sort({ deletedAt: -1 });
+        res.json(await Promise.all(tenants.map(serializeTenantForSuperAdmin)));
+    } catch (err) {
+        res.status(500).json({ error: 'Error al cargar papelera' });
+    }
+});
+
+app.delete('/api/super-admin/trash/:id', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenant = await Tenant.findOne({ _id: req.params.id, status: 'deleted' });
+        if (!tenant) return res.status(404).json({ error: 'Cuenta no encontrada en trash' });
+        await Promise.allSettled([
+            Category.deleteMany({ tenantId: tenant._id }),
+            Producto.deleteMany({ tenantId: tenant._id }),
+            Settings.deleteOne({ tenantId: tenant._id }),
+            Pedido.deleteMany({ tenantId: tenant._id }),
+            User.deleteMany({ tenantId: tenant._id, rol: { $ne: 'super_admin' } }),
+            Session.deleteMany({ tenantId: tenant._id }),
+            Payment.deleteMany({ tenantId: tenant._id }),
+            AccountStatusLog.deleteMany({ tenantId: tenant._id })
+        ]);
+        await Tenant.deleteOne({ _id: tenant._id });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al eliminar definitivamente' });
+    }
+});
+
+app.get('/api/super-admin/tenants/:id', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenant = await Tenant.findById(req.params.id).populate('planId');
+        if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
+        await applyAccountTransitions(tenant);
+        const [payments, logs] = await Promise.all([
+            Payment.find({ tenantId: tenant._id }).sort({ createdAt: -1 }).populate('approvedBy', 'nombre email usuario'),
+            AccountStatusLog.find({ tenantId: tenant._id }).sort({ createdAt: -1 }).populate('changedBy', 'nombre email usuario')
+        ]);
+        res.json({
+            tenant: await serializeTenantForSuperAdmin(tenant),
+            payments,
+            statusLogs: logs,
+            suspensionLogs: logs.filter(log => log.newStatus === 'suspended' || log.previousStatus === 'suspended'),
+            receipts: payments.filter(payment => payment.receiptUrl)
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al obtener detalle del cliente' });
+    }
+});
+
+const statusUpdateSchema = z.object({
+    status: z.enum(['trial', 'active', 'pending_payment', 'suspended', 'deleted']),
+    reason: z.string().trim().max(200).optional()
+});
+
+app.patch('/api/super-admin/tenants/:id/status', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const data = statusUpdateSchema.parse(req.body);
+        const tenant = await Tenant.findById(req.params.id);
+        if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
+        const previousStatus = tenant.status;
+        tenant.status = data.status;
+        tenant.activo = !['suspended', 'deleted'].includes(data.status);
+        tenant.suspendedAt = data.status === 'suspended' ? new Date() : (data.status === 'active' ? null : tenant.suspendedAt);
+        tenant.deletedAt = data.status === 'deleted' ? new Date() : (data.status !== 'deleted' ? null : tenant.deletedAt);
+        if (data.status !== 'deleted') tenant.deletedReason = '';
+        await tenant.save();
+        await logAccountStatus(tenant, previousStatus, data.status, data.reason || 'Cambio manual super admin', req.user._id);
+        res.json({ success: true, tenant: await serializeTenantForSuperAdmin(tenant) });
+    } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Estado invalido' });
+        res.status(500).json({ error: 'Error al actualizar estado' });
+    }
+});
+
+const tenantPlanSchema = z.object({
+    planId: z.string().trim().min(1),
+    monthlyPrice: z.number().min(0).optional()
+});
+
+app.patch('/api/super-admin/tenants/:id/plan', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const data = tenantPlanSchema.parse(req.body);
+        const [tenant, plan] = await Promise.all([
+            Tenant.findById(req.params.id),
+            Plan.findById(data.planId)
+        ]);
+        if (!tenant || !plan) return res.status(404).json({ error: 'Cliente o plan no encontrado' });
+        tenant.planId = plan._id;
+        tenant.monthlyPrice = money(data.monthlyPrice ?? plan.monthlyPrice);
+        tenant.trialEndDate = tenant.trialStartDate && plan.trialDays ? addDays(tenant.trialStartDate, plan.trialDays) : tenant.trialEndDate;
+        if (!tenant.currentPeriodStart) tenant.currentPeriodStart = new Date();
+        tenant.currentPeriodEnd = nextBillingDate(tenant.currentPeriodStart, tenant.billingDay || new Date().getDate());
+        tenant.paymentDueDate = addDays(tenant.currentPeriodEnd, plan.graceDays || 0);
+        await tenant.save();
+        res.json({ success: true, tenant: await serializeTenantForSuperAdmin(tenant) });
+    } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Datos de plan invalidos' });
+        res.status(500).json({ error: 'Error al cambiar plan' });
+    }
+});
+
+const tenantPriceSchema = z.object({
+    monthlyPrice: z.number().min(0)
+});
+
+app.patch('/api/super-admin/tenants/:id/price', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const data = tenantPriceSchema.parse(req.body);
+        const tenant = await Tenant.findById(req.params.id);
+        if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
+        tenant.monthlyPrice = money(data.monthlyPrice);
+        await tenant.save();
+        res.json({ success: true, tenant: await serializeTenantForSuperAdmin(tenant) });
+    } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Precio invalido' });
+        res.status(500).json({ error: 'Error al cambiar precio' });
+    }
+});
+
+const tenantTrialSchema = z.object({
+    trialStartDate: z.coerce.date().optional(),
+    trialEndDate: z.coerce.date().optional(),
+    action: z.enum(['extend', 'finish']).optional(),
+    days: z.number().int().min(1).optional()
+});
+
+app.patch('/api/super-admin/tenants/:id/trial', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const data = tenantTrialSchema.parse(req.body);
+        const tenant = await Tenant.findById(req.params.id);
+        if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
+        const previousStatus = tenant.status;
+        if (data.trialStartDate) tenant.trialStartDate = data.trialStartDate;
+        if (data.trialEndDate) tenant.trialEndDate = data.trialEndDate;
+        if (data.action === 'extend') {
+            tenant.trialEndDate = addDays(tenant.trialEndDate || new Date(), data.days || 1);
+            tenant.status = 'trial';
+            tenant.activo = true;
+        }
+        if (data.action === 'finish') {
+            tenant.trialEndDate = new Date();
+            tenant.status = 'pending_payment';
+            tenant.activo = true;
+        }
+        await tenant.save();
+        await logAccountStatus(tenant, previousStatus, tenant.status, 'Actualizacion de prueba gratis', req.user._id);
+        res.json({ success: true, tenant: await serializeTenantForSuperAdmin(tenant) });
+    } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Datos de prueba invalidos' });
+        res.status(500).json({ error: 'Error al actualizar prueba gratis' });
+    }
+});
+
+const manualPaymentSchema = z.object({
+    amount: z.number().min(0),
+    paymentMonth: z.string().trim().min(1).max(40).optional(),
+    paymentMethod: z.string().trim().max(60).optional()
+});
+
+app.post('/api/super-admin/tenants/:id/payments/confirm', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const data = manualPaymentSchema.parse(req.body);
+        const tenant = await Tenant.findById(req.params.id).populate('planId');
+        if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
+
+        const now = new Date();
+        const payment = await Payment.create({
+            tenantId: tenant._id,
+            amount: money(data.amount),
+            paymentMonth: data.paymentMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
+            paymentMethod: data.paymentMethod || 'Efectivo',
+            status: 'aprobado',
+            paidAt: now,
+            approvedAt: now,
+            approvedBy: req.user._id
+        });
+
+        const previousStatus = tenant.status;
+        const plan = tenant.planId;
+        tenant.status = 'active';
+        tenant.activo = true;
+        tenant.suspendedAt = null;
+        tenant.lastPaymentAt = now;
+        tenant.currentPeriodStart = now;
+        tenant.currentPeriodEnd = nextBillingDate(now, tenant.billingDay || now.getDate());
+        tenant.paymentDueDate = addDays(tenant.currentPeriodEnd, plan?.graceDays || 0);
+        await tenant.save();
+        await logAccountStatus(tenant, previousStatus, 'active', 'Pago confirmado manualmente', req.user._id);
+
+        res.status(201).json({ success: true, payment, tenant: await serializeTenantForSuperAdmin(tenant) });
+    } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Datos de pago invalidos' });
+        res.status(500).json({ error: 'Error al confirmar pago manual' });
+    }
+});
+
+app.delete('/api/super-admin/tenants/:id', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenant = await Tenant.findById(req.params.id);
+        if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
+        const previousStatus = tenant.status;
+        tenant.status = 'deleted';
+        tenant.activo = false;
+        tenant.deletedAt = new Date();
+        tenant.deletedReason = String(req.body?.reason || '').trim();
+        await tenant.save();
+        await logAccountStatus(tenant, previousStatus, 'deleted', tenant.deletedReason || 'Soft delete super admin', req.user._id);
+        res.json({ success: true, tenant: await serializeTenantForSuperAdmin(tenant) });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al eliminar cuenta' });
+    }
+});
+
+app.get('/api/super-admin/payments', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const status = String(req.query.status || '').trim();
+        const query = PAYMENT_STATUSES.includes(status) ? { status } : {};
+        const payments = await Payment.find(query).sort({ createdAt: -1 }).populate('tenantId', 'nombre slug whatsapp email status').populate('approvedBy', 'nombre email usuario');
+        res.json(payments.map(payment => ({
+            id: payment._id,
+            tenant: payment.tenantId,
+            amount: payment.amount,
+            paymentMonth: payment.paymentMonth,
+            paymentMethod: payment.paymentMethod,
+            receiptUrl: payment.receiptUrl,
+            status: payment.status,
+            paidAt: payment.paidAt,
+            approvedAt: payment.approvedAt,
+            approvedBy: payment.approvedBy,
+            rejectionReason: payment.rejectionReason,
+            createdAt: payment.createdAt
+        })));
+    } catch (err) {
+        res.status(500).json({ error: 'Error al obtener pagos' });
+    }
+});
+
+app.patch('/api/super-admin/payments/:id/approve', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id);
+        if (!payment) return res.status(404).json({ error: 'Pago no encontrado' });
+        const tenant = await Tenant.findById(payment.tenantId).populate('planId');
+        if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
+        const previousStatus = tenant.status;
+        payment.status = 'aprobado';
+        payment.paidAt = payment.paidAt || new Date();
+        payment.approvedAt = new Date();
+        payment.approvedBy = req.user._id;
+        await payment.save();
+
+        const plan = tenant.planId;
+        tenant.status = 'active';
+        tenant.activo = true;
+        tenant.suspendedAt = null;
+        tenant.lastPaymentAt = payment.paidAt;
+        tenant.currentPeriodStart = payment.paidAt;
+        tenant.currentPeriodEnd = nextBillingDate(payment.paidAt, tenant.billingDay || payment.paidAt.getDate());
+        tenant.paymentDueDate = addDays(tenant.currentPeriodEnd, plan?.graceDays || 0);
+        await tenant.save();
+        await logAccountStatus(tenant, previousStatus, 'active', 'Pago aprobado', req.user._id);
+        res.json({ success: true, payment, tenant: await serializeTenantForSuperAdmin(tenant) });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al aprobar pago' });
+    }
+});
+
+app.patch('/api/super-admin/payments/:id/reject', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id);
+        if (!payment) return res.status(404).json({ error: 'Pago no encontrado' });
+        const tenant = await Tenant.findById(payment.tenantId);
+        payment.status = 'rechazado';
+        payment.rejectionReason = String(req.body?.reason || '').trim();
+        await payment.save();
+        if (tenant) {
+            const previousStatus = tenant.status;
+            tenant.status = 'suspended';
+            tenant.activo = false;
+            tenant.suspendedAt = new Date();
+            await tenant.save();
+            await logAccountStatus(tenant, previousStatus, 'suspended', payment.rejectionReason || 'Pago rechazado', req.user._id);
+        }
+        res.json({ success: true, payment, tenant: tenant ? await serializeTenantForSuperAdmin(tenant) : null });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al rechazar pago' });
+    }
+});
+
+app.get('/api/super-admin/plans', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const plans = await Plan.find({}).sort({ createdAt: -1 });
+        res.json(plans);
+    } catch (err) {
+        res.status(500).json({ error: 'Error al obtener planes' });
+    }
+});
+
+const planSchema = z.object({
+    name: z.string().trim().min(2).max(80),
+    monthlyPrice: z.number().min(0),
+    trialDays: z.number().int().min(0).default(0),
+    graceDays: z.number().int().min(0).default(0),
+    productLimit: z.number().int().min(0).nullable().optional(),
+    features: z.array(z.string().trim().min(1).max(120)).default([]),
+    isActive: z.boolean().default(true)
+});
+
+app.post('/api/super-admin/plans', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const data = planSchema.parse(req.body);
+        const plan = await Plan.create(data);
+        res.status(201).json(plan);
+    } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Datos de plan invalidos' });
+        res.status(500).json({ error: 'Error al crear plan' });
+    }
+});
+
+app.patch('/api/super-admin/plans/:id', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const partialSchema = planSchema.partial();
+        const data = partialSchema.parse(req.body);
+        const plan = await Plan.findByIdAndUpdate(req.params.id, { $set: data }, { new: true });
+        if (!plan) return res.status(404).json({ error: 'Plan no encontrado' });
+        res.json(plan);
+    } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Datos de plan invalidos' });
+        res.status(500).json({ error: 'Error al actualizar plan' });
+    }
+});
+
 app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
     try {
+        await applyAccountTransitions(req.tenant);
         const settings = await settingsTenant(req.tenant);
+        const plan = req.tenant.planId ? await Plan.findById(req.tenant.planId) : null;
         res.json({
             whatsapp: settings.whatsapp,
             telefonoWhatsApp: settings.whatsapp,
             colorPrimario: settings.colorPrimario,
             logo: settings.logo,
             logoShape: settings.logoShape || 'rectangle',
+            catalogTitle: settings.catalogTitle || 'Catalogo de productos',
             tema: settings.tema,
             theme: normalizarThemeTenant(settings.theme),
             nombreNegocio: req.tenant.nombre,
@@ -724,7 +1594,8 @@ app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
             mostrarCategorias: settings.mostrarCategorias,
             mostrarDescripcion: settings.mostrarDescripcion,
             vistaPredeterminada: settings.vistaPredeterminada,
-            monedaVisible: settings.monedaVisible
+            monedaVisible: settings.monedaVisible,
+            account: tenantBillingPayload(req.tenant, plan)
         });
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener la configuración pública' });
@@ -733,13 +1604,16 @@ app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
 
 app.get('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async (req, res) => {
     try {
+        await applyAccountTransitions(req.tenant);
         const settings = await settingsTenant(req.tenant);
+        const plan = req.tenant.planId ? await Plan.findById(req.tenant.planId) : null;
         res.json({
             whatsapp: settings.whatsapp,
             telefonoWhatsApp: settings.whatsapp,
             colorPrimario: settings.colorPrimario,
             logo: settings.logo,
             logoShape: settings.logoShape || 'rectangle',
+            catalogTitle: settings.catalogTitle || 'Catalogo de productos',
             tema: settings.tema,
             theme: normalizarThemeTenant(settings.theme),
             nombreNegocio: req.tenant.nombre,
@@ -748,7 +1622,8 @@ app.get('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             mostrarCategorias: settings.mostrarCategorias,
             mostrarDescripcion: settings.mostrarDescripcion,
             vistaPredeterminada: settings.vistaPredeterminada,
-            monedaVisible: settings.monedaVisible
+            monedaVisible: settings.monedaVisible,
+            account: tenantBillingPayload(req.tenant, plan)
         });
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener la configuración del tenant' });
@@ -764,6 +1639,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             colorPrimario,
             logo,
             logoShape,
+            catalogTitle,
             theme,
             nombreNegocio,
             descripcionNegocio,
@@ -784,6 +1660,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
                     ...(colorPrimario ? { colorPrimario } : {}),
                     ...(logo !== undefined ? { logo } : {}),
                     ...(logoShape ? { logoShape } : {}),
+                    ...(catalogTitle !== undefined ? { catalogTitle: String(catalogTitle).trim() || 'Catalogo de productos' } : {}),
                     ...(themeNormalizado ? { theme: themeNormalizado } : {}),
                     ...(mostrarBuscador !== undefined ? { mostrarBuscador: Boolean(mostrarBuscador) } : {}),
                     ...(mostrarCategorias !== undefined ? { mostrarCategorias: Boolean(mostrarCategorias) } : {}),
@@ -808,6 +1685,44 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
         res.json({ success: true, mensaje: 'Ajustes del tenant actualizados correctamente' });
     } catch (err) {
         res.status(500).json({ error: 'Error al actualizar ajustes del tenant' });
+    }
+});
+
+app.post('/api/:tenant/admin/payments/receipt', tenantMiddleware, requireAdminAuth, upload.single('receipt'), async (req, res) => {
+    try {
+        const amount = money(req.body.amount || req.tenant.monthlyPrice || 0);
+        const now = new Date();
+        const receipt = req.file
+            ? await guardarArchivoGeneral(req.file, `${req.tenant.slug}/receipts`, `receipt-${req.tenant.slug}`)
+            : { url: '', publicId: '' };
+        const payment = await Payment.create({
+            tenantId: req.tenantId,
+            amount,
+            paymentMonth: String(req.body.paymentMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`),
+            paymentMethod: String(req.body.paymentMethod || 'Transferencia'),
+            receiptUrl: receipt.url,
+            status: 'pendiente',
+            paidAt: now
+        });
+        const previousStatus = req.tenant.status;
+        req.tenant.status = 'active';
+        req.tenant.activo = true;
+        req.tenant.suspendedAt = null;
+        await req.tenant.save();
+        await logAccountStatus(req.tenant, previousStatus, 'active', 'Pago reportado por cliente en revision', req.user._id);
+        res.status(201).json({ success: true, payment, account: tenantBillingPayload(req.tenant, req.tenant.planId ? await Plan.findById(req.tenant.planId) : null) });
+    } catch (err) {
+        console.error('Error subiendo comprobante:', err);
+        res.status(500).json({ error: 'Error al subir comprobante' });
+    }
+});
+
+app.get('/api/:tenant/admin/payments', tenantMiddleware, requireAdminAuth, async (req, res) => {
+    try {
+        const payments = await Payment.find({ tenantId: req.tenantId }).sort({ createdAt: -1 }).populate('approvedBy', 'nombre email usuario');
+        res.json(payments);
+    } catch (err) {
+        res.status(500).json({ error: 'Error al cargar historial de pagos' });
     }
 });
 
@@ -923,12 +1838,19 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
             slug,
             nombre: data.nombre,
             descripcion: '',
+            ownerName: 'Administrador',
+            email,
             tipoNegocio: data.tipoNegocio,
             whatsapp,
             colorPrimario: '#10b981',
             adminAccessKey: crearAdminAccessKey(),
-            activo: true
+            activo: true,
+            status: 'trial',
+            trialStartDate: new Date(),
+            billingDay: new Date().getDate()
         });
+
+        await ensureTenantBillingDefaults(tenantCreado);
 
         await Settings.create({
             tenantId: tenantCreado._id,
@@ -936,6 +1858,7 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
             colorPrimario: tenantCreado.colorPrimario,
             logo: '',
             logoShape: 'rectangle',
+            catalogTitle: 'Catalogo de productos',
             theme: DEFAULT_TENANT_THEME,
             tema: 'emerald',
             mostrarBuscador: true,
@@ -951,7 +1874,7 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
             email,
             usuario,
             passwordHash: await bcrypt.hash(data.password, 12),
-            rol: 'owner',
+            rol: 'tenant_admin',
             activo: true
         });
 
@@ -1223,7 +2146,7 @@ app.get('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, asy
     }
 });
 
-app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, async (req, res) => {
+app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, requireTenantOperational, async (req, res) => {
     try {
         const categoria = await Category.create({
             tenantId: req.tenantId,
@@ -1236,7 +2159,7 @@ app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, as
     }
 });
 
-app.put('/api/:tenant/admin/categories/:id', tenantMiddleware, requireAdminAuth, async (req, res) => {
+app.put('/api/:tenant/admin/categories/:id', tenantMiddleware, requireAdminAuth, requireTenantOperational, async (req, res) => {
     try {
         const categoria = await Category.findOneAndUpdate(
             { _id: req.params.id, tenantId: req.tenantId },
@@ -1252,7 +2175,7 @@ app.put('/api/:tenant/admin/categories/:id', tenantMiddleware, requireAdminAuth,
     }
 });
 
-app.delete('/api/:tenant/admin/categories/:id', tenantMiddleware, requireAdminAuth, async (req, res) => {
+app.delete('/api/:tenant/admin/categories/:id', tenantMiddleware, requireAdminAuth, requireTenantOperational, async (req, res) => {
     try {
         const productosEnCategoria = await Producto.countDocuments({ tenantId: req.tenantId, categoriaId: req.params.id });
         if (productosEnCategoria > 0) {
@@ -1268,7 +2191,7 @@ app.delete('/api/:tenant/admin/categories/:id', tenantMiddleware, requireAdminAu
     }
 });
 
-app.get('/api/:tenant/products', tenantMiddleware, async (req, res) => {
+app.get('/api/:tenant/products', tenantMiddleware, requireTenantOperational, async (req, res) => {
     try {
         const lista = await Producto.find({ tenantId: req.tenantId, activo: true })
             .populate('categoriaId')
@@ -1290,7 +2213,7 @@ app.get('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, async
     }
 });
 
-app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, upload.single('foto'), async (req, res) => {
+app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requireTenantOperational, upload.single('foto'), async (req, res) => {
     try {
         const categoria = await buscarCategoriaTenant(req.tenantId, req.body.categoriaId || req.body.categoria);
         if (!categoria) {
@@ -1324,7 +2247,7 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, uplo
     }
 });
 
-app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, upload.single('foto'), async (req, res) => {
+app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, requireTenantOperational, upload.single('foto'), async (req, res) => {
     try {
         const productoExistente = await Producto.findOne({ _id: req.params.id, tenantId: req.tenantId });
         if (!productoExistente) {
@@ -1368,7 +2291,7 @@ app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, u
     }
 });
 
-app.delete('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, async (req, res) => {
+app.delete('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, requireTenantOperational, async (req, res) => {
     try {
         const producto = await Producto.findOne({ _id: req.params.id, tenantId: req.tenantId });
         if (!producto) {
@@ -1384,7 +2307,7 @@ app.delete('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth
     }
 });
 
-app.patch('/api/:tenant/admin/products/:id/toggle', tenantMiddleware, requireAdminAuth, async (req, res) => {
+app.patch('/api/:tenant/admin/products/:id/toggle', tenantMiddleware, requireAdminAuth, requireTenantOperational, async (req, res) => {
     try {
         const producto = await Producto.findOne({ _id: req.params.id, tenantId: req.tenantId });
         if (!producto) {
@@ -1400,7 +2323,7 @@ app.patch('/api/:tenant/admin/products/:id/toggle', tenantMiddleware, requireAdm
     }
 });
 
-app.post('/api/:tenant/orders', tenantMiddleware, async (req, res) => {
+app.post('/api/:tenant/orders', tenantMiddleware, requireTenantOperational, async (req, res) => {
     try {
         const nuevoPedido = new Pedido({
             tenantId: req.tenantId,

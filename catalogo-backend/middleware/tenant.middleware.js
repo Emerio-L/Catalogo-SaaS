@@ -11,8 +11,8 @@ async function tenantMiddleware(req, res, next) {
         if (!tenant) {
             return res.status(404).json({ error: 'Catalogo no encontrado' });
         }
-        if (!tenant.activo) {
-            return res.status(403).json({ error: 'Catalogo inactivo' });
+        if (tenant.status === 'deleted') {
+            return res.status(404).json({ error: 'Catalogo no encontrado', status: tenant.status });
         }
 
         req.tenant = tenant;

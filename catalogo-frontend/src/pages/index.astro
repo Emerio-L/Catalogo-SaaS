@@ -21,11 +21,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             <div class="relative mx-auto max-w-6xl">
                 <div class="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                     <div class="min-w-0 flex-1 pr-28 text-left md:pr-0">
-                        <p class="text-[11px] font-black uppercase tracking-[0.24em] text-primary-100/85 md:text-xs">CATÁLOGO DE</p>
-                        <h1 class="text-2xl font-black tracking-tight uppercase leading-none select-none text-primary-300 sm:text-3xl md:text-5xl">PRODUCTOS</h1>
+                        <p class="text-[11px] font-black uppercase tracking-[0.24em] md:text-xs" style="color: var(--tenant-header-muted, rgba(255,255,255,.82));">CATALOGO</p>
+                        <h1 id="catalog-main-title" class="text-2xl font-black tracking-tight uppercase leading-none select-none sm:text-3xl md:text-5xl" style="color: var(--tenant-header-text, #FFFFFF);">Catalogo de productos</h1>
                         <div class="mt-2">
-                            <p id="catalog-business-name" class="max-w-full break-words text-sm font-black uppercase leading-tight tracking-wider text-white">Catálogo de Productos</p>
-                            <p id="catalog-business-description" class="text-xs font-semibold text-primary-100/85 mt-0.5">Haz tu pedido por WhatsApp</p>
+                            <p id="catalog-business-name" class="max-w-full break-words text-sm font-black uppercase leading-tight tracking-wider" style="color: var(--tenant-header-text, #FFFFFF);">Catálogo de Productos</p>
+                            <p id="catalog-business-description" class="text-xs font-semibold mt-0.5" style="color: var(--tenant-header-muted, rgba(255,255,255,.82));">Haz tu pedido por WhatsApp</p>
                         </div>
                     </div>
                     <div id="catalog-brand-mark" class="absolute right-4 top-4 flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.5rem] bg-white/10 text-primary-200 shadow-xl ring-1 ring-white/15 md:static md:h-32 md:w-32">
@@ -36,10 +36,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     </div>
                     <div id="catalog-search-wrapper" class="relative col-span-full mt-1 w-full md:col-start-1 md:row-start-2 md:mt-3 md:max-w-xl">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                            <i class="fa-solid fa-magnifying-glass text-primary-100/80"></i>
+                            <i class="fa-solid fa-magnifying-glass" style="color: var(--tenant-search-placeholder, rgba(255,255,255,.72));"></i>
                         </span>
                         <input type="text" id="buscar-producto" oninput="dibujar()" placeholder="¿Qué estás buscando hoy?" 
-                        class="w-full pl-10 pr-4 py-2.5 bg-white/12 text-white placeholder-primary-100/70 rounded-2xl border border-white/10 outline-none text-sm font-semibold focus:ring-2 focus:ring-primary-300 focus:bg-white/18 transition-all">
+                        class="catalog-search-input w-full pl-10 pr-4 py-2.5 rounded-2xl border outline-none text-sm font-semibold focus:ring-2 focus:ring-primary-300 transition-all" style="background: var(--tenant-search-bg, rgba(255,255,255,.14)); color: var(--tenant-search-text, #FFFFFF); border-color: var(--tenant-search-border, rgba(255,255,255,.18));">
                     </div>
                 </div>
             </div>
@@ -92,7 +92,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             <aside class="fixed inset-y-0 left-0 z-50 hidden w-72 flex-col bg-[#071b33] text-white lg:flex">
                 <div class="flex h-full flex-col p-5">
                     <div class="mb-8 flex items-center gap-3 rounded-3xl bg-white/5 p-3 ring-1 ring-white/10">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-500 text-xl text-white shadow-lg shadow-primary-950/30">
+                        <div class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-primary-500 text-xl text-white shadow-lg shadow-primary-950/30">
+                            <img id="tenant-saas-logo-sidebar" src="" alt="Logo SaaS" class="hidden h-full w-full object-cover">
                             <i class="fa-solid fa-bag-shopping"></i>
                         </div>
                         <div>
@@ -123,7 +124,15 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             </div>
                             <p class="text-sm font-extrabold text-white">Soporte por WhatsApp</p>
                             <p class="mt-1 text-xs font-semibold text-slate-300">¿Necesitas ayuda?</p>
-                            <p class="mt-3 text-sm font-black text-primary-300">502 1234 5678</p>
+                            <p id="admin-support-whatsapp" class="mt-3 text-sm font-black text-primary-300">Soporte no configurado</p>
+                            <div class="mt-3 grid gap-2">
+                                <button id="admin-support-whatsapp-btn" type="button" onclick="abrirSoporteWhatsapp()" class="rounded-2xl bg-primary-500 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-50">
+                                    Abrir soporte
+                                </button>
+                                <button id="admin-support-emulator-btn" type="button" onclick="abrirEmuladorSoporte()" class="rounded-2xl bg-white/8 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-200 ring-1 ring-white/10 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-45">
+                                    Ver emulador
+                                </button>
+                            </div>
                         </div>
                         <button class="flex w-full items-center gap-3 rounded-3xl bg-white/8 p-3 text-left ring-1 ring-white/10 transition hover:bg-white/12">
                             <div id="admin-sidebar-avatar" class="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 font-black">A</div>
@@ -141,7 +150,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             <main class="min-h-screen flex-1 p-4 lg:ml-72 lg:p-8">
                 <div class="mb-4 rounded-[1.75rem] bg-[#071b33] p-4 text-white shadow-premium ring-1 ring-slate-900/10 lg:hidden">
                     <div class="mb-4 flex items-center gap-3">
-                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-500 text-lg text-white">
+                        <div class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-primary-500 text-lg text-white">
+                            <img id="tenant-saas-logo-mobile" src="" alt="Logo SaaS" class="hidden h-full w-full object-cover">
                             <i class="fa-solid fa-bag-shopping"></i>
                         </div>
                         <div>
@@ -325,17 +335,48 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                     </button>
                                 </div>
                             </div>
+                            <div class="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs font-black uppercase tracking-wider text-slate-700">Titulo del catalogo</p>
+                                        <p id="perfil-catalog-title-display" class="mt-1 text-sm font-black text-slate-800">Catalogo de productos</p>
+                                    </div>
+                                    <button type="button" onclick="abrirModalTituloCatalogo()" class="rounded-xl bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-600 ring-1 ring-slate-200 transition hover:text-primary-700 hover:ring-primary-200">
+                                        <i class="fa-solid fa-pen-to-square mr-1"></i> Editar
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div class="rounded-[1.75rem] bg-white p-6 shadow-premium ring-1 ring-slate-100">
                             <p class="text-sm font-black text-slate-900">Informacion de la cuenta</p>
                             <div class="mt-4 space-y-3 text-sm font-bold text-slate-600">
-                                <div class="flex justify-between"><span>Plan actual</span><strong class="text-slate-950">Profesional</strong></div>
-                                <div class="flex justify-between"><span>Corte del mes</span><strong class="text-slate-950">15 de junio, 2026</strong></div>
-                                <div class="flex justify-between"><span>Fecha limite de pago</span><strong class="text-slate-950">30 de junio, 2026</strong></div>
-                                <div class="flex justify-between"><span>Mensualidad</span><strong class="text-slate-950">Q50.00</strong></div>
-                                <div class="flex justify-between"><span>Estado</span><strong class="text-primary-600">Al dia</strong></div>
+                                <div class="flex justify-between gap-4"><span>Plan actual</span><strong id="account-plan-name" class="text-right text-slate-950">Cargando...</strong></div>
+                                <div class="flex justify-between gap-4"><span>Corte del mes</span><strong id="account-period-end" class="text-right text-slate-950">Cargando...</strong></div>
+                                <div class="flex justify-between gap-4"><span>Fecha limite de pago</span><strong id="account-payment-due" class="text-right text-slate-950">Cargando...</strong></div>
+                                <div class="flex justify-between gap-4"><span>Mensualidad</span><strong id="account-monthly-price" class="text-right text-slate-950">Cargando...</strong></div>
+                                <div class="flex justify-between gap-4"><span>Estado</span><strong id="account-status" class="text-right text-primary-600">Cargando...</strong></div>
                             </div>
-                            <p class="mt-4 flex items-center gap-2 text-xs font-bold text-amber-700"><i class="fa-solid fa-triangle-exclamation"></i> Si entra en mora, la cuenta se suspendera el 30 de junio, 2026.</p>
+                            <p id="account-warning" class="mt-4 hidden items-center gap-2 text-xs font-bold text-amber-700"><i class="fa-solid fa-triangle-exclamation"></i> <span></span></p>
+                            <form onsubmit="subirComprobantePago(event)" class="mt-5 space-y-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                                <p class="text-xs font-black uppercase tracking-wider text-slate-700">Reportar pago</p>
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <input id="payment-receipt-amount" type="number" min="0" step="0.01" placeholder="Monto" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary-100">
+                                    <input id="payment-receipt-month" placeholder="Mes pagado (2026-06)" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary-100">
+                                </div>
+                                <input id="payment-receipt-method" placeholder="Metodo de pago" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary-100">
+                                <input id="payment-receipt-file" type="file" accept="image/*,.pdf" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary-100">
+                                <p class="text-[11px] font-semibold text-slate-500">El comprobante es opcional si pagaste en efectivo.</p>
+                                <button type="submit" class="w-full rounded-2xl bg-primary-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white transition hover:bg-primary-500">Reportar pago</button>
+                            </form>
+                            <div class="mt-5 rounded-2xl bg-white p-4 ring-1 ring-slate-100">
+                                <div class="mb-3 flex items-center justify-between gap-3">
+                                    <p class="text-xs font-black uppercase tracking-wider text-slate-700">Historial de pagos</p>
+                                    <button type="button" onclick="cargarHistorialPagosPerfil()" class="text-[10px] font-black uppercase tracking-wider text-primary-600 transition hover:text-primary-700"><i class="fa-solid fa-rotate-right mr-1"></i> Actualizar</button>
+                                </div>
+                                <div id="payment-history-list" class="space-y-2 text-sm text-slate-500">
+                                    <p class="rounded-2xl bg-slate-50 p-4 text-center text-xs font-bold text-slate-400">Cargando historial...</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="rounded-[1.75rem] bg-white p-6 shadow-premium ring-1 ring-slate-100">
                             <p class="text-sm font-black text-slate-900">Seguridad de la cuenta</p>
@@ -461,7 +502,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <div class="mb-5 flex items-start justify-between gap-4">
                                 <div>
                                     <h3 class="text-sm font-black text-slate-900">Paleta de colores</h3>
-                                    <p class="mt-1 text-sm font-semibold text-slate-500">Selecciona un color, revisa la vista previa y guarda los cambios.</p>
+                                    <p class="mt-1 text-sm font-semibold text-slate-500">Selecciona un color y guarda los cambios para aplicarlo.</p>
                                 </div>
                                 <i class="fa-solid fa-palette text-primary-500"></i>
                             </div>
@@ -471,13 +512,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                 <button id="palette-tab-business" onclick="cambiarTabPaleta('business')" class="palette-tab rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wider text-slate-600 transition">Sugerencias por negocio</button>
                             </div>
 
-                            <div class="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+                            <div class="mt-5">
                                 <div id="palette-tab-content" class="min-h-[320px] rounded-[1.5rem] border border-slate-100 bg-slate-50 p-5"></div>
-
-                                <div>
-                                    <div id="palette-live-preview"></div>
-                                </div>
-
                                 <input id="custom-main-color" type="color" class="sr-only" oninput="seleccionarColorPersonalizado(this.value)">
                             </div>
 
@@ -1013,6 +1049,47 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         </div>
     </div>
 
+    <div id="modal-perfil-catalog-title" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[65] flex items-center justify-center p-6 transition-all duration-300 hidden">
+        <div class="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl ring-1 ring-slate-100">
+            <div class="mb-5 flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.25em] text-primary-600">Titulo del catalogo</p>
+                    <h2 class="mt-1 text-xl font-black text-slate-950">Edita el titulo público</h2>
+                    <p class="mt-1 text-sm font-semibold text-slate-500">Este texto aparece arriba del catalogo de productos.</p>
+                </div>
+                <button type="button" onclick="cerrarModalTituloCatalogo()" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <label for="perfil-catalog-title" class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Titulo visible</label>
+            <input id="perfil-catalog-title" type="text" placeholder="Catalogo de productos" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:ring-4 focus:ring-primary-100">
+            <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button onclick="guardarTituloCatalogo()" class="w-full rounded-2xl bg-primary-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-700">Guardar cambios</button>
+                <button type="button" onclick="cerrarModalTituloCatalogo()" class="w-full rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-600 transition hover:bg-slate-200">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="modal-color-pendiente" class="fixed inset-0 z-[90] hidden items-center justify-center bg-slate-950/80 p-6 backdrop-blur-sm">
+        <div class="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+            <div class="mb-5 flex items-start gap-4">
+                <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-600"><i class="fa-solid fa-palette"></i></span>
+                <div>
+                    <h3 class="text-lg font-black text-slate-950">Guardar cambios de color</h3>
+                    <p class="mt-1 text-sm font-semibold text-slate-500">Tienes una paleta pendiente. Guarda o cancela antes de continuar.</p>
+                </div>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <button type="button" onclick="cancelarCambiosColor()" class="rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-600 transition hover:bg-slate-200">Cancelar</button>
+                <button type="button" onclick="guardarPaletaSeleccionada()" class="rounded-2xl bg-primary-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white transition hover:bg-primary-500">Guardar color</button>
+            </div>
+        </div>
+    </div>
+
+    <style is:inline>
+        .catalog-search-input::placeholder {
+            color: var(--tenant-search-placeholder, rgba(255,255,255,.72));
+        }
+    </style>
 
     <!-- SCRIPTS DE LA APLICACION -->
     <script is:inline>
@@ -1072,6 +1149,13 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         let filtroActual = "todos";
         let productoIdParaEliminar = null;
         let pedidoIdParaEliminar = null;
+        let saasSupportSettings = {
+            supportWhatsapp: '',
+            supportMessage: 'Hola, necesito ayuda con mi catalogo.',
+            emulatorUrl: '',
+            emulatorEnabled: false,
+            logoUrl: ''
+        };
         const DEFAULT_TENANT_THEME = {
             mode: 'default',
             selectedColor: '#3B82F6',
@@ -1093,6 +1177,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         };
         let configuracionNegocio = {
             nombreNegocio: 'Catálogo de Productos',
+            catalogTitle: 'Catalogo de productos',
             descripcionNegocio: 'Selecciona tus productos y confirma tu pedido',
             logo: '',
             logoShape: 'rectangle',
@@ -1101,8 +1186,202 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             mostrarDescripcion: true,
             vistaPredeterminada: 'grid',
             monedaVisible: 'GTQ',
+            account: null,
             theme: DEFAULT_TENANT_THEME
         };
+
+        function formatAccountDate(value) {
+            if (!value) return 'Sin fecha';
+            return new Intl.DateTimeFormat('es-GT', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(value));
+        }
+
+        function formatAccountMoney(value) {
+            return new Intl.NumberFormat('es-GT', { style: 'currency', currency: 'GTQ' }).format(Number(value || 0));
+        }
+
+        function accountStatusClass(status) {
+            if (status === 'active') return 'text-emerald-600';
+            if (status === 'trial') return 'text-blue-600';
+            if (status === 'pending_payment') return 'text-amber-600';
+            if (status === 'suspended' || status === 'deleted') return 'text-rose-600';
+            return 'text-primary-600';
+        }
+
+        function actualizarInformacionCuenta(account = configuracionNegocio.account) {
+            const safeAccount = account || {};
+            const status = safeAccount.status || '';
+            const statusLabel = safeAccount.statusLabel || 'Sin estado';
+            const planName = safeAccount.planName || safeAccount.plan?.name || 'Sin plan';
+            const setText = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = value;
+            };
+
+            setText('account-plan-name', planName);
+            setText('account-period-end', formatAccountDate(safeAccount.currentPeriodEnd));
+            setText('account-payment-due', formatAccountDate(safeAccount.paymentDueDate));
+            setText('account-monthly-price', formatAccountMoney(safeAccount.monthlyPrice));
+            const amountInput = document.getElementById('payment-receipt-amount');
+            const monthInput = document.getElementById('payment-receipt-month');
+            if (amountInput && !amountInput.value) amountInput.value = Number(safeAccount.monthlyPrice || 0).toFixed(2);
+            if (monthInput && !monthInput.value) {
+                const sourceDate = safeAccount.currentPeriodEnd ? new Date(safeAccount.currentPeriodEnd) : new Date();
+                monthInput.value = `${sourceDate.getFullYear()}-${String(sourceDate.getMonth() + 1).padStart(2, '0')}`;
+            }
+            const statusEl = document.getElementById('account-status');
+            if (statusEl) {
+                statusEl.innerText = statusLabel;
+                statusEl.className = `text-right ${accountStatusClass(status)}`;
+            }
+
+            const warning = document.getElementById('account-warning');
+            const warningText = warning?.querySelector('span');
+            if (!warning || !warningText) return;
+            const showWarning = ['pending_payment', 'suspended', 'trial'].includes(status);
+            warning.classList.toggle('hidden', !showWarning);
+            warning.classList.toggle('flex', showWarning);
+            if (status === 'trial') {
+                warningText.innerText = safeAccount.trialEndDate
+                    ? `Tu prueba gratis finaliza el ${formatAccountDate(safeAccount.trialEndDate)}.`
+                    : 'Tu cuenta esta en prueba gratis.';
+            } else if (status === 'pending_payment') {
+                warningText.innerText = safeAccount.paymentDueDate
+                    ? `Fecha limite de pago: ${formatAccountDate(safeAccount.paymentDueDate)}.`
+                    : 'Tu cuenta tiene pago pendiente.';
+            } else if (status === 'suspended') {
+                warningText.innerText = 'Tu cuenta esta suspendida. Realiza el pago para reactivar el servicio.';
+            }
+        }
+
+        function actualizarTituloCatalogoUI(title = configuracionNegocio.catalogTitle) {
+            const cleanTitle = String(title || '').trim() || 'Catalogo de productos';
+            const headerTitle = document.getElementById('catalog-main-title');
+            const profileDisplay = document.getElementById('perfil-catalog-title-display');
+            const profileInput = document.getElementById('perfil-catalog-title');
+            if (headerTitle) headerTitle.innerText = cleanTitle;
+            if (profileDisplay) profileDisplay.innerText = cleanTitle;
+            if (profileInput) profileInput.value = cleanTitle;
+            configuracionNegocio.catalogTitle = cleanTitle;
+        }
+
+        function actualizarSoporteSaasUI() {
+            const whatsapp = String(saasSupportSettings.supportWhatsapp || '').replace(/\D/g, '');
+            const display = document.getElementById('admin-support-whatsapp');
+            const whatsappBtn = document.getElementById('admin-support-whatsapp-btn');
+            const emulatorBtn = document.getElementById('admin-support-emulator-btn');
+            if (display) display.innerText = whatsapp ? `+${whatsapp}` : 'Soporte no configurado';
+            if (whatsappBtn) whatsappBtn.disabled = !whatsapp;
+            if (emulatorBtn) {
+                emulatorBtn.disabled = !(saasSupportSettings.emulatorEnabled && saasSupportSettings.emulatorUrl);
+                emulatorBtn.title = emulatorBtn.disabled ? 'Emulador pendiente de configurar' : 'Abrir emulador';
+            }
+            const logoUrl = normalizarAssetUrl(saasSupportSettings.logoUrl || '');
+            ['tenant-saas-logo-sidebar', 'tenant-saas-logo-mobile'].forEach((id) => {
+                const img = document.getElementById(id);
+                if (!img) return;
+                img.src = logoUrl;
+                img.classList.toggle('hidden', !logoUrl);
+                img.nextElementSibling?.classList.toggle('hidden', Boolean(logoUrl));
+            });
+        }
+
+        async function cargarSoporteSaas() {
+            try {
+                const res = await fetch(`${API_URL}/saas/settings`);
+                if (!res.ok) return;
+                saasSupportSettings = { ...saasSupportSettings, ...(await res.json()) };
+                actualizarSoporteSaasUI();
+            } catch (err) {
+                console.error('Error al cargar soporte SaaS', err);
+            }
+        }
+
+        function abrirSoporteWhatsapp() {
+            const whatsapp = String(saasSupportSettings.supportWhatsapp || '').replace(/\D/g, '');
+            if (!whatsapp) {
+                showToast('Soporte aun no esta configurado.', 'error');
+                return;
+            }
+            const message = encodeURIComponent(saasSupportSettings.supportMessage || 'Hola, necesito ayuda con mi catalogo.');
+            window.open(`https://wa.me/${whatsapp}?text=${message}`, '_blank', 'noopener');
+        }
+
+        function abrirEmuladorSoporte() {
+            if (!saasSupportSettings.emulatorEnabled || !saasSupportSettings.emulatorUrl) {
+                showToast('El emulador estara disponible proximamente.', 'info');
+                return;
+            }
+            window.open(saasSupportSettings.emulatorUrl, '_blank', 'noopener');
+        }
+
+        async function subirComprobantePago(event) {
+            event.preventDefault();
+            const file = document.getElementById('payment-receipt-file')?.files?.[0];
+            const formData = new FormData();
+            if (file) formData.append('receipt', file);
+            formData.append('amount', document.getElementById('payment-receipt-amount')?.value || configuracionNegocio.account?.monthlyPrice || 0);
+            formData.append('paymentMonth', document.getElementById('payment-receipt-month')?.value || '');
+            formData.append('paymentMethod', document.getElementById('payment-receipt-method')?.value || 'Transferencia');
+            try {
+                const res = await fetch(`${TENANT_API_URL}/admin/payments/receipt`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showToast(data.error || 'No se pudo subir el comprobante', 'error');
+                    return;
+                }
+                if (data.account) {
+                    configuracionNegocio.account = data.account;
+                    actualizarInformacionCuenta(configuracionNegocio.account);
+                }
+                event.target.reset();
+                await cargarHistorialPagosPerfil();
+                showToast(file ? 'Comprobante enviado para revision' : 'Pago reportado para revision', 'success');
+            } catch (err) {
+                showToast('Error de conexion al subir comprobante', 'error');
+            }
+        }
+
+        function paymentStatusClass(status) {
+            if (status === 'aprobado') return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+            if (status === 'rechazado') return 'bg-rose-50 text-rose-700 ring-rose-100';
+            return 'bg-amber-50 text-amber-700 ring-amber-100';
+        }
+
+        async function cargarHistorialPagosPerfil() {
+            const list = document.getElementById('payment-history-list');
+            if (!list) return;
+            try {
+                const res = await fetch(`${TENANT_API_URL}/admin/payments`, { credentials: 'include' });
+                if (!res.ok) {
+                    list.innerHTML = '<p class="rounded-2xl bg-slate-50 p-4 text-center text-xs font-bold text-slate-400">No se pudo cargar el historial.</p>';
+                    return;
+                }
+                const payments = await res.json();
+                list.innerHTML = payments.length ? payments.map(payment => {
+                    const receiptLink = payment.receiptUrl
+                        ? `<a href="${normalizarAssetUrl(payment.receiptUrl)}" target="_blank" rel="noopener" class="text-[11px] font-black uppercase tracking-wider text-primary-600 hover:text-primary-700">Ver comprobante</a>`
+                        : '<span class="text-[11px] font-bold text-slate-400">Sin comprobante</span>';
+                    return `
+                        <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="font-black text-slate-900">${formatAccountMoney(payment.amount)} <span class="text-xs text-slate-400">/ ${payment.paymentMonth || 'Sin mes'}</span></p>
+                                    <p class="mt-1 text-xs font-semibold text-slate-500">${payment.paymentMethod || 'Metodo no registrado'} - ${formatAccountDate(payment.paidAt || payment.createdAt)}</p>
+                                </div>
+                                <span class="rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ring-1 ${paymentStatusClass(payment.status)}">${payment.status || 'pendiente'}</span>
+                            </div>
+                            <div class="mt-2">${receiptLink}</div>
+                        </div>
+                    `;
+                }).join('') : '<p class="rounded-2xl bg-slate-50 p-4 text-center text-xs font-bold text-slate-400">Aun no hay pagos reportados.</p>';
+            } catch (err) {
+                list.innerHTML = '<p class="rounded-2xl bg-slate-50 p-4 text-center text-xs font-bold text-slate-400">Error de conexion al cargar pagos.</p>';
+            }
+        }
 
         function normalizarAssetUrl(url = '') {
             if (!url) return '';
@@ -1284,6 +1563,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const normalized = normalizarTenantTheme(theme);
             const c = normalized.colors;
             const root = document.documentElement;
+            const headerText = colorTextoSobre(c.primary);
+            const headerUsesLightText = headerText === '#FFFFFF';
             root.style.setProperty('--tenant-primary', c.primary);
             root.style.setProperty('--tenant-secondary', c.secondary);
             root.style.setProperty('--tenant-background', c.background);
@@ -1291,6 +1572,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             root.style.setProperty('--tenant-button', c.button);
             root.style.setProperty('--tenant-text', c.text);
             root.style.setProperty('--tenant-accent', c.accent);
+            root.style.setProperty('--tenant-header-text', headerText);
+            root.style.setProperty('--tenant-header-muted', headerUsesLightText ? 'rgba(255,255,255,.82)' : 'rgba(15,23,42,.78)');
+            root.style.setProperty('--tenant-search-bg', headerUsesLightText ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.86)');
+            root.style.setProperty('--tenant-search-text', headerUsesLightText ? '#FFFFFF' : '#0F172A');
+            root.style.setProperty('--tenant-search-border', headerUsesLightText ? 'rgba(255,255,255,.18)' : 'rgba(15,23,42,.14)');
+            root.style.setProperty('--tenant-search-placeholder', headerUsesLightText ? 'rgba(255,255,255,.72)' : 'rgba(51,65,85,.72)');
             root.style.setProperty('--color-primary-50', c.background);
             root.style.setProperty('--color-primary-100', c.secondary);
             root.style.setProperty('--color-primary-200', c.secondary);
@@ -1559,6 +1846,28 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             aplicarPaletaTenant(paletteDraft);
             actualizarPreviewCatalogo();
             renderPaletaColores();
+            mostrarModalCambiosColor();
+        }
+
+        function mostrarModalCambiosColor() {
+            const modal = document.getElementById('modal-color-pendiente');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function cerrarModalCambiosColor() {
+            const modal = document.getElementById('modal-color-pendiente');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function cancelarCambiosColor() {
+            paletteDraft = normalizarTenantTheme(configuracionNegocio.theme || DEFAULT_TENANT_THEME);
+            aplicarPaletaTenant(paletteDraft);
+            renderPaletaColores();
+            cerrarModalCambiosColor();
         }
 
         function seleccionarColorPredefinido(color, label) {
@@ -1654,32 +1963,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 </div>`;
         }
 
-        function palettePreviewHTML(theme) {
-            const c = completarColores(theme.colors);
-            const buttonText = colorTextoSobre(c.primary);
-            return `<div class="overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-sm">
-                <div class="h-16" style="background:${c.primary}"></div>
-                <div class="-mt-6 px-4 pb-4">
-                    <div class="rounded-2xl bg-white p-4 shadow-lg ring-1 ring-slate-100">
-                        <div class="mb-3 flex items-center justify-between">
-                            <div>
-                                <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Vista previa</p>
-                                <p class="text-sm font-black text-slate-900">Producto ejemplo</p>
-                            </div>
-                            <span class="h-7 w-7 rounded-full" style="background:${c.accent}"></span>
-                        </div>
-                        <div class="mb-3 h-20 rounded-2xl" style="background:${c.secondary}"></div>
-                        <p class="text-xs font-semibold text-slate-500">Texto de ejemplo del catálogo</p>
-                        <button type="button" class="mt-4 w-full rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-wider shadow-sm" style="background:${c.primary}; color:${buttonText}">Agregar</button>
-                    </div>
-                </div>
-            </div>`;
-        }
-
         function renderPaletaColores() {
             if (!paletteDraft) paletteDraft = normalizarTenantTheme(configuracionNegocio.theme);
             const content = document.getElementById('palette-tab-content');
-            const preview = document.getElementById('palette-live-preview');
             const saveBtn = document.getElementById('palette-save-btn');
             const theme = normalizarTenantTheme(paletteDraft);
             const primary = theme.selectedColor || theme.colors.primary;
@@ -1690,7 +1976,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 else if (paletteTabActiva === 'business') content.innerHTML = renderNegociosHTML(theme);
                 else content.innerHTML = renderColorActualHTML(theme);
             }
-            if (preview) preview.innerHTML = palettePreviewHTML(theme);
             if (saveBtn) {
                 saveBtn.style.background = primary;
                 saveBtn.style.color = colorTextoSobre(primary);
@@ -1716,6 +2001,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         async function guardarPaletaSeleccionada() {
             try {
                 await guardarThemeTenant(paletteDraft || configuracionNegocio.theme || DEFAULT_TENANT_THEME);
+                cerrarModalCambiosColor();
                 showToast("Paleta de colores guardada", "success");
             } catch (err) {
                 showToast("Error al guardar la paleta", "error");
@@ -1843,7 +2129,19 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     await cargarCategorias();
                 }
                 const response = await fetch(`${TENANT_API_URL}/products`);
-                if (!response.ok) throw new Error('Error de servidor');
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    if (errorData.status === 'suspended') {
+                        document.getElementById("grid-productos").innerHTML = `
+                        <div class="col-span-full rounded-3xl border border-amber-100 bg-white p-8 text-center shadow-premium">
+                            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <p class="text-sm font-black uppercase tracking-wider text-slate-900">Cuenta suspendida</p>
+                            <p class="mx-auto mt-2 max-w-md text-sm font-semibold text-slate-500">${errorData.error || 'Esta cuenta esta suspendida. Realiza el pago para reactivar el catalogo.'}</p>
+                        </div>`;
+                        return;
+                    }
+                    throw new Error(errorData.error || 'Error de servidor');
+                }
                 const data = await response.json();
                 
                 productos = data.map(p => ({
@@ -2969,8 +3267,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     if (profileName) profileName.value = data.nombreNegocio || '';
                     if (profileNameDisplay) profileNameDisplay.innerText = data.nombreNegocio || 'Nombre del negocio';
                     if (logoShape) logoShape.value = data.logoShape || 'rectangle';
+                    actualizarTituloCatalogoUI(data.catalogTitle);
                     configuracionNegocio.logo = data.logo || '';
                     configuracionNegocio.logoShape = data.logoShape || 'rectangle';
+                    configuracionNegocio.account = data.account || null;
+                    actualizarInformacionCuenta(configuracionNegocio.account);
+                    await cargarHistorialPagosPerfil();
                     actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape);
                     if (data.tema) {
                         aplicarTema(data.tema);
@@ -3050,6 +3352,49 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         function cerrarModalNombreNegocio() {
             document.getElementById('modal-perfil-nombre')?.classList.add('hidden');
+        }
+
+        function abrirModalTituloCatalogo() {
+            const modal = document.getElementById('modal-perfil-catalog-title');
+            const input = document.getElementById('perfil-catalog-title');
+            if (input) input.value = configuracionNegocio.catalogTitle || 'Catalogo de productos';
+            modal?.classList.remove('hidden');
+            setTimeout(() => {
+                input?.focus();
+                input?.select();
+            }, 50);
+        }
+
+        function cerrarModalTituloCatalogo() {
+            document.getElementById('modal-perfil-catalog-title')?.classList.add('hidden');
+        }
+
+        async function guardarTituloCatalogo() {
+            const input = document.getElementById('perfil-catalog-title');
+            const catalogTitle = input?.value.trim();
+            if (!catalogTitle) {
+                showToast('El titulo del catalogo no puede estar vacio', 'error');
+                return;
+            }
+            try {
+                const res = await fetch(`${TENANT_API_URL}/admin/settings`, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ catalogTitle })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showToast(data.error || 'Error al guardar titulo del catalogo', 'error');
+                    return;
+                }
+                actualizarTituloCatalogoUI(catalogTitle);
+                cerrarModalTituloCatalogo();
+                showToast('Titulo del catalogo actualizado', 'success');
+                await cargarConfiguracionPublica();
+            } catch (err) {
+                showToast('Error de conexion al guardar titulo', 'error');
+            }
         }
 
         function abrirModalImagenCatalogo() {
@@ -4490,6 +4835,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     }
                     configuracionNegocio.logo = data.logo || '';
                     configuracionNegocio.logoShape = data.logoShape || 'rectangle';
+                    configuracionNegocio.account = data.account || null;
+                    actualizarTituloCatalogoUI(data.catalogTitle);
+                    actualizarInformacionCuenta(configuracionNegocio.account);
                     actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape);
                     const nombreEl = document.getElementById('catalog-business-name');
                     const descEl = document.getElementById('catalog-business-description');
@@ -4530,6 +4878,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         async function iniciarApp() {
+            cargarSoporteSaas();
             if (isAdminRoute) {
                 const rutaAdminValida = await validarRutaAdmin();
                 if (!rutaAdminValida) {

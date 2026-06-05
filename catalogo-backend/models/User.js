@@ -6,7 +6,7 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, lowercase: true, trim: true },
     usuario: { type: String, required: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    rol: { type: String, enum: ['owner', 'admin'], default: 'owner' },
+    rol: { type: String, enum: ['super_admin', 'owner', 'admin', 'tenant_admin'], default: 'owner' },
     activo: { type: Boolean, default: true },
     failedLoginAttempts: { type: Number, default: 0 },
     lockedUntil: { type: Date },
