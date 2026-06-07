@@ -1381,6 +1381,27 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             if (selectedTenantId) loadTenantDrawerDetail(selectedTenantId);
             await loadPayments();
         }
+        window.deletePaymentById = deletePaymentById;
+        window.deletePaymentFromDrawer = deletePaymentFromDrawer;
+        window.approvePayment = approvePayment;
+        window.rejectPayment = rejectPayment;
+        window.togglePlan = togglePlan;
+        window.removeFaqItem = removeFaqItem;
+        window.addFaqItem = addFaqItem;
+        window.setSuperTab = setSuperTab;
+        window.superLogout = superLogout;
+        window.exportTenantsCSV = exportTenantsCSV;
+        window.resetTenantsFilters = resetTenantsFilters;
+        window.setConfigSubTab = setConfigSubTab;
+        window.closeTenantActionModal = closeTenantActionModal;
+        window.closeTenantDrawer = closeTenantDrawer;
+        window.openTenantDrawer = openTenantDrawer;
+        window.openTenantPaymentModal = openTenantPaymentModal;
+        window.updateTenantStatus = updateTenantStatus;
+        window.openTenantCancelModal = openTenantCancelModal;
+        window.openTenantPlanModal = openTenantPlanModal;
+        window.hardDeleteTenant = hardDeleteTenant;
+        window.deleteSuperAdminUser = deleteSuperAdminUser;
 
         // ─── RESET CREDENTIALS ──────────────────────────────────────────────
         function openResetCredentialsModal() {
