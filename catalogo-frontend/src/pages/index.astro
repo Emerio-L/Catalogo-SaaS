@@ -1,35 +1,692 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
+import heroCommerce from '../assets/landing/hero-commerce.png';
+import laptopWhatsapp from '../assets/landing/laptop-whatsapp.png';
 
 const initialPathParts = Astro.url.pathname.split('/').filter(Boolean);
+const isLandingPage = Astro.url.pathname === '/';
 const isAdminInitialRoute = initialPathParts[0] === 'c' && initialPathParts[2] === 'p' && Boolean(initialPathParts[3]);
 const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 ---
 
-<Layout title="Catálogo de Productos">
+<Layout title={isLandingPage ? "sedelynk | Crea tu Catálogo de WhatsApp" : "Catálogo de Productos"}>
     <script define:vars={{ publicBackendUrl }}>
         window.__PUBLIC_BACKEND_URL__ = publicBackendUrl;
     </script>
 
     <!-- FLOATING TOAST NOTIFICATIONS CONTAINER -->
     <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+    {isLandingPage ? (
+        <div id="landing-view" class="w-full min-h-screen landing-view text-slate-800 selection:bg-purple-500 selection:text-white font-sans relative flex flex-col justify-between">
+            {/* Soft Background Decorative Lights */}
+            <div class="absolute inset-0 pointer-events-none z-0">
+                {/* General soft gradient background */}
+                <div class="absolute inset-0 bg-gradient-to-tr from-[#F3F4F6] via-[#FFFFFF] to-[#FAF5FF]"></div>
+                {/* Purple wave/blob decoration top left */}
+                <div class="absolute top-0 left-0 w-[420px] h-[420px] bg-gradient-to-br from-[#7C3AED]/12 via-[#7C3AED]/3 to-transparent rounded-br-[320px] blur-sm"></div>
+                {/* Dotted grid on the left */}
+                <div class="absolute top-28 left-8 w-36 h-36 dot-pattern opacity-60"></div>
+            </div>
 
-    <!-- CLIENT VIEW (CATALOG) -->
-    <div id="client-view" class={`w-full ${isAdminInitialRoute ? 'hidden' : ''}`}>
+            {/* STYLE DECLARATIONS */}
+            <style is:inline>
+                :root {
+                  --color-bg: #FFFFFF;
+                  --color-surface: #FFFFFF;
+                  --color-text-primary: #070B24;
+                  --color-text-secondary: #607089;
+
+                  --color-purple: #7C3AED;
+                  --color-pink: #D946EF;
+                  --color-orange: #FF6B1A;
+                  --color-blue: #2563EB;
+                  --color-green: #22C55E;
+
+                  --gradient-primary: linear-gradient(135deg, #7C3AED 0%, #D946EF 45%, #FF6B1A 100%);
+                  --gradient-blue: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+                  --gradient-soft-purple: linear-gradient(135deg, #F3E8FF 0%, #EEF2FF 100%);
+
+                  --border-soft: #E5EAF5;
+                  --shadow-card: 0 20px 50px rgba(7, 11, 36, 0.08);
+                  --radius-card: 28px;
+                  --radius-button: 14px;
+                }
+
+                body.landing-page {
+                    background-color: var(--color-bg) !important;
+                }
+
+                .landing-view {
+                    background-color: var(--color-bg);
+                    color: var(--color-text-primary);
+                }
+
+                .landing-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--border-soft);
+                    border-radius: var(--radius-card);
+                    box-shadow: var(--shadow-card);
+                }
+
+                .landing-btn-primary {
+                    background: var(--gradient-primary);
+                    color: white !important;
+                    border-radius: var(--radius-button);
+                    transition: all 0.2s ease-in-out;
+                }
+                .landing-btn-primary:hover {
+                    opacity: 0.9;
+                    transform: translateY(-1px);
+                }
+                .landing-btn-primary:active {
+                    transform: translateY(0);
+                }
+
+                .landing-btn-secondary {
+                    background: white;
+                    border: 1.5px solid var(--color-purple);
+                    color: var(--color-purple) !important;
+                    border-radius: var(--radius-button);
+                    transition: all 0.2s ease-in-out;
+                }
+                .landing-btn-secondary:hover {
+                    background-color: rgba(124, 58, 237, 0.04);
+                    transform: translateY(-1px);
+                }
+
+                .faq-answer {
+                    max-height: 0;
+                    overflow: hidden;
+                    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+                }
+                .faq-item.active .faq-answer {
+                    max-height: 200px;
+                    padding-top: 1rem;
+                }
+                .faq-item.active .faq-icon {
+                    transform: rotate(180deg);
+                }
+
+                /* Custom highlighted card styling matching approved design */
+                .cardHighlight {
+                  background: #ffffff;
+                  border-radius: 28px;
+                  border: 1px solid rgba(139, 92, 246, 0.28);
+                  box-shadow:
+                    0 22px 45px rgba(79, 70, 229, 0.10),
+                    0 8px 18px rgba(15, 23, 42, 0.05);
+                  position: relative;
+                  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                .cardHighlight::before {
+                  content: "";
+                  position: absolute;
+                  inset: 0;
+                  border-radius: inherit;
+                  padding: 1px;
+                  background: linear-gradient(135deg, rgba(139,92,246,.45), rgba(37,99,235,.35), rgba(249,115,22,.25));
+                  -webkit-mask:
+                    linear-gradient(#fff 0 0) content-box,
+                    linear-gradient(#fff 0 0);
+                  -webkit-mask-composite: xor;
+                  mask-composite: exclude;
+                  pointer-events: none;
+                }
+
+                .cardHighlight:hover {
+                  transform: translateY(-4px);
+                  box-shadow:
+                    0 28px 60px rgba(79, 70, 229, 0.14),
+                    0 10px 24px rgba(15, 23, 42, 0.07);
+                }
+
+                .dot-pattern {
+                  background-image: radial-gradient(rgba(124, 58, 237, 0.15) 1.5px, transparent 1.5px);
+                  background-size: 16px 16px;
+                }
+
+                @keyframes float {
+                  0%, 100% { transform: translateY(0px); }
+                  50% { transform: translateY(-10px); }
+                }
+
+                .animate-float {
+                  animation: float 4s ease-in-out infinite;
+                }
+            </style>
+
+            <script is:inline>
+                document.body.classList.add('landing-page');
+            </script>
+
+            {/* NAVBAR */}
+            <header class="relative z-50 w-full max-w-6xl mx-auto px-6 py-3.5 flex justify-between items-center bg-white shadow-xl shadow-purple-950/[0.03] border border-slate-100/80 rounded-3xl sticky top-4 mt-4">
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center gap-3">
+                        <div class="flex items-center shrink-0">
+                            <img id="landing-logo-img" src="" alt="SEDELYNK Logo" class="hidden w-auto max-w-[190px] h-auto max-h-[58px] object-contain" style="opacity: 1 !important; filter: none !important;">
+                            <div id="landing-logo-fallback" class="flex items-center w-auto max-w-[190px] h-auto max-h-[58px]">
+                                <svg class="w-auto h-full" viewBox="0 0 400 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M40 70H100M20 52H90M30 35H80" stroke="url(#paint0_linear_nav)" stroke-width="4" stroke-linecap="round"/>
+                                  <path d="M85 85H140L150 95L155 85H165C175 85 180 80 180 70V50C180 40 175 35 165 35H115C105 35 100 40 100 50V70C100 78 105 85 115 85" stroke="#0B132B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                                  <circle cx="120" cy="60" r="5" fill="#8B5CF6"/>
+                                  <circle cx="138" cy="60" r="5" fill="#EC4899"/>
+                                  <circle cx="156" cy="60" r="5" fill="#F97316"/>
+                                  <path d="M105 45C115 35 130 20 155 20C170 20 190 28 200 45C185 43 175 42 165 44C160 40 155 35 145 38C140 40 142 45 138 48C125 46 115 46 105 45Z" fill="#0B132B"/>
+                                  <path d="M140 22C145 12 155 5 165 10C160 15 158 20 155 25C150 24 145 23 140 22Z" fill="#0B132B"/>
+                                  <circle cx="185" cy="35" r="2" fill="white"/>
+                                  <text x="200" y="65" font-family="'Outfit', 'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="36" fill="#0B132B" letter-spacing="-0.02em">SEDE</text>
+                                  <text x="295" y="65" font-family="'Outfit', 'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="36" fill="url(#paint1_linear_nav)" letter-spacing="-0.02em">LYNK</text>
+                                  <text x="200" y="85" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="9" fill="#0B132B" letter-spacing="0.08em">CONECTA TU NEGOCIO, RECIBE MÁS PEDIDOS</text>
+                                  <defs>
+                                    <linearGradient id="paint0_linear_nav" x1="20" y1="52" x2="100" y2="52" gradientUnits="userSpaceOnUse">
+                                      <stop stop-color="#8B5CF6"/>
+                                      <stop offset="0.5" stop-color="#EC4899"/>
+                                      <stop offset="1" stop-color="#F97316"/>
+                                    </linearGradient>
+                                    <linearGradient id="paint1_linear_nav" x1="295" y1="65" x2="390" y2="65" gradientUnits="userSpaceOnUse">
+                                      <stop stop-color="#8B5CF6"/>
+                                      <stop offset="0.5" stop-color="#EC4899"/>
+                                      <stop offset="1" stop-color="#F97316"/>
+                                    </linearGradient>
+                                  </defs>
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                
+                {/* Menú de navegación desktop */}
+                <nav class="hidden md:flex items-center gap-8 text-sm font-extrabold text-slate-600">
+                    <a href="#como-funciona" class="hover:text-slate-900 transition-colors">¿Cómo funciona?</a>
+                    <a href="#beneficios" class="hover:text-slate-900 transition-colors">Beneficios</a>
+                    <a href="#precios" class="hover:text-slate-900 transition-colors">Precios</a>
+                    <a href="#faq" class="hover:text-slate-900 transition-colors">Preguntas frecuentes</a>
+                </nav>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="mostrarLandingStep('login')" class="hidden sm:inline-flex items-center justify-center landing-btn-secondary px-5 py-2.5 text-xs font-black uppercase tracking-wider gap-2">
+                        <i class="fa-solid fa-right-to-bracket text-xs"></i> INGRESAR AL PORTAL
+                    </button>
+                    <button onclick="mostrarLandingStep('register')" class="landing-btn-primary px-5 py-2.5 text-xs font-black uppercase tracking-wider shadow-md">
+                        COMENZAR GRATIS
+                    </button>
+                    <button onclick="toggleMobileMenu()" class="md:hidden text-slate-700 p-2 focus:outline-none" aria-label="Menú">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </header>
+
+            {/* Menú Móvil */}
+            <div id="mobile-menu" class="hidden fixed inset-0 z-50 bg-white flex flex-col p-6 space-y-6">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-black text-slate-900 uppercase">Menú</span>
+                    <button onclick="toggleMobileMenu()" class="text-slate-700 p-2 text-xl"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <nav class="flex flex-col gap-4 text-base font-extrabold text-slate-600">
+                    <a href="#como-funciona" onclick="toggleMobileMenu()" class="hover:text-slate-900">¿Cómo funciona?</a>
+                    <a href="#beneficios" onclick="toggleMobileMenu()" class="hover:text-slate-900">Beneficios</a>
+                    <a href="#precios" onclick="toggleMobileMenu()" class="hover:text-slate-900">Precios</a>
+                    <a href="#faq" onclick="toggleMobileMenu()" class="hover:text-slate-900">Preguntas frecuentes</a>
+                </nav>
+                <div class="flex flex-col gap-3 pt-6 border-t border-slate-100">
+                    <button onclick="toggleMobileMenu(); mostrarLandingStep('login');" class="w-full border border-blue-200 bg-white text-blue-600 font-extrabold text-sm px-5 py-3.5 rounded-xl text-center">Ingresar al portal</button>
+                    <button onclick="toggleMobileMenu(); mostrarLandingStep('register');" class="w-full bg-gradient-to-r from-violet-600 via-pink-500 to-orange-500 text-white font-extrabold text-sm px-5 py-3.5 rounded-xl text-center">Comenzar gratis</button>
+                </div>
+            </div>
+
+            {/* HERO SECTION */}
+            <main class="relative z-10 w-full max-w-6xl mx-auto px-6 py-6 lg:py-10 grid lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-12 items-start flex-1">
+                {/* Columna Izquierda */}
+                <div class="text-left space-y-4 lg:space-y-5">
+                    
+                    <h1 id="landing-hero-title" class="text-3xl md:text-4xl lg:text-[2.85rem] font-black tracking-tight text-[#070B24] leading-[1.15] max-w-xl">
+                        Vende cualquier producto en línea por <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#D946EF]">carrito y</span> <span class="text-[#FF6B1A]">WhatsApp</span>
+                    </h1>
+                    
+                    <p id="landing-hero-text" class="text-slate-500 text-base md:text-lg font-semibold leading-relaxed max-w-xl">
+                        Crea tu tienda en línea, recibe pedidos y haz crecer tu negocio. Sin comisiones, sin complicaciones.
+                    </p>
+
+                    {/* Mini Beneficios en dos columnas */}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl text-slate-600 font-extrabold text-xs">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-50 text-purple-600 ring-1 ring-purple-100"><i class="fa-solid fa-cart-shopping"></i></span>
+                            <span>Sin comisiones ni cargos ocultos</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-50 text-purple-600 ring-1 ring-purple-100"><i class="fa-solid fa-store"></i></span>
+                            <span>Empieza tu tienda en minutos</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-50 text-purple-600 ring-1 ring-purple-100"><i class="fa-brands fa-whatsapp"></i></span>
+                            <span>Recibe pedidos por carrito y WhatsApp</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-50 text-purple-600 ring-1 ring-purple-100"><i class="fa-solid fa-box-open"></i></span>
+                            <span>Organiza y envía sin complicaciones</span>
+                        </div>
+                    </div>
+
+                    {/* Tarjeta de Promoción */}
+                    <div id="landing-promo-card" class="landing-card overflow-hidden grid grid-cols-[110px_1fr] md:grid-cols-[130px_1fr] items-stretch min-h-[140px] max-w-xl">
+                        <div class="bg-gradient-to-br from-violet-600 to-indigo-700 text-white flex flex-col justify-center items-center p-4 text-center">
+                            <p class="text-[9px] font-black uppercase tracking-wider opacity-90">PRUÉBALO GRATIS</p>
+                            <p class="text-2xl md:text-3xl font-black mt-1 leading-none uppercase"><span id="landing-promo-days">7 DÍAS</span></p>
+                            <span class="mt-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-violet-700 shadow-md"><i class="fa-solid fa-check"></i></span>
+                        </div>
+                        <div class="p-5 flex flex-col justify-center gap-3">
+                            <div>
+                                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Luego continúa con nuestro plan mensual</p>
+                                <p class="text-3xl font-black text-[#070B24] mt-0.5"><span id="landing-promo-price">Q50</span></p>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-green-500"></i> Sin tarjeta de crédito</span>
+                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-green-500"></i> Cancela cuando quieras</span>
+                                <span class="flex items-center gap-1.5 sm:col-span-2"><i class="fa-solid fa-circle-check text-green-500"></i> Todo lo que necesitas para vender</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Banner de protección */}
+                    <div class="max-w-xl bg-blue-50/50 border border-blue-100 rounded-2xl px-4 py-3 flex items-center gap-3 text-xs font-bold text-blue-700">
+                        <i class="fa-solid fa-shield-halved text-base text-blue-500"></i>
+                        <span>Tu información y la de tus clientes siempre está protegida.</span>
+                    </div>
+                </div>
+
+                {/* Columna Derecha (Tarjetas de Selección) */}
+                <div class="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
+                    {/* Tarjeta Cliente Nuevo */}
+                    <div class="landing-card p-6 flex flex-col justify-between items-stretch">
+                        <div class="space-y-4">
+                            <span class="inline-block bg-purple-50 border border-purple-100 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest text-purple-700">¿ERES NUEVO?</span>
+                            <div>
+                                <h3 class="text-2xl font-black text-slate-900 leading-tight">Crea tu cuenta</h3>
+                                <p class="text-xs font-semibold text-slate-500 mt-1">y comienza a vender</p>
+                            </div>
+                            <ul class="space-y-2 text-xs font-bold text-slate-600 border-t border-slate-100 pt-4">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-[10px]"></i> <span id="landing-card-trial-text">Prueba 7 días gratis</span></li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-[10px]"></i> <span id="landing-card-price-text">Plan mensual de Q50</span></li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-[10px]"></i> Sin comisiones por ventas</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-[10px]"></i> Vende cualquier tipo de producto</li>
+                            </ul>
+                        </div>
+                        <div class="mt-8 space-y-3">
+                            <button onclick="mostrarLandingStep('register')" class="w-full py-4 text-xs font-black uppercase tracking-wider landing-btn-primary shadow-lg shadow-purple-500/20">
+                                Comenzar gratis
+                            </button>
+                            <p class="text-[10px] font-bold text-slate-400 text-center flex items-center justify-center gap-1.5"><i class="fa-solid fa-lock text-[9px]"></i> Sin tarjeta de crédito</p>
+                        </div>
+                    </div>
+
+                    {/* Tarjeta Cliente Existente */}
+                    <div class="landing-card p-6 flex flex-col justify-between items-stretch border-blue-100 bg-gradient-to-b from-white to-blue-50/10 shadow-blue-900/5">
+                        <div class="space-y-4">
+                            <span class="inline-block bg-blue-50 border border-blue-100 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest text-blue-700">¿YA TIENES CUENTA?</span>
+                            <div>
+                                <h3 class="text-2xl font-black text-slate-900 leading-tight">Ingresa al portal</h3>
+                                <p class="text-xs font-semibold text-slate-500 mt-1">y administra tu negocio</p>
+                            </div>
+                            <ul class="space-y-2 text-xs font-bold text-slate-600 border-t border-slate-100 pt-4">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-[10px]"></i> Gestiona productos y precios</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-[10px]"></i> Revisa y responde pedidos</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-[10px]"></i> Actualiza tu catálogo</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-[10px]"></i> Accede a tus estadísticas</li>
+                            </ul>
+                        </div>
+                        <div class="mt-8 space-y-3">
+                            <button onclick="mostrarLandingStep('login')" class="w-full py-4 text-xs font-black uppercase tracking-wider bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-500 active:scale-95 transition-all shadow-lg shadow-blue-500/10">
+                                Ingresar al portal
+                            </button>
+                            <p class="text-[10px] font-bold text-slate-400 text-center flex items-center justify-center gap-1.5"><i class="fa-solid fa-lock text-[9px]"></i> Acceso seguro</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            {/* SECCIÓN RUBROS */}
+            <section class="relative z-10 w-full max-w-6xl mx-auto px-6 py-10 text-center space-y-6 border-t border-slate-100 bg-[#F8FAFF]">
+                <p class="text-xs font-black uppercase tracking-widest text-purple-700">Ideal para todo tipo de negocios que quieren vender en línea</p>
+                <div class="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-extrabold text-[#070B24] items-center">
+                    <span class="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm ring-1 ring-slate-100"><i class="fa-solid fa-bag-shopping text-purple-500"></i> Tiendas</span>
+                    <span class="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm ring-1 ring-slate-100"><i class="fa-solid fa-utensils text-purple-500"></i> Restaurantes</span>
+                    <span class="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm ring-1 ring-slate-100"><i class="fa-solid fa-lightbulb text-purple-500"></i> Emprendedores</span>
+                    <span class="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm ring-1 ring-slate-100"><i class="fa-solid fa-bread-slice text-purple-500"></i> Panaderías</span>
+                    <span class="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm ring-1 ring-slate-100"><i class="fa-solid fa-wand-magic-sparkles text-purple-500"></i> Belleza</span>
+                    <span class="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm ring-1 ring-slate-100"><i class="fa-solid fa-cake-candles text-purple-500"></i> Repostería</span>
+                    <span class="text-slate-400 font-black tracking-wider"><i class="fa-solid fa-ellipsis text-lg align-middle"></i> Y más...</span>
+                </div>
+            </section>
+
+            {/* SECCIÓN BENEFICIOS */}
+            <section id="beneficios" class="relative z-10 w-full max-w-6xl mx-auto px-6 py-16 lg:py-24 border-t border-slate-100 space-y-16 scroll-mt-20">
+                <div class="text-center space-y-3">
+                    <span class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Por qué elegirnos</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-[#070B24] uppercase">Todo lo que necesitas para tu negocio</h2>
+                    <p class="text-slate-500 text-sm font-semibold max-w-xl mx-auto">Vende más de forma automatizada y sin dolores de cabeza. Diseñado para aumentar tus conversiones.</p>
+                </div>
+
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
+                    <div class="landing-card p-6 space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl shadow-inner ring-1 ring-purple-100"><i class="fa-solid fa-cart-shopping"></i></div>
+                        <h3 class="text-lg font-black text-slate-900 uppercase">Catálogo y carrito</h3>
+                        <p class="text-xs font-semibold text-slate-500 leading-relaxed">Tus clientes eligen productos, cantidades y envían su pedido organizado.</p>
+                    </div>
+                    <div class="landing-card p-6 space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl shadow-inner ring-1 ring-orange-100"><i class="fa-brands fa-whatsapp"></i></div>
+                        <h3 class="text-lg font-black text-slate-900 uppercase">Pedidos por WhatsApp</h3>
+                        <p class="text-xs font-semibold text-slate-500 leading-relaxed">Recibe cada pedido listo para responder y despachar.</p>
+                    </div>
+                    <div class="landing-card p-6 space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shadow-inner ring-1 ring-blue-100"><i class="fa-solid fa-sliders"></i></div>
+                        <h3 class="text-lg font-black text-slate-900 uppercase">Panel fácil de usar</h3>
+                        <p class="text-xs font-semibold text-slate-500 leading-relaxed">Agrega productos, precios, fotos y categorías desde cualquier dispositivo.</p>
+                    </div>
+                    <div class="landing-card p-6 space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center text-xl shadow-inner ring-1 ring-green-100"><i class="fa-solid fa-wallet"></i></div>
+                        <h3 class="text-lg font-black text-slate-900 uppercase">Sin comisiones</h3>
+                        <p class="text-xs font-semibold text-slate-500 leading-relaxed">Tus ventas son tuyas. No pagas comisión por pedido.</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* SECCIÓN ¿CÓMO FUNCIONA? */}
+            <section id="como-funciona" class="relative z-10 w-full max-w-6xl mx-auto px-6 py-16 lg:py-24 border-t border-slate-100 space-y-16 scroll-mt-20">
+                <div class="text-center space-y-3">
+                    <span class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Flujo de trabajo</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-[#070B24] uppercase">¿Cómo funciona?</h2>
+                    <p class="text-slate-500 text-sm font-semibold max-w-xl mx-auto">Configura tu catálogo digital en cuestión de minutos siguiendo estos sencillos pasos.</p>
+                </div>
+
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-left">
+                    <div class="space-y-3 relative group">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-[#7C3AED] text-white text-sm font-black shadow-md">1</span>
+                        <h3 class="text-base font-black text-[#070B24] uppercase pt-2">Regístrate</h3>
+                        <p class="text-xs text-slate-500 font-semibold leading-relaxed">Crea tu cuenta y activa tu prueba gratis.</p>
+                    </div>
+                    <div class="space-y-3 relative group">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-[#EC4899] text-white text-sm font-black shadow-md">2</span>
+                        <h3 class="text-base font-black text-[#070B24] uppercase pt-2">Carga tus productos</h3>
+                        <p class="text-xs text-slate-500 font-semibold leading-relaxed">Agrega fotos, precios, descripciones y categorías.</p>
+                    </div>
+                    <div class="space-y-3 relative group">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-[#FF6B1A] text-white text-sm font-black shadow-md">3</span>
+                        <h3 class="text-base font-black text-[#070B24] uppercase pt-2">Comparte tu enlace</h3>
+                        <p class="text-xs text-slate-500 font-semibold leading-relaxed">Envía tu catálogo a tus clientes por redes sociales o WhatsApp.</p>
+                    </div>
+                    <div class="space-y-3 relative group">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white text-sm font-black shadow-md">4</span>
+                        <h3 class="text-base font-black text-[#070B24] uppercase pt-2">Recibe pedidos</h3>
+                        <p class="text-xs text-slate-500 font-semibold leading-relaxed">Tus clientes compran por carrito y finalizan por WhatsApp.</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* SECCIÓN PRECIOS */}
+            <section id="precios" class="relative z-10 w-full max-w-6xl mx-auto px-6 py-16 lg:py-24 border-t border-slate-100 scroll-mt-20">
+                <div class="max-w-3xl mx-auto landing-card overflow-hidden p-8 md:p-12 text-center bg-gradient-to-br from-white to-purple-50/10 border-purple-100 flex flex-col items-center gap-6 shadow-xl shadow-purple-900/5">
+                    <span class="inline-block bg-purple-50 border border-purple-100 rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-purple-700">Precios transparentes</span>
+                    
+                    <div class="space-y-2">
+                        <h2 class="text-3xl md:text-5xl font-black text-[#070B24] leading-none uppercase"><span id="landing-price-trial">7 DÍAS GRATIS</span></h2>
+                        <p class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-pink-500 to-orange-500 leading-none mt-2 uppercase">Luego <span id="landing-price-monthly">Q50</span> al mes</p>
+                    </div>
+
+                    <p class="text-slate-500 text-sm font-semibold max-w-md">
+                        Sin tarjeta de crédito. Sin comisiones por ventas. Cancela cuando quieras.
+                    </p>
+
+                    <button onclick="mostrarLandingStep('register')" class="landing-btn-primary px-8 py-4 text-xs font-black uppercase tracking-wider shadow-lg shadow-purple-500/20 max-w-xs w-full mt-4">
+                        Comenzar gratis
+                    </button>
+                </div>
+            </section>
+
+            {/* SECCIÓN PREGUNTAS FRECUENTES (FAQ) */}
+            <section id="faq" class="relative z-10 w-full max-w-3xl mx-auto px-6 py-16 lg:py-24 border-t border-slate-100 space-y-12 scroll-mt-20">
+                <div class="text-center space-y-3">
+                    <span class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Resolviendo dudas</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-[#070B24] uppercase">Preguntas Frecuentes</h2>
+                    <p class="text-slate-500 text-sm font-semibold max-w-xl mx-auto">¿Tienes dudas sobre el funcionamiento de Sedelynk? Aquí te las resolvemos.</p>
+                </div>
+
+                <div id="landing-faqs-container" class="space-y-4">
+                    {/* FAQ 1 */}
+                    <div class="faq-item landing-card p-5 cursor-pointer" onclick="this.classList.toggle('active')">
+                        <div class="flex justify-between items-center gap-4">
+                            <h3 class="font-extrabold text-sm md:text-base text-slate-900 uppercase">¿Necesito tarjeta para probar?</h3>
+                            <span class="faq-icon text-slate-400 shrink-0 transition-transform duration-200"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                        <p class="faq-answer text-xs md:text-sm font-semibold text-slate-500 leading-relaxed">
+                            No. Puedes probar Sedelynk gratis por <span class="landing-faq-days">7 días</span> sin tarjeta.
+                        </p>
+                    </div>
+
+                    {/* FAQ 2 */}
+                    <div class="faq-item landing-card p-5 cursor-pointer" onclick="this.classList.toggle('active')">
+                        <div class="flex justify-between items-center gap-4">
+                            <h3 class="font-extrabold text-sm md:text-base text-slate-900 uppercase">¿Cuánto cuesta?</h3>
+                            <span class="faq-icon text-slate-400 shrink-0 transition-transform duration-200"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                        <p class="faq-answer text-xs md:text-sm font-semibold text-slate-500 leading-relaxed">
+                            El plan mensual cuesta <span class="landing-faq-price">Q50</span>.
+                        </p>
+                    </div>
+
+                    {/* FAQ 3 */}
+                    <div class="faq-item landing-card p-5 cursor-pointer" onclick="this.classList.toggle('active')">
+                        <div class="flex justify-between items-center gap-4">
+                            <h3 class="font-extrabold text-sm md:text-base text-slate-900 uppercase">¿Cobra comisión por ventas?</h3>
+                            <span class="faq-icon text-slate-400 shrink-0 transition-transform duration-200"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                        <p class="faq-answer text-xs md:text-sm font-semibold text-slate-500 leading-relaxed">
+                            No. Sedelynk no cobra comisión por pedido.
+                        </p>
+                    </div>
+
+                    {/* FAQ 4 */}
+                    <div class="faq-item landing-card p-5 cursor-pointer" onclick="this.classList.toggle('active')">
+                        <div class="flex justify-between items-center gap-4">
+                            <h3 class="font-extrabold text-sm md:text-base text-slate-900 uppercase">¿Puedo vender cualquier producto?</h3>
+                            <span class="faq-icon text-slate-400 shrink-0 transition-transform duration-200"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                        <p class="faq-answer text-xs md:text-sm font-semibold text-slate-500 leading-relaxed">
+                            Sí. Puedes crear categorías y productos según tu negocio.
+                        </p>
+                    </div>
+
+                    {/* FAQ 5 */}
+                    <div class="faq-item landing-card p-5 cursor-pointer" onclick="this.classList.toggle('active')">
+                        <div class="flex justify-between items-center gap-4">
+                            <h3 class="font-extrabold text-sm md:text-base text-slate-900 uppercase">¿Dónde recibo los pedidos?</h3>
+                            <span class="faq-icon text-slate-400 shrink-0 transition-transform duration-200"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                        <p class="faq-answer text-xs md:text-sm font-semibold text-slate-500 leading-relaxed">
+                            Los pedidos se organizan en el carrito y se envían directamente a tu WhatsApp.
+                        </p>
+                    </div>
+
+                    {/* FAQ 6 */}
+                    <div class="faq-item landing-card p-5 cursor-pointer" onclick="this.classList.toggle('active')">
+                        <div class="flex justify-between items-center gap-4">
+                            <h3 class="font-extrabold text-sm md:text-base text-slate-900 uppercase">¿Puedo entrar a mi panel si ya tengo cuenta?</h3>
+                            <span class="faq-icon text-slate-400 shrink-0 transition-transform duration-200"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                        <p class="faq-answer text-xs md:text-sm font-semibold text-slate-500 leading-relaxed">
+                            Sí. Usa el botón "Ingresar al portal" para acceder a tu panel administrativo.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* LANDING AUTH MODAL (Formularios Unificados) */}
+            <div id="landing-auth-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div class="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white p-6 md:p-8 shadow-2xl animate-slide-up relative max-h-[calc(100vh-2rem)] overflow-y-auto">
+                    <button onclick="mostrarLandingStep('close')" class="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Cerrar modal">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                    
+                    {/* LOGIN STEP */}
+                    <div id="landing-login-step" class="w-full space-y-6">
+                        <div class="text-center md:text-left">
+                            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg md:mx-0">
+                                <i class="fa-solid fa-user-check text-xl"></i>
+                            </div>
+                            <p class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Ingresar a tu cuenta</p>
+                            <h2 class="text-2xl font-black tracking-tight text-slate-900 mt-1 uppercase">Acceder al panel</h2>
+                            <p class="mt-2 text-xs font-semibold text-slate-500">Ingresa tus credenciales registradas para acceder a tu panel de administración.</p>
+                        </div>
+                        
+                        <form action="javascript:void(0)" onsubmit="event.preventDefault(); verificarPasswordLanding(event); return false;" class="space-y-4">
+                            <div id="landing-login-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
+                            
+                            <div>
+                                <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Usuario o correo</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input type="text" id="landing-login-identifier" placeholder="admin o admin@correo.com" required autocomplete="username"
+                                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Contraseña</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input type="password" id="landing-login-password" placeholder="Ingresa tu contraseña" required autocomplete="current-password"
+                                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-12 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                                    <button type="button" onclick="togglePasswordVisibility('landing-login-password', this)" class="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Mostrar contraseña">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <button id="landing-login-submit" type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 active:scale-95 py-4 text-xs font-black uppercase tracking-wider text-white shadow-xl shadow-purple-500/10 transition-all">
+                                <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                                Entrar al panel
+                            </button>
+                        </form>
+                        
+                        <div class="flex flex-col gap-3 pt-2 text-center border-t border-slate-100">
+                            <p class="text-xs text-slate-400 font-bold">¿No tienes una cuenta aún?</p>
+                            <button type="button" onclick="mostrarLandingStep('register')" class="text-xs font-black uppercase text-purple-600 hover:text-purple-700 transition-colors">
+                                Registrarme ahora
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* REGISTER STEP */}
+                    <div id="landing-register-step" class="w-full space-y-4 hidden">
+                        <div class="text-center md:text-left">
+                            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg md:mx-0">
+                                <i class="fa-solid fa-store text-xl"></i>
+                            </div>
+                            <p class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Crear nuevo catálogo</p>
+                            <h2 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Registrar Negocio</h2>
+                            <p class="text-xs font-semibold text-slate-500 mt-1">Configura el acceso de tu catálogo. Tienes <strong id="landing-register-trial-days">7 días gratis</strong> de prueba.</p>
+                        </div>
+                        
+                        <form action="javascript:void(0)" onsubmit="event.preventDefault(); registrarCuentaSaasLanding(event); return false;" class="grid gap-3">
+                            <div id="landing-register-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
+                            
+                            <div>
+                                <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Nombre del negocio</label>
+                                <input type="text" id="landing-register-name" required placeholder="Ej: Tienda del barrio"
+                                class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                            </div>
+                            
+                            <div>
+                                <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Enlace deseado para tu catálogo</label>
+                                <div class="flex overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 focus-within:border-purple-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-purple-500/10">
+                                    <span class="flex items-center border-r border-slate-200 px-3 text-xs font-black text-slate-400">/c/</span>
+                                    <input type="text" id="landing-register-slug" required placeholder="verduleria-lucero"
+                                    class="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm font-bold text-slate-900 outline-none">
+                                </div>
+                            </div>
+                            
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <div>
+                                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">WhatsApp (Recibe pedidos)</label>
+                                    <input type="tel" id="landing-register-whatsapp" required placeholder="502XXXXXXXX"
+                                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Tipo de negocio (Opcional)</label>
+                                    <input type="text" id="landing-register-type" placeholder="Ej: Ropa, Café, Repostería..."
+                                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                                </div>
+                            </div>
+                            
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <div>
+                                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Tu nombre de usuario</label>
+                                    <input type="text" id="landing-register-user" required placeholder="Ej: Juan"
+                                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Correo</label>
+                                    <input type="email" id="landing-register-email" placeholder="admin@correo.com"
+                                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Contraseña de acceso</label>
+                                <input type="password" id="landing-register-password" required minlength="8" placeholder="Mínimo 8 caracteres"
+                                class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                            </div>
+                            
+                            <div class="bg-purple-50 border border-purple-100 rounded-2xl p-3 text-[11px] font-semibold text-purple-700 flex items-start gap-2">
+                                <i class="fa-solid fa-circle-info mt-0.5"></i>
+                                <span>Estás seleccionando el <strong>Plan Profesional</strong>. Al guardar tu cuenta se habilitará una prueba gratis, luego podrás reportar tu suscripción mensual para seguir activo.</span>
+                            </div>
+                            
+                            <button id="landing-register-submit" type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 text-white py-3.5 text-xs font-black uppercase tracking-wider shadow-xl shadow-purple-500/10 transition-all">
+                                <i class="fa-solid fa-store"></i>
+                                Guardar y crear catálogo
+                            </button>
+                        </form>
+                        
+                        <div id="landing-register-result" class="hidden rounded-2xl border border-purple-200 bg-purple-50 p-4 text-xs font-bold text-purple-700"></div>
+                        
+                        <div class="flex flex-col gap-3 pt-2 text-center border-t border-slate-100">
+                            <p class="text-xs text-slate-400 font-bold">¿Ya tienes una cuenta?</p>
+                            <button type="button" onclick="mostrarLandingStep('login')" class="text-xs font-black uppercase text-purple-600 hover:text-purple-700 transition-colors">
+                                Ingresar al portal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* FOOTER */}
+            <footer class="relative z-10 w-full max-w-6xl mx-auto px-6 py-8 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-slate-400 text-xs font-semibold bg-white/50 rounded-t-3xl">
+                <p>&copy; 2026 sedelynk. Todos los derechos reservados.</p>
+                <div class="flex gap-6">
+                    <a href="javascript:void(0)" class="hover:text-slate-600 transition-colors">Términos</a>
+                    <a href="javascript:void(0)" class="hover:text-slate-600 transition-colors">Privacidad</a>
+                    <a href="javascript:void(0)" class="hover:text-slate-600 transition-colors">Soporte</a>
+                </div>
+            </footer>
+        </div>
+    ) : (
+        <!-- CLIENT VIEW (CATALOG) -->
+        <div id="client-view" class={`w-full pb-36 ${isAdminInitialRoute ? 'hidden' : ''}`}>
         <!-- HEADER -->
-        <header class="relative overflow-hidden bg-primary-900 text-white px-4 py-4 sticky top-0 z-50 rounded-b-[1.5rem] shadow-2xl shadow-primary-950/20">
+        <header class="relative overflow-hidden bg-primary-500 text-white px-4 py-4 sticky top-0 z-50 rounded-b-[1.5rem] shadow-2xl shadow-primary-950/20">
             <div class="relative mx-auto max-w-6xl">
                 <div class="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                     <div class="min-w-0 flex-1 pr-28 text-left md:pr-0">
-                        <p class="text-[11px] font-black uppercase tracking-[0.24em] md:text-xs" style="color: var(--tenant-header-muted, rgba(255,255,255,.82));">CATALOGO</p>
                         <h1 id="catalog-main-title" class="text-2xl font-black tracking-tight uppercase leading-none select-none sm:text-3xl md:text-5xl" style="color: var(--tenant-header-text, #FFFFFF);">Catalogo de productos</h1>
                         <div class="mt-2">
                             <p id="catalog-business-name" class="max-w-full break-words text-sm font-black uppercase leading-tight tracking-wider" style="color: var(--tenant-header-text, #FFFFFF);">Catálogo de Productos</p>
                             <p id="catalog-business-description" class="text-xs font-semibold mt-0.5" style="color: var(--tenant-header-muted, rgba(255,255,255,.82));">Haz tu pedido por WhatsApp</p>
                         </div>
                     </div>
-                    <div id="catalog-brand-mark" class="absolute right-4 top-4 flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.5rem] bg-white/10 text-primary-200 shadow-xl ring-1 ring-white/15 md:static md:h-32 md:w-32">
-                        <img id="catalog-logo" src="" alt="Logo del negocio" class="hidden h-full w-full object-cover">
+                    <div id="catalog-brand-mark" class="absolute right-4 top-4 flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.5rem] bg-white text-primary-200 shadow-xl ring-1 ring-black/5 md:static md:h-32 md:w-32">
+                        <img id="catalog-logo" src="" alt="Logo del negocio" class="hidden h-full w-full object-contain p-2">
                         <div id="catalog-logo-fallback" class="flex h-full w-full items-center justify-center">
                             <i class="fa-solid fa-truck-fast text-4xl md:text-5xl"></i>
                         </div>
@@ -83,7 +740,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 </button>
             </div>
         </footer>
-    </div>
+        </div>
+    )}
 
 
     <!-- ADMIN VIEW (DASHBOARD) -->
@@ -91,14 +749,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         <div class="min-h-screen lg:flex">
             <aside class="fixed inset-y-0 left-0 z-50 hidden w-72 flex-col bg-[#071b33] text-white lg:flex">
                 <div class="flex h-full flex-col p-5">
-                    <div class="mb-8 flex items-center gap-3 rounded-3xl bg-white/5 p-3 ring-1 ring-white/10">
-                        <div class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-primary-500 text-xl text-white shadow-lg shadow-primary-950/30">
-                            <img id="tenant-saas-logo-sidebar" src="" alt="Logo SaaS" class="hidden h-full w-full object-cover">
-                            <i class="fa-solid fa-bag-shopping"></i>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-[0.22em] text-primary-200">Panel Administrativo</p>
-                            <p class="text-sm font-extrabold text-white">Catálogo de pedidos</p>
+                    <div class="mb-8 flex h-24 w-24 mx-auto items-center justify-center overflow-hidden rounded-[1.5rem] bg-white shadow-xl ring-1 ring-black/5 relative">
+                        <img id="tenant-saas-logo-sidebar" src="" alt="Logo SaaS" class="hidden h-full w-full object-contain p-2">
+                        <div id="tenant-saas-placeholder-sidebar" class="flex flex-col items-center justify-center text-slate-400 text-center w-full">
+                            <i class="fa-solid fa-bag-shopping text-2xl mb-0.5 text-slate-300"></i>
+                            <p class="text-[9px] font-black uppercase tracking-wider text-slate-400">Admin</p>
                         </div>
                     </div>
 
@@ -149,14 +804,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             <main class="min-h-screen flex-1 p-4 lg:ml-72 lg:p-8">
                 <div class="mb-4 rounded-[1.75rem] bg-[#071b33] p-4 text-white shadow-premium ring-1 ring-slate-900/10 lg:hidden">
-                    <div class="mb-4 flex items-center gap-3">
-                        <div class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-primary-500 text-lg text-white">
-                            <img id="tenant-saas-logo-mobile" src="" alt="Logo SaaS" class="hidden h-full w-full object-cover">
-                            <i class="fa-solid fa-bag-shopping"></i>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-primary-200">Panel Administrativo</p>
-                            <p class="text-sm font-extrabold">Catálogo de pedidos</p>
+                    <div class="mb-4 flex h-20 w-20 mx-auto items-center justify-center overflow-hidden rounded-[1.25rem] bg-white shadow-xl ring-1 ring-black/5 relative">
+                        <img id="tenant-saas-logo-mobile" src="" alt="Logo SaaS" class="hidden h-full w-full object-contain p-2">
+                        <div id="tenant-saas-placeholder-mobile" class="flex flex-col items-center justify-center text-slate-400 text-center w-full">
+                            <i class="fa-solid fa-bag-shopping text-xl mb-0.5 text-slate-300"></i>
+                            <p class="text-[8px] font-black uppercase tracking-wider text-slate-400">Admin</p>
                         </div>
                     </div>
                     <nav class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -180,6 +832,21 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <p class="text-[11px] font-black uppercase tracking-[0.2em] text-[#17324f]">Panel de control</p>
                             <h2 id="admin-welcome-title" class="mt-1 text-2xl font-black text-[#071b33] md:text-3xl">Hola, Admin</h2>
                             <p class="mt-1 text-sm font-semibold text-slate-600">Bienvenido a tu panel de control</p>
+                            
+                            <!-- Banner de Prueba Gratis con Countdown -->
+                            <div id="trial-countdown-banner" class="mt-4 hidden items-center gap-3 rounded-2xl bg-amber-50 border border-amber-200/60 p-4 text-amber-900 shadow-sm">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white text-lg shadow-md shadow-amber-500/20">
+                                    <i class="fa-solid fa-clock"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-[10px] font-black uppercase tracking-wider text-amber-800">Modo de prueba gratis de 7 días</p>
+                                    <p class="mt-0.5 text-xs font-semibold">
+                                        Tu período de prueba expira en: 
+                                        <span id="trial-countdown-timer" class="font-extrabold text-amber-600 font-mono text-sm">--d --h --m --s</span>. 
+                                        Antes de finalizar la prueba reporta tu pago para continuar tu subscripción o contacta a soporte.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex flex-col gap-2 sm:flex-row">
                             <button onclick="abrirAdminForm()" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-primary-900/20 transition hover:bg-primary-500 active:scale-95">
@@ -211,7 +878,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                 <h3 id="stat-inactivos" class="text-3xl font-black leading-none tracking-tight text-slate-950">0</h3>
                             </div>
                         </div>
-                        <div class="flex items-center gap-4 rounded-[1.25rem] bg-white p-4 shadow-premium ring-1 ring-slate-100">
+                        <button onclick="cambiarSeccion('historial')" class="flex w-full text-left items-center gap-4 rounded-[1.25rem] bg-white p-4 shadow-premium ring-1 ring-slate-100 transition hover:bg-slate-50 cursor-pointer">
                             <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 text-lg"><i class="fa-solid fa-cart-shopping"></i></div>
                             <div class="min-w-0 flex-1">
                                 <p class="text-xs font-extrabold text-slate-600">Pedidos hoy</p>
@@ -220,7 +887,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                     <span id="stat-pedidos-comparacion" class="hidden rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-600"></span>
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     </div>
                     <span id="stat-total" class="hidden">0</span>
 
@@ -312,7 +979,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <div class="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
                                 <div class="flex items-center gap-4">
                                     <span class="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white text-primary-600 shadow-sm ring-1 ring-slate-100">
-                                        <img id="perfil-logo-preview" src="" alt="Logo o imagen del negocio" class="hidden h-full w-full object-cover">
+                                        <img id="perfil-logo-preview" src="" alt="Logo o imagen del negocio" class="hidden h-full w-full object-contain p-1">
                                         <i id="perfil-logo-placeholder" class="fa-solid fa-image text-xl"></i>
                                     </span>
                                     <div class="min-w-0 flex-1">
@@ -577,196 +1244,191 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
     <!-- MODALS SECTION -->
 
     <!-- MODAL AUTENTICACION ADMIN V2 -->
-    <div id="modal-admin-auth-v2" class={`fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[70] flex items-center justify-center p-3 md:p-5 transition-all duration-300 ${isAdminInitialRoute ? '' : 'hidden'}`}>
-        <div class={`w-full max-w-6xl max-h-[calc(100vh-1.5rem)] overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-white/20 text-left transform transition-all duration-300 ${isAdminInitialRoute ? '' : 'scale-95 opacity-0'}`}>
-            <div class="grid md:min-h-[600px] md:grid-cols-[1fr_1.15fr]">
-                <aside class="relative hidden overflow-hidden bg-slate-950 p-8 text-white md:flex md:flex-col md:justify-between">
-                    <div class="absolute inset-0 opacity-95" style="background: radial-gradient(circle at 16% 18%, rgba(16,185,129,.30), transparent 32%), radial-gradient(circle at 82% 10%, rgba(14,165,233,.16), transparent 28%), linear-gradient(145deg, #020617, #071525 58%, #031512);"></div>
-                    <div class="absolute right-8 top-8 flex h-16 w-16 items-center justify-center rounded-[1.4rem] bg-emerald-400/10 text-3xl text-emerald-300 ring-1 ring-emerald-300/20 shadow-2xl shadow-emerald-950/40">
-                        <i class="fa-brands fa-whatsapp"></i>
-                    </div>
-                    <div class="absolute right-16 top-24 h-10 w-10 rounded-full bg-emerald-300/10 blur-md"></div>
-                    <div class="relative">
-                        <div class="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
-                            <i class="fa-solid fa-bag-shopping text-xl text-emerald-300"></i>
-                        </div>
-                        <p class="mb-3 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-300">Catálogo profesional</p>
-                        <h2 class="max-w-xs text-3xl font-black leading-tight tracking-tight">Administra tu catálogo de pedidos por WhatsApp</h2>
-                        <p class="mt-4 max-w-sm text-sm font-semibold leading-6 text-slate-300">Organiza productos, recibe pedidos y mantén tu negocio listo para vender cada día.</p>
-                    </div>
-                    <div class="relative rounded-3xl bg-white/10 p-4 ring-1 ring-white/10">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400 text-slate-950">
-                                <i class="fa-solid fa-shield-halved"></i>
-                            </div>
-                            <div>
-                                <p class="text-xs font-black uppercase tracking-wider">Acceso protegido</p>
-                                <p class="text-[11px] font-semibold text-slate-300">Sesión validada por administrador.</p>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
+    <!-- MODAL AUTENTICACION ADMIN V2 (Nuevo diseño unificado sin columna lateral) -->
+    <div id="modal-admin-auth-v2" class={`fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4 transition-all duration-300 ${isAdminInitialRoute ? '' : 'hidden'}`}>
+        <div class={`w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white p-6 md:p-8 shadow-2xl relative max-h-[calc(100vh-2rem)] overflow-y-auto transform transition-all duration-300 ${isAdminInitialRoute ? '' : 'scale-95 opacity-0'}`}>
+            <button onclick="cerrarAuthModal()" class="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Cerrar modal">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
 
-                <section class="relative flex max-h-[calc(100vh-1.5rem)] items-center justify-center overflow-y-auto p-5 md:p-8">
-                    <button onclick="cerrarAuthModal()" class="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
-                    <div class="w-full max-w-xl">
-                        <div id="auth2-main-heading" class="mb-7 text-center md:text-left">
-                            <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-xl md:mx-0">
-                                <i class="fa-solid fa-lock text-xl"></i>
-                            </div>
-                            <p class="mb-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Panel administrativo</p>
-                            <h2 class="text-2xl font-black tracking-tight text-slate-950">Accede a tu negocio</h2>
-                            <p class="mt-2 text-sm font-semibold text-slate-500">Ingresa con tu usuario o correo registrado para este catálogo.</p>
-                        </div>
-
-                        <div id="auth2-login-step" class="space-y-5">
-                            <form id="auth2-login-form" action="javascript:void(0)" onsubmit="event.preventDefault(); verificarPassword(event); return false;" class="space-y-4">
-                                <div id="auth2-login-error" class="hidden rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700"></div>
-                                <div>
-                                    <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Usuario o correo</label>
-                                    <div class="relative">
-                                        <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                        <input type="text" id="auth2-identifier" placeholder="admin o admin@example.com" required autocomplete="username"
-                                        class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-11 pr-4 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Contraseña</label>
-                                    <div class="relative">
-                                        <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                        <input type="password" id="auth2-password" placeholder="Ingresa tu contraseña" required autocomplete="current-password"
-                                        class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-11 pr-12 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
-                                        <button type="button" onclick="togglePasswordVisibility('auth2-password', this)" class="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white hover:text-slate-700" aria-label="Mostrar contraseña">
-                                            <i class="fa-solid fa-eye"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <button id="auth2-login-submit" type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-4 text-xs font-black uppercase tracking-wider text-white shadow-xl shadow-slate-950/20 transition-all hover:-translate-y-0.5 hover:bg-slate-900 active:translate-y-0">
-                                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                                    Entrar al panel
-                                </button>
-                            </form>
-                            <div class="flex flex-col gap-3 border-t border-slate-100 pt-5 text-center">
-                                <button type="button" onclick="mostrarAuthStep('recovery')" class="text-[11px] font-black uppercase tracking-widest text-slate-400 transition-colors hover:text-emerald-600">
-                                    Olvidé mi contraseña
-                                </button>
-                                <button type="button" onclick="mostrarRegistroSaas()" class="flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 text-[11px] font-black uppercase tracking-widest text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-md">
-                                    <i class="fa-solid fa-store"></i>
-                                    Crear cuenta nueva
-                                </button>
-                            </div>
-                        </div>
-
-            <div id="auth2-register-step" class="space-y-5 hidden">
-                <div>
-                    <p class="mb-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Nueva cuenta</p>
-                    <h2 class="text-2xl font-black tracking-tight text-slate-950">Crea tu catálogo</h2>
-                    <p class="mt-2 text-sm font-semibold text-slate-500">Configura el acceso inicial de tu negocio.</p>
+            {/* LOGIN STEP */}
+            <div id="auth2-login-step" class="w-full space-y-6">
+                <div class="text-center md:text-left">
+                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg md:mx-0">
+                        <i class="fa-solid fa-user-check text-xl"></i>
+                    </div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-primary-600">Panel administrativo</p>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 mt-1 uppercase">Accede a tu negocio</h2>
+                    <p class="mt-2 text-xs font-semibold text-slate-500">Ingresa con tu usuario o correo registrado para este catálogo.</p>
                 </div>
-                <form id="auth2-register-form" action="javascript:void(0)" onsubmit="event.preventDefault(); registrarCuentaSaas(event); return false;" class="grid gap-3">
-                    <div id="auth2-register-error" class="hidden rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700"></div>
+
+                <form id="auth2-login-form" action="javascript:void(0)" onsubmit="event.preventDefault(); verificarPassword(event); return false;" class="space-y-4">
+                    <div id="auth2-login-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
+
                     <div>
-                        <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Nombre del negocio</label>
-                        <input type="text" id="register-business-name" required placeholder="Ej: Verdulería Lucero"
-                        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                        <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Usuario o correo</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="auth2-identifier" placeholder="admin o admin@example.com" required autocomplete="username"
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
+                        </div>
                     </div>
+
                     <div>
-                        <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Enlace del catálogo</label>
-                        <div class="flex overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 focus-within:border-emerald-400 focus-within:ring-4 focus-within:ring-emerald-100">
+                        <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Contraseña</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="password" id="auth2-password" placeholder="Ingresa tu contraseña" required autocomplete="current-password"
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-12 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
+                            <button type="button" onclick="togglePasswordVisibility('auth2-password', this)" class="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Mostrar contraseña">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="auth2-login-submit" type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-4 text-xs font-black uppercase tracking-wider text-white shadow-xl shadow-slate-950/20 transition-all hover:-translate-y-0.5 hover:bg-slate-900 active:translate-y-0">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        Entrar al panel
+                    </button>
+                </form>
+
+                <div class="flex flex-col gap-3 pt-2 text-center border-t border-slate-100">
+                    <button type="button" onclick="mostrarAuthStep('recovery')" class="text-xs font-black uppercase text-slate-400 hover:text-primary-600 transition-colors">
+                        Olvidé mi contraseña
+                    </button>
+                    <button type="button" onclick="mostrarRegistroSaas()" class="flex items-center justify-center gap-2 rounded-2xl border border-primary-200 bg-primary-50 px-4 py-3.5 text-xs font-black uppercase tracking-wider text-primary-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-100 hover:shadow-md">
+                        <i class="fa-solid fa-store"></i>
+                        Crear cuenta nueva
+                    </button>
+                </div>
+            </div>
+
+            {/* REGISTER STEP */}
+            <div id="auth2-register-step" class="w-full space-y-4 hidden">
+                <div class="text-center md:text-left">
+                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg md:mx-0">
+                        <i class="fa-solid fa-store text-xl"></i>
+                    </div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-primary-600">Crear nuevo catálogo</p>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Crea tu catálogo</h2>
+                    <p class="text-xs font-semibold text-slate-500 mt-1">Configura el acceso inicial de tu negocio.</p>
+                </div>
+
+                <form id="auth2-register-form" action="javascript:void(0)" onsubmit="event.preventDefault(); registrarCuentaSaas(event); return false;" class="grid gap-3">
+                    <div id="auth2-register-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
+
+                    <div>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Nombre del negocio</label>
+                        <input type="text" id="register-business-name" required placeholder="Ej: Tienda del barrio"
+                        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Enlace del catálogo</label>
+                        <div class="flex overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 focus-within:border-primary-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-primary-500/10">
                             <span class="flex items-center border-r border-slate-200 px-3 text-xs font-black text-slate-400">/c/</span>
                             <input type="text" id="register-slug" required placeholder="verduleria-lucero"
-                            class="min-w-0 flex-1 bg-transparent px-3 py-3 text-sm font-bold text-slate-900 outline-none">
+                            class="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm font-bold text-slate-900 outline-none">
                         </div>
                     </div>
+
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">WhatsApp</label>
+                            <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">WhatsApp</label>
                             <input type="tel" id="register-whatsapp" required placeholder="502XXXXXXXX"
-                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
                         </div>
                         <div>
-                            <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Tipo</label>
-                            <select id="register-business-type" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
-                                <option value="verduleria">Verdulería</option>
-                                <option value="abarrotes">Abarrotes</option>
-                                <option value="electronica">Electrónica</option>
-                                <option value="personalizado">Personalizado</option>
-                            </select>
+                            <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Tipo (Opcional)</label>
+                            <input type="text" id="register-business-type" placeholder="Ej: Ropa, Café, Repostería..."
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
                         </div>
                     </div>
+
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Usuario</label>
-                            <input type="text" id="register-user" required placeholder="admin"
-                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                            <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Tu nombre de usuario</label>
+                            <input type="text" id="register-user" required placeholder="Ej: Juan"
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
                         </div>
                         <div>
-                            <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Correo</label>
+                            <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Correo</label>
                             <input type="email" id="register-email" placeholder="admin@negocio.com"
-                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
                         </div>
                     </div>
+
                     <div>
-                        <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Contraseña</label>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Contraseña</label>
                         <input type="password" id="register-password" required minlength="8" placeholder="Mínimo 8 caracteres"
-                        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
                     </div>
-                    <p class="text-center text-[11px] font-bold leading-5 text-slate-500">Al guardar, se crearán tu catálogo público y tu panel privado.</p>
-                    <button id="auth2-register-submit" type="submit" class="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-xs font-black uppercase tracking-wider text-white shadow-xl shadow-emerald-600/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-500">
+
+                    <p class="text-center text-[10px] font-semibold text-slate-500 leading-normal">Al guardar, se crearán tu catálogo público y tu panel privado.</p>
+                    <button id="auth2-register-submit" type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 text-xs font-black uppercase tracking-wider shadow-xl shadow-emerald-600/10 transition-all">
                         <i class="fa-solid fa-store"></i>
                         Guardar y crear catálogo
                     </button>
                 </form>
-                <div id="auth2-register-result" class="hidden rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-xs font-bold text-emerald-800"></div>
-                <button type="button" onclick="mostrarAuthStep('login')" class="w-full text-center text-[11px] font-black uppercase tracking-widest text-slate-400 transition-colors hover:text-slate-700">
-                    Ya tengo cuenta
-                </button>
+
+                <div id="auth2-register-result" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800"></div>
+
+                <div class="flex flex-col gap-3 pt-2 text-center border-t border-slate-100">
+                    <button type="button" onclick="mostrarAuthStep('login')" class="text-xs font-black uppercase text-slate-400 hover:text-slate-700 transition-colors">
+                        Ya tengo cuenta
+                    </button>
+                </div>
             </div>
 
-            <div id="auth2-recovery-step" class="space-y-5 hidden">
-                <div class="w-14 h-14 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center text-xl mx-auto">
-                    <i class="fa-solid fa-envelope-circle-check"></i>
+            {/* RECOVERY STEP */}
+            <div id="auth2-recovery-step" class="w-full space-y-6 hidden">
+                <div class="text-center md:text-left">
+                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 shadow-lg md:mx-0">
+                        <i class="fa-solid fa-envelope-circle-check text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Recuperar Acceso</h2>
+                    <p class="text-xs font-semibold text-slate-500 mt-1">Te enviaremos un enlace seguro para restablecer tu contraseña.</p>
                 </div>
-                <div>
-                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight">Recuperar Acceso</h2>
-                    <p class="text-slate-400 text-[10px] mt-1 font-extrabold uppercase tracking-widest">Te enviaremos un enlace seguro</p>
-                </div>
-                <form onsubmit="recuperarPassword(event)" class="space-y-3 text-left">
+
+                <form onsubmit="recuperarPassword(event)" class="space-y-4 text-left">
                     <div>
-                        <label class="block text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1">Usuario o correo</label>
+                        <label class="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Usuario o correo</label>
                         <input type="text" id="auth2-recovery-identifier" placeholder="admin@example.com" required
-                        class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
                     </div>
                     <button type="submit" class="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all">
                         Enviar Enlace
                     </button>
                 </form>
+
                 <p id="auth2-dev-reset-link" class="hidden text-[10px] text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-3 break-all"></p>
-                <button type="button" onclick="mostrarAuthStep('login')" class="text-slate-400 hover:text-slate-600 font-bold text-[10px] uppercase tracking-widest transition-colors">
-                    Volver al inicio
-                </button>
+
+                <div class="text-center pt-2 border-t border-slate-100">
+                    <button type="button" onclick="mostrarAuthStep('login')" class="text-xs font-black uppercase text-slate-400 hover:text-slate-600 transition-colors">
+                        Volver al inicio
+                    </button>
+                </div>
             </div>
 
-            <div id="auth2-reset-step" class="space-y-5 hidden">
-                <div class="w-14 h-14 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center text-xl mx-auto">
-                    <i class="fa-solid fa-key"></i>
+            {/* RESET STEP */}
+            <div id="auth2-reset-step" class="w-full space-y-6 hidden">
+                <div class="text-center md:text-left">
+                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 shadow-lg md:mx-0">
+                        <i class="fa-solid fa-key text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Nueva Contraseña</h2>
+                    <p class="text-xs font-semibold text-slate-500 mt-1">Ingresa tu nueva contraseña (mínimo 8 caracteres).</p>
                 </div>
-                <div>
-                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight">Nueva Contraseña</h2>
-                    <p class="text-slate-400 text-[10px] mt-1 font-extrabold uppercase tracking-widest">Mínimo 8 caracteres</p>
-                </div>
-                <form onsubmit="recuperarPorPregunta(event)" class="space-y-3 text-left">
+
+                <form onsubmit="recuperarPorPregunta(event)" class="space-y-4 text-left">
                     <input type="password" id="auth2-reset-password" placeholder="Nueva contraseña" required
-                    class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
                     <input type="password" id="auth2-reset-confirm" placeholder="Confirmar contraseña" required
-                    class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
                     <button type="submit" class="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all">
                         Guardar Contraseña
                     </button>
                 </form>
-            </div>
-                    </div>
-                </section>
             </div>
         </div>
     </div>
@@ -783,8 +1445,18 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             <!-- PASO 1: DATOS DEL CLIENTE -->
             <div id="checkout-step-1">
                 <h2 class="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tight italic">Finalizar Pedido</h2>
-                <p class="text-slate-400 text-[10px] mb-6 font-extrabold uppercase tracking-widest">Paso 1: Datos de Contacto</p>
+                <p class="text-slate-400 text-[10px] mb-4 font-extrabold uppercase tracking-widest">Resumen del Pedido</p>
                 
+                <!-- Resumen de productos en el carrito -->
+                <div id="checkout-resumen-productos" class="mb-3 text-left bg-slate-50 rounded-2xl p-4 max-h-32 overflow-y-auto border border-slate-100 space-y-2 text-xs">
+                    <!-- Carga dinámica -->
+                </div>
+                <div class="flex justify-between items-center px-2 mb-4">
+                    <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Total del Recibo:</span>
+                    <span id="checkout-total-resumen" class="text-base font-black text-slate-900">Q0.00</span>
+                </div>
+
+                <p class="text-slate-400 text-[10px] mb-3 font-extrabold uppercase tracking-widest text-center">Datos de Contacto</p>
                 <div class="space-y-3 mb-6">
                     <div>
                         <input type="text" id="nombre-cliente" placeholder="Tu Nombre y Apellido" 
@@ -796,9 +1468,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     </div>
                 </div>
 
-                <button onclick="siguienteCheckout()" 
-                    class="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg shadow-primary-600/20 active:scale-95 uppercase tracking-wider text-xs transition-all mb-4">
-                    Continuar <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
+                <button onclick="enviarOrden({ whatsapp: false })" 
+                    class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all mb-3 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cart-shopping"></i> Enviar por Carrito
+                </button>
+
+                <button onclick="enviarOrden({ whatsapp: true })" 
+                    class="w-full py-4 bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold rounded-2xl shadow-lg shadow-[#25D366]/20 active:scale-95 uppercase tracking-wider text-xs transition-all mb-4 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> Enviar por WhatsApp
                 </button>
                 
                 <button onclick="cerrarValidacion()" class="text-slate-400 hover:text-slate-600 font-bold text-[11px] uppercase tracking-widest transition-colors">
@@ -806,27 +1483,16 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 </button>
             </div>
 
-            <!-- PASO 2: DESCARGA DE PDF ANTES DE ENVIAR -->
-            <div id="checkout-step-2" class="hidden">
-                <h2 class="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tight italic">¿Descargar Recibo?</h2>
-                <p class="text-slate-400 text-[10px] mb-4 font-extrabold uppercase tracking-widest">Paso 2: Descargar PDF (Opcional)</p>
-                
-                <p class="text-slate-500 text-xs mb-6 font-medium leading-relaxed">
-                    ¿Deseas descargar tu recibo de compra en formato PDF antes de enviar el pedido por WhatsApp?
-                </p>
-
-                <button onclick="descargarYEnviar()" 
-                    class="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg shadow-primary-600/20 active:scale-95 uppercase tracking-wider text-xs transition-all mb-3 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-file-pdf"></i> Descargar PDF y Enviar
-                </button>
-
-                <button onclick="enviarOrden()" 
-                    class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-md active:scale-95 uppercase tracking-wider text-[10px] transition-all mb-5">
-                    No descargar, solo enviar <i class="fa-brands fa-whatsapp ml-1 text-sm"></i>
-                </button>
-                
-                <button onclick="regresarCheckoutStep1()" class="text-slate-400 hover:text-slate-600 font-bold text-[11px] uppercase tracking-widest transition-colors block mx-auto">
-                    ← Regresar a mis datos
+            <!-- PASO EXITO: CONFIRMACION DE ENVIO -->
+            <div id="checkout-step-success" class="hidden py-4">
+                <div class="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">
+                    <i class="fa-solid fa-circle-check animate-pulse"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight italic">¡Pedido Enviado!</h2>
+                <p id="checkout-success-msg" class="text-slate-500 text-sm font-bold mb-6 px-2">Tu pedido ha sido registrado con éxito en nuestro sistema.</p>
+                <button onclick="cerrarValidacion()" 
+                    class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all">
+                    Entendido
                 </button>
             </div>
         </div>
@@ -1108,6 +1774,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         );
         const API_URL = `${BACKEND_URL}/api`;
         const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const isLandingPage = window.location.pathname === '/';
         const tenantSlug = pathParts[0] === 'c' && pathParts[1] ? pathParts[1] : 'default';
         const isAdminRoute = pathParts[0] === 'c' && pathParts[2] === 'p' && Boolean(pathParts[3]);
         const isResetRoute = pathParts[0] === 'c' && pathParts[2] === 'reset-password';
@@ -1244,12 +1911,23 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 warningText.innerText = safeAccount.trialEndDate
                     ? `Tu prueba gratis finaliza el ${formatAccountDate(safeAccount.trialEndDate)}.`
                     : 'Tu cuenta esta en prueba gratis.';
-            } else if (status === 'pending_payment') {
-                warningText.innerText = safeAccount.paymentDueDate
-                    ? `Fecha limite de pago: ${formatAccountDate(safeAccount.paymentDueDate)}.`
-                    : 'Tu cuenta tiene pago pendiente.';
-            } else if (status === 'suspended') {
-                warningText.innerText = 'Tu cuenta esta suspendida. Realiza el pago para reactivar el servicio.';
+                if (typeof window.iniciarTrialCountdown === 'function') {
+                    window.iniciarTrialCountdown(safeAccount.trialEndDate);
+                }
+            } else {
+                if (status === 'pending_payment') {
+                    warningText.innerText = safeAccount.paymentDueDate
+                        ? `Fecha limite de pago: ${formatAccountDate(safeAccount.paymentDueDate)}.`
+                        : 'Tu cuenta tiene pago pendiente.';
+                } else if (status === 'suspended') {
+                    warningText.innerText = 'Tu cuenta esta suspendida. Realiza el pago para reactivar el servicio.';
+                }
+                const banner = document.getElementById('trial-countdown-banner');
+                if (banner) banner.classList.add('hidden');
+                if (window.trialCountdownInterval) {
+                    clearInterval(window.trialCountdownInterval);
+                    window.trialCountdownInterval = null;
+                }
             }
         }
 
@@ -1281,8 +1959,159 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 if (!img) return;
                 img.src = logoUrl;
                 img.classList.toggle('hidden', !logoUrl);
-                img.nextElementSibling?.classList.toggle('hidden', Boolean(logoUrl));
+                
+                const placeholderId = id === 'tenant-saas-logo-sidebar' ? 'tenant-saas-placeholder-sidebar' : 'tenant-saas-placeholder-mobile';
+                const placeholder = document.getElementById(placeholderId);
+                if (placeholder) {
+                    placeholder.classList.toggle('hidden', Boolean(logoUrl));
+                }
             });
+
+            // Update Landing page settings dynamically if on landing page
+            if (isLandingPage) {
+                // Apply branding colors
+                if (saasSupportSettings.primaryColor) {
+                    document.documentElement.style.setProperty('--color-purple', saasSupportSettings.primaryColor);
+                }
+                if (saasSupportSettings.secondaryColor) {
+                    document.documentElement.style.setProperty('--color-pink', saasSupportSettings.secondaryColor);
+                }
+                if (saasSupportSettings.accentColor) {
+                    document.documentElement.style.setProperty('--color-orange', saasSupportSettings.accentColor);
+                }
+
+                // Show/hide price
+                const showPrice = saasSupportSettings.showPrice !== false;
+                const preciosSec = document.getElementById('precios');
+                if (preciosSec) preciosSec.classList.toggle('hidden', !showPrice);
+                
+                const promoCard = document.getElementById('landing-promo-card');
+                if (promoCard) promoCard.classList.toggle('hidden', !showPrice);
+                
+                document.querySelectorAll('a[href="#precios"]').forEach(el => {
+                    el.classList.toggle('hidden', !showPrice);
+                });
+
+                const cardPriceLi = document.getElementById('landing-card-price-text')?.closest('li');
+                if (cardPriceLi) {
+                    cardPriceLi.classList.toggle('hidden', !showPrice);
+                }
+
+                // Apply dynamic price text
+                const monthlyPrice = typeof saasSupportSettings.monthlyPrice === 'number' ? saasSupportSettings.monthlyPrice : 50;
+                const priceText = `Q${monthlyPrice}`;
+                
+                const promoPriceEl = document.getElementById('landing-promo-price');
+                if (promoPriceEl) promoPriceEl.innerText = priceText;
+                
+                const cardPriceTextEl = document.getElementById('landing-card-price-text');
+                if (cardPriceTextEl) cardPriceTextEl.innerText = `Plan mensual de Q${monthlyPrice}`;
+                
+                const priceMonthlyEl = document.getElementById('landing-price-monthly');
+                if (priceMonthlyEl) priceMonthlyEl.innerText = priceText;
+                
+                document.querySelectorAll('.landing-faq-price').forEach(el => {
+                    el.innerText = priceText;
+                });
+
+                // Apply dynamic free trial days text
+                const trialDays = typeof saasSupportSettings.freeTrialDays === 'number' ? saasSupportSettings.freeTrialDays : 7;
+                const trialText = `PRUÉBALO GRATIS POR ${trialDays} DÍAS`;
+                const daysTextSuffix = `${trialDays} DÍAS`;
+                
+                const trialBadgeEl = document.getElementById('landing-trial-badge');
+                if (trialBadgeEl) trialBadgeEl.innerText = trialText;
+                
+                const promoDaysEl = document.getElementById('landing-promo-days');
+                if (promoDaysEl) promoDaysEl.innerText = daysTextSuffix;
+                
+                const cardTrialTextEl = document.getElementById('landing-card-trial-text');
+                if (cardTrialTextEl) cardTrialTextEl.innerText = `Prueba ${trialDays} días gratis`;
+                
+                const registerTrialDaysEl = document.getElementById('landing-register-trial-days');
+                if (registerTrialDaysEl) registerTrialDaysEl.innerText = `${trialDays} días gratis`;
+                
+                document.querySelectorAll('.landing-faq-days').forEach(el => {
+                    el.innerText = `${trialDays} días`;
+                });
+
+                // Apply dynamic logo alt text / image url
+                const landingLogoImg = document.getElementById('landing-logo-img');
+                const landingLogoFallback = document.getElementById('landing-logo-fallback');
+                const logoAlt = saasSupportSettings.logoAltText || 'SEDELYNK';
+                
+                if (logoUrl) {
+                    if (landingLogoImg) {
+                        landingLogoImg.src = logoUrl;
+                        landingLogoImg.alt = logoAlt;
+                        landingLogoImg.classList.remove('hidden');
+                    }
+                    if (landingLogoFallback) landingLogoFallback.classList.add('hidden');
+                } else {
+                    if (landingLogoImg) landingLogoImg.classList.add('hidden');
+                    if (landingLogoFallback) {
+                        landingLogoFallback.classList.remove('hidden');
+                    }
+                }
+
+                // Apply dynamic hero title
+                const heroTitleEl = document.getElementById('landing-hero-title');
+                if (heroTitleEl) {
+                    const title = saasSupportSettings.landingTitle || 'Vende cualquier producto en línea por';
+                    const subtitle = saasSupportSettings.landingSubtitle || 'carrito y WhatsApp';
+                    const parts = subtitle.split(' y ');
+                    heroTitleEl.innerHTML = `${title} <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#D946EF]">${parts[0] || ''}</span> ${parts[1] ? `<span class="text-[#FF6B1A]">y ${parts[1]}</span>` : ''}`;
+                }
+
+                // Apply dynamic hero text
+                const heroTextEl = document.getElementById('landing-hero-text');
+                if (heroTextEl) {
+                    heroTextEl.innerText = saasSupportSettings.landingHeroText || 'Crea tu tienda en línea, recibe pedidos y haz crecer tu negocio. Sin comisiones, sin complicaciones.';
+                }
+
+                // Apply dynamic favicon
+                if (saasSupportSettings.faviconUrl) {
+                    let link = document.querySelector("link[rel~='icon']");
+                    if (!link) {
+                        link = document.createElement('link');
+                        link.rel = 'icon';
+                        document.getElementsByTagName('head')[0].appendChild(link);
+                    }
+                    link.href = normalizarAssetUrl(saasSupportSettings.faviconUrl);
+                }
+
+                // Apply dynamic platform fallback name
+                const logoFallback = document.getElementById('landing-logo-fallback');
+                if (logoFallback && saasSupportSettings.platformName) {
+                    const pName = saasSupportSettings.platformName.toUpperCase();
+                    if (pName !== 'SEDELYNK') {
+                        logoFallback.innerHTML = `<span class="text-xl font-black tracking-tight text-[#0B132B] uppercase">${pName}</span>`;
+                    }
+                }
+
+                // Apply dynamic FAQs
+                const faqsContainer = document.getElementById('landing-faqs-container');
+                if (faqsContainer && saasSupportSettings.landingFaqs) {
+                    try {
+                        const faqs = JSON.parse(saasSupportSettings.landingFaqs);
+                        if (Array.isArray(faqs) && faqs.length > 0) {
+                            faqsContainer.innerHTML = faqs.map((faq) => `
+                                <div class="faq-item landing-card p-5 cursor-pointer" onclick="this.classList.toggle('active')">
+                                    <div class="flex justify-between items-center gap-4">
+                                        <h3 class="font-extrabold text-sm md:text-base text-slate-900 uppercase">${faq.question}</h3>
+                                        <span class="faq-icon text-slate-400 shrink-0 transition-transform duration-200"><i class="fa-solid fa-chevron-down"></i></span>
+                                    </div>
+                                    <p class="faq-answer text-xs md:text-sm font-semibold text-slate-500 leading-relaxed">
+                                        ${faq.answer}
+                                    </p>
+                                </div>
+                            `).join('');
+                        }
+                    } catch (e) {
+                        console.error("Error parsing dynamic FAQs", e);
+                    }
+                }
+            }
         }
 
         async function cargarSoporteSaas() {
@@ -1574,10 +2403,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             root.style.setProperty('--tenant-accent', c.accent);
             root.style.setProperty('--tenant-header-text', headerText);
             root.style.setProperty('--tenant-header-muted', headerUsesLightText ? 'rgba(255,255,255,.82)' : 'rgba(15,23,42,.78)');
-            root.style.setProperty('--tenant-search-bg', headerUsesLightText ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.86)');
-            root.style.setProperty('--tenant-search-text', headerUsesLightText ? '#FFFFFF' : '#0F172A');
-            root.style.setProperty('--tenant-search-border', headerUsesLightText ? 'rgba(255,255,255,.18)' : 'rgba(15,23,42,.14)');
-            root.style.setProperty('--tenant-search-placeholder', headerUsesLightText ? 'rgba(255,255,255,.72)' : 'rgba(51,65,85,.72)');
+            root.style.setProperty('--tenant-search-bg', '#FFFFFF');
+            root.style.setProperty('--tenant-search-text', '#0F172A');
+            root.style.setProperty('--tenant-search-border', 'rgba(15,23,42,.14)');
+            root.style.setProperty('--tenant-search-placeholder', 'rgba(51,65,85,.72)');
             root.style.setProperty('--color-primary-50', c.background);
             root.style.setProperty('--color-primary-100', c.secondary);
             root.style.setProperty('--color-primary-200', c.secondary);
@@ -2133,10 +2962,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     const errorData = await response.json().catch(() => ({}));
                     if (errorData.status === 'suspended') {
                         document.getElementById("grid-productos").innerHTML = `
-                        <div class="col-span-full rounded-3xl border border-amber-100 bg-white p-8 text-center shadow-premium">
-                            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            <p class="text-sm font-black uppercase tracking-wider text-slate-900">Cuenta suspendida</p>
-                            <p class="mx-auto mt-2 max-w-md text-sm font-semibold text-slate-500">${errorData.error || 'Esta cuenta esta suspendida. Realiza el pago para reactivar el catalogo.'}</p>
+                        <div class="col-span-full rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-premium">
+                            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-400"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                            <p class="text-sm font-black uppercase tracking-wider text-slate-900">Catálogo temporalmente no disponible</p>
+                            <p class="mx-auto mt-2 max-w-md text-sm font-semibold text-slate-500">Este catálogo se encuentra en mantenimiento. Por favor, intenta de nuevo más tarde.</p>
                         </div>`;
                         return;
                     }
@@ -2697,42 +3526,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             } else if (step === 'login') {
                 document.getElementById('auth2-main-heading')?.classList.remove('hidden');
             }
-            return;
-            if (step === 'login') {
-                document.getElementById('auth-login-step').classList.remove('hidden');
-                document.getElementById('auth-recovery-step').classList.add('hidden');
-                document.getElementById('auth-question-step').classList.add('hidden');
-                document.getElementById("auth-password").focus();
-            } else if (step === 'recovery') {
-                document.getElementById('auth-login-step').classList.add('hidden');
-                document.getElementById('auth-recovery-step').classList.remove('hidden');
-                document.getElementById('auth-question-step').classList.add('hidden');
-                document.getElementById('recovery-pin').value = '';
-                document.getElementById('recovery-new-password').value = '';
-                document.getElementById('recovery-confirm-password').value = '';
-                document.getElementById('recovery-pin').focus();
-            } else if (step === 'question') {
-                document.getElementById('auth-login-step').classList.add('hidden');
-                document.getElementById('auth-recovery-step').classList.add('hidden');
-                document.getElementById('auth-question-step').classList.remove('hidden');
-                document.getElementById('recovery-question-answer').value = '';
-                document.getElementById('recovery-question-new-password').value = '';
-                document.getElementById('recovery-question-confirm-password').value = '';
-                
-                // Cargar la pregunta secreta de la API
-                try {
-                    const res = await fetch(`${API_URL}/admin/auth/recovery-question`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        document.getElementById('recovery-question-text').innerText = data.pregunta;
-                    } else {
-                        document.getElementById('recovery-question-text').innerText = "Error al cargar la pregunta secreta.";
-                    }
-                } catch (err) {
-                    document.getElementById('recovery-question-text').innerText = "Error de conexión.";
-                }
-                document.getElementById('recovery-question-answer').focus();
-            }
         }
 
         async function verificarPassword(e) {
@@ -2762,11 +3555,24 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     if (data.devSessionToken) {
                         sessionStorage.setItem(DEV_SESSION_KEY, data.devSessionToken);
                     }
+                    if (data.mustChangePassword) {
+                        // Force the user to change their password before accessing the panel
+                        window._pendingAdminTenantSlug = tenantSlug;
+                        window._pendingAdminAccessKey = data.adminAccessKey || data.user?.adminAccessKey || adminAccessKey;
+                        abrirForzarCambioPassword();
+                        return;
+                    }
                     actualizarIdentidadAdmin(data.user || {});
                     adminAutenticado = true;
                     sessionStorage.setItem('admin_auth', 'true');
                     registrarActividadAdmin();
                     showToast("Acceso concedido", "success");
+                    
+                    const realAccessKey = data.adminAccessKey || data.user?.adminAccessKey;
+                    if (realAccessKey && adminAccessKey !== realAccessKey) {
+                        window.location.href = `/c/${tenantSlug}/p/${realAccessKey}`;
+                        return;
+                    }
                     switchView('admin');
                 } else {
                     const mensaje = data.error === 'Credenciales inv\u00c3\u00a1lidas'
@@ -3733,16 +4539,38 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 return;
             }
             
-            // Cargar datos guardados del cliente
-            const nombreGuardado = localStorage.getItem('cliente_nombre');
-            const telGuardado = localStorage.getItem('cliente_tel');
-            
-            if (nombreGuardado) document.getElementById("nombre-cliente").value = nombreGuardado;
-            if (telGuardado) document.getElementById("tel-cliente").value = telGuardado;
+            // Limpiar datos de contacto para que aparezcan vacíos
+            const inputNombre = document.getElementById("nombre-cliente");
+            const inputTel = document.getElementById("tel-cliente");
+            if (inputNombre) inputNombre.value = "";
+            if (inputTel) inputTel.value = "";
 
-            // Restablecer el modal al paso 1
+            // Generar el resumen de productos y total
+            const resumenContenedor = document.getElementById("checkout-resumen-productos");
+            const totalContenedor = document.getElementById("checkout-total-resumen");
+            if (resumenContenedor && totalContenedor) {
+                let resumenHtml = "";
+                let total = 0;
+                productos.forEach(p => {
+                    if (pedido[p.id] > 0) {
+                        const sub = p.p * pedido[p.id];
+                        total += sub;
+                        resumenHtml += `
+                            <div class="flex justify-between items-center text-xs font-bold text-slate-600 py-1 border-b border-slate-100 last:border-b-0">
+                                <div class="truncate pr-2">
+                                    <span class="font-extrabold text-slate-800">${pedido[p.id]}x</span> ${p.n}
+                                </div>
+                                <div class="font-black text-slate-900 shrink-0">Q${sub.toFixed(2)}</div>
+                            </div>
+                        `;
+                    }
+                });
+                resumenContenedor.innerHTML = resumenHtml;
+                totalContenedor.innerText = `Q${total.toFixed(2)}`;
+            }
+
+            // Mostrar el paso 1
             document.getElementById("checkout-step-1").classList.remove("hidden");
-            document.getElementById("checkout-step-2").classList.add("hidden");
 
             const modal = document.getElementById("modal-validacion");
             modal.classList.remove("hidden");
@@ -3751,55 +4579,15 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }, 10);
         }
 
-        function siguienteCheckout() {
-            const nombre = document.getElementById("nombre-cliente").value.trim();
-            const tel = document.getElementById("tel-cliente").value.trim();
-            
-            if (!nombre || !tel) {
-                showToast("Por favor, completa tus datos.", "error");
-                return;
-            }
-
-            document.getElementById("checkout-step-1").classList.add("hidden");
-            document.getElementById("checkout-step-2").classList.remove("hidden");
-        }
-
-        function regresarCheckoutStep1() {
-            document.getElementById("checkout-step-2").classList.add("hidden");
-            document.getElementById("checkout-step-1").classList.remove("hidden");
-        }
-
-        async function descargarYEnviar() {
-            const btnDescargar = document.querySelector("#modal-validacion button[onclick='descargarYEnviar()']");
-            const btnSoloEnviar = document.querySelector("#modal-validacion button[onclick='enviarOrden()']");
-            if (!btnDescargar || !btnSoloEnviar) return;
-
-            const originalDescargarText = btnDescargar.innerHTML;
-            btnDescargar.disabled = true;
-            btnSoloEnviar.disabled = true;
-            btnDescargar.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Generando PDF...`;
-            
-            try {
-                // Descargar PDF de forma manual y local
-                descargarPDFCliente();
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Enviar la orden
-                await enviarOrden({ preopenedWindow: window.open('about:blank', '_blank') });
-            } catch (err) {
-                console.error(err);
-            } finally {
-                btnDescargar.disabled = false;
-                btnSoloEnviar.disabled = false;
-                btnDescargar.innerHTML = originalDescargarText;
-            }
-        }
 
         function cerrarValidacion() {
             const modal = document.getElementById("modal-validacion");
             modal.querySelector('div').classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 modal.classList.add("hidden");
+                // Restaurar vista de pasos para la próxima vez
+                document.getElementById("checkout-step-1").classList.remove("hidden");
+                document.getElementById("checkout-step-success").classList.add("hidden");
             }, 300);
         }
 
@@ -4147,6 +4935,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         async function enviarOrden(options = {}) {
+            const useWhatsapp = options.whatsapp !== false;
             const nombre = document.getElementById("nombre-cliente").value.trim();
             const tel = document.getElementById("tel-cliente").value.trim();
             
@@ -4155,19 +4944,24 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 return;
             }
 
-            const preopenedWindow = options.preopenedWindow || window.open('about:blank', '_blank');
+            const preopenedWindow = useWhatsapp ? window.open('about:blank', '_blank') : null;
 
             // Deshabilitar botón temporalmente para evitar doble envío
-            const btnWhatsApp = document.querySelector("#modal-validacion button[onclick='enviarOrden()']");
-            const originalText = btnWhatsApp?.innerHTML || "";
-            if (btnWhatsApp) {
-                btnWhatsApp.disabled = true;
-                btnWhatsApp.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Guardando Pedido...`;
+            const btnCarrito = document.querySelector("#modal-validacion button[onclick*='whatsapp: false']");
+            const btnWhatsapp = document.querySelector("#modal-validacion button[onclick*='whatsapp: true']");
+            const originalCarritoText = btnCarrito?.innerHTML || "";
+            const originalWhatsappText = btnWhatsapp?.innerHTML || "";
+
+            if (btnCarrito) btnCarrito.disabled = true;
+            if (btnWhatsapp) btnWhatsapp.disabled = true;
+
+            if (useWhatsapp && btnWhatsapp) {
+                btnWhatsapp.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Procesando...`;
+            } else if (!useWhatsapp && btnCarrito) {
+                btnCarrito.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Procesando...`;
             }
 
-            // Guardar datos en localStorage para compras futuras
-            localStorage.setItem('cliente_nombre', nombre);
-            localStorage.setItem('cliente_tel', tel);
+            // No se guardan datos de contacto en localStorage para preservar la privacidad y limpieza
 
             // Estructurar ítems para guardar
             const items = [];
@@ -4183,6 +4977,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     const sub = p.p * pedido[p.id];
                     msg += `• *${p.n}* (${pedido[p.id]} ${p.u}) -> _Q${sub.toFixed(2)}_%0A`;
                     items.push({
+                        productId: p.id,
                         nombre: p.n,
                         precio: p.p,
                         cantidad: pedido[p.id],
@@ -4200,7 +4995,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             copiarMensajeWhatsapp(msg);
 
             try {
-                // Registrar pedido en la base de datos de MongoDB
+                // Registrar pedido en la base de datos de PostgreSQL
                 const res = await fetch(`${TENANT_API_URL}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -4213,22 +5008,53 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
                 if (!res.ok) throw new Error('Error al registrar pedido');
 
-                abrirWhatsapp(preopenedWindow, MI_WHATSAPP, msg);
+                if (useWhatsapp) {
+                    abrirWhatsapp(preopenedWindow, MI_WHATSAPP, msg);
+                    showToast("¡Pedido registrado! Redirigiendo a WhatsApp...", "success");
+                    document.getElementById("checkout-success-msg").innerText = "Tu pedido fue registrado en nuestro sistema. Te estamos redirigiendo a WhatsApp para completar el envío.";
+                } else {
+                    showToast("¡Pedido enviado correctamente al sistema!", "success");
+                    document.getElementById("checkout-success-msg").innerText = "Tu pedido ha sido enviado y registrado con éxito en nuestro sistema.";
+                }
                 
-                // Limpiar pedido local y refrescar
+                // Limpiar pedido local, campos de contacto y refrescar
                 pedido = {};
                 dibujar();
                 recalcular();
-                cerrarValidacion();
-                showToast("¡Pedido registrado! Redirigiendo a WhatsApp...", "success");
+                const inputNombre = document.getElementById("nombre-cliente");
+                const inputTel = document.getElementById("tel-cliente");
+                if (inputNombre) inputNombre.value = "";
+                if (inputTel) inputTel.value = "";
+
+                // Mostrar pantalla de éxito
+                document.getElementById("checkout-step-1").classList.add("hidden");
+                document.getElementById("checkout-step-success").classList.remove("hidden");
             } catch (err) {
                 console.error(err);
-                showToast("Error al guardar pedido en base de datos. Redirigiendo a WhatsApp...", "warning");
-                abrirWhatsapp(preopenedWindow, MI_WHATSAPP, msg);
+                if (useWhatsapp) {
+                    showToast("Error al guardar pedido. Redirigiendo a WhatsApp...", "warning");
+                    abrirWhatsapp(preopenedWindow, MI_WHATSAPP, msg);
+                    document.getElementById("checkout-success-msg").innerText = "Te estamos redirigiendo a WhatsApp para procesar tu pedido.";
+                    pedido = {};
+                    dibujar();
+                    recalcular();
+                    const inputNombre = document.getElementById("nombre-cliente");
+                    const inputTel = document.getElementById("tel-cliente");
+                    if (inputNombre) inputNombre.value = "";
+                    if (inputTel) inputTel.value = "";
+                    document.getElementById("checkout-step-1").classList.add("hidden");
+                    document.getElementById("checkout-step-success").classList.remove("hidden");
+                } else {
+                    showToast("Error al enviar el pedido. Intenta nuevamente.", "error");
+                }
             } finally {
-                if (btnWhatsApp) {
-                    btnWhatsApp.disabled = false;
-                    btnWhatsApp.innerHTML = originalText;
+                if (btnCarrito) {
+                    btnCarrito.disabled = false;
+                    btnCarrito.innerHTML = originalCarritoText;
+                }
+                if (btnWhatsapp) {
+                    btnWhatsapp.disabled = false;
+                    btnWhatsapp.innerHTML = originalWhatsappText;
                 }
             }
         }
@@ -4726,7 +5552,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(17);
-            doc.text("AGRUPAR PEDIDOS", 14, 17);
+            doc.text("PEDIDOS AGRUPADOS", 14, 17);
             doc.setFont("helvetica", "normal");
             doc.setFontSize(9);
             doc.text(String(nombreNegocio).toUpperCase(), 14, 24);
@@ -4813,12 +5639,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             const fechaArchivo = fechaGeneracion.toISOString().slice(0, 10);
             const cleanTenant = (tenantSlug || "catalogo").replace(/[^a-z0-9-]/gi, "_").toLowerCase();
-            doc.save(`agrupar_pedidos_${cleanTenant}_${fechaArchivo}.pdf`);
+            doc.save(`pedidos_agrupados_${cleanTenant}_${fechaArchivo}.pdf`);
             if (modo === 'selected') {
                 pedidosSeleccionados.clear();
                 dibujarPedidos();
             }
-            showToast("Pedidos agrupados en PDF", "success");
+            showToast("Pedidos agrupados generados en PDF", "success");
         }
 
         async function cargarConfiguracionPublica() {
@@ -4877,12 +5703,373 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }
         }
 
+        /* ===========================
+        LANDING PAGE & COUNTDOWN HANDLERS
+        =========================== */
+        function mostrarLandingStep(step) {
+            const modal = document.getElementById('landing-auth-modal');
+            const login = document.getElementById('landing-login-step');
+            const register = document.getElementById('landing-register-step');
+            
+            if (step === 'close' || step === 'portal') {
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                return;
+            }
+
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            if (login) login.classList.toggle('hidden', step !== 'login');
+            if (register) register.classList.toggle('hidden', step !== 'register');
+
+            if (step === 'register') {
+                mostrarErrorRegistroLanding('');
+                const form = register.querySelector('form');
+                const resultEl = document.getElementById('landing-register-result');
+                if (form) form.classList.remove('hidden');
+                if (resultEl) {
+                    resultEl.classList.add('hidden');
+                    resultEl.innerHTML = '';
+                }
+                const nameInput = document.getElementById('landing-register-name');
+                if (nameInput) nameInput.focus();
+            } else if (step === 'login') {
+                mostrarErrorLoginLanding('');
+                const identifierInput = document.getElementById('landing-login-identifier');
+                if (identifierInput) identifierInput.focus();
+            }
+        }
+        window.mostrarLandingStep = mostrarLandingStep;
+
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu) {
+                mobileMenu.classList.toggle('hidden');
+            }
+        }
+        window.toggleMobileMenu = toggleMobileMenu;
+
+        // Close modal on backdrop click or escape key
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('landing-auth-modal');
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        mostrarLandingStep('close');
+                    }
+                });
+            }
+            
+            const modalAdmin = document.getElementById('modal-admin-auth-v2');
+            if (modalAdmin) {
+                modalAdmin.addEventListener('click', (e) => {
+                    if (e.target === modalAdmin) {
+                        cerrarAuthModal();
+                    }
+                });
+            }
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    mostrarLandingStep('close');
+                    cerrarAuthModal();
+                }
+            });
+
+            // Auto slug generation for landing register form
+            const landingRegName = document.getElementById('landing-register-name');
+            const landingRegSlug = document.getElementById('landing-register-slug');
+            if (landingRegName && landingRegSlug) {
+                landingRegName.addEventListener('input', () => {
+                    if (!landingRegSlug.dataset.touched) {
+                        landingRegSlug.value = slugifyClient(landingRegName.value);
+                    }
+                });
+                landingRegSlug.addEventListener('input', () => {
+                    landingRegSlug.dataset.touched = 'true';
+                    landingRegSlug.value = slugifyClient(landingRegSlug.value);
+                });
+            }
+        });
+
+        function mostrarErrorLoginLanding(mensaje = '') {
+            const errorEl = document.getElementById('landing-login-error');
+            if (!errorEl) return;
+            if (!mensaje) {
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+                return;
+            }
+            errorEl.innerText = mensaje;
+            errorEl.classList.remove('hidden');
+        }
+
+        function mostrarErrorRegistroLanding(mensaje = '') {
+            const errorEl = document.getElementById('landing-register-error');
+            if (!errorEl) return;
+            if (!mensaje) {
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+                return;
+            }
+            errorEl.innerText = mensaje;
+            errorEl.classList.remove('hidden');
+        }
+
+        async function verificarPasswordLanding(e) {
+            if (e) e.preventDefault();
+            const identifier = document.getElementById("landing-login-identifier").value.trim();
+            const password = document.getElementById("landing-login-password").value;
+            const submitBtn = document.getElementById('landing-login-submit');
+
+            mostrarErrorLoginLanding('');
+            if (!identifier || !password) {
+                mostrarErrorLoginLanding("Ingresa tu usuario o correo y contraseña.");
+                return;
+            }
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-70', 'cursor-wait');
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Validando...';
+                }
+                
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, password })
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    const tSlug = data.tenantSlug || data.user?.tenantSlug;
+                    const aKey = data.adminAccessKey;
+                    
+                    if (data.devSessionToken) {
+                        sessionStorage.setItem(`catalogo_dev_session_${tSlug}`, data.devSessionToken);
+                    }
+                    
+                    if (data.mustChangePassword) {
+                        // Store redirect info and show forced password change modal
+                        window._pendingAdminTenantSlug = tSlug;
+                        window._pendingAdminAccessKey = aKey;
+                        mostrarLandingStep('close');
+                        abrirForzarCambioPasswordLanding(tSlug);
+                        return;
+                    }
+                    
+                    window.location.href = `/c/${tSlug}/p/${aKey}`;
+                } else {
+                    mostrarErrorLoginLanding(data.error || "Credenciales inválidas.");
+                }
+            } catch (err) {
+                mostrarErrorLoginLanding("Error de conexión al servidor.");
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-70', 'cursor-wait');
+                    submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar al panel';
+                }
+            }
+        }
+        window.verificarPasswordLanding = verificarPasswordLanding;
+
+        async function registrarCuentaSaasLanding(e) {
+            if (e) e.preventDefault();
+            const form = document.getElementById('landing-register-step')?.querySelector('form');
+            const submitBtn = document.getElementById('landing-register-submit');
+            const resultEl = document.getElementById('landing-register-result');
+            if (resultEl) {
+                resultEl.classList.add('hidden');
+                resultEl.innerHTML = '';
+            }
+            const payload = {
+                nombre: document.getElementById('landing-register-name')?.value.trim(),
+                slug: slugifyClient(document.getElementById('landing-register-slug')?.value.trim()),
+                whatsapp: document.getElementById('landing-register-whatsapp')?.value.trim(),
+                usuario: document.getElementById('landing-register-user')?.value.trim(),
+                email: document.getElementById('landing-register-email')?.value.trim() || undefined,
+                password: document.getElementById('landing-register-password')?.value,
+                tipoNegocio: document.getElementById('landing-register-type')?.value || 'personalizado'
+            };
+
+            mostrarErrorRegistroLanding('');
+            if (!payload.nombre || !payload.slug || !payload.whatsapp || !payload.usuario || !payload.password) {
+                mostrarErrorRegistroLanding('Completa los campos requeridos para crear la cuenta.');
+                return;
+            }
+            if (payload.password.length < 8) {
+                mostrarErrorRegistroLanding('La contraseña debe tener al menos 8 caracteres.');
+                return;
+            }
+
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-70', 'cursor-wait');
+                    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Guardando catálogo';
+                }
+                const res = await fetch(`${API_URL}/tenants/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    if (data.existingAccount && data.publicUrl && data.adminUrl) {
+                        mostrarErrorRegistroLanding('');
+                        if (form) form.classList.add('hidden');
+                        if (resultEl) {
+                            resultEl.innerHTML = `
+                                <div class="space-y-4 text-slate-800">
+                                    <div class="flex items-center gap-3 text-emerald-800">
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-white text-lg"><i class="fa-solid fa-circle-check"></i></div>
+                                        <div>
+                                            <p class="text-sm font-black uppercase text-slate-900">La cuenta ya existe</p>
+                                            <p class="text-[11px] font-semibold text-slate-500">Te mostramos los accesos del catálogo configurado.</p>
+                                        </div>
+                                    </div>
+                                    <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200/60 space-y-3">
+                                        <div>
+                                            <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Tu catálogo público</p>
+                                            <a href="${data.publicUrl}" target="_blank" class="text-xs font-black text-emerald-600 underline break-all">${window.location.origin}${data.publicUrl}</a>
+                                        </div>
+                                        <div>
+                                            <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Tu panel de administración privado</p>
+                                            <a href="${data.adminUrl}" target="_blank" class="text-xs font-black text-slate-800 underline break-all">${window.location.origin}${data.adminUrl}</a>
+                                        </div>
+                                    </div>
+                                    <p class="text-[10px] font-semibold text-slate-500 text-center">¡Guarda el enlace administrativo! Es la única forma de acceder a tu panel.</p>
+                                </div>
+                            `;
+                            resultEl.classList.remove('hidden');
+                        }
+                        showToast('La cuenta ya existe. Te mostramos tus enlaces.', 'info');
+                        return;
+                    }
+                    const mensaje = data.error || 'No se pudo crear la cuenta.';
+                    mostrarErrorRegistroLanding(res.status === 409
+                        ? `${mensaje}. Cambia el enlace del catálogo o usa otro nombre para tu negocio.`
+                        : mensaje);
+                    return;
+                }
+
+                mostrarErrorRegistroLanding('');
+                if (form) form.classList.add('hidden');
+                if (resultEl) {
+                    resultEl.innerHTML = `
+                        <div class="space-y-4 text-slate-800">
+                            <div class="flex items-center gap-3 text-emerald-800">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-white text-lg"><i class="fa-solid fa-circle-check"></i></div>
+                                <div>
+                                    <p class="text-sm font-black uppercase text-slate-900">¡Cuenta creada con éxito!</p>
+                                    <p class="text-[11px] font-semibold text-slate-500">Bienvenido a Sedelynk. Tu catálogo profesional está listo.</p>
+                                </div>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200/60 space-y-3">
+                                <div>
+                                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Tu catálogo público</p>
+                                    <a href="${data.publicUrl}" target="_blank" class="text-xs font-black text-emerald-600 underline break-all">${window.location.origin}${data.publicUrl}</a>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Tu panel de administración privado</p>
+                                    <a href="${data.adminUrl}" target="_blank" class="text-xs font-black text-slate-800 underline break-all">${window.location.origin}${data.adminUrl}</a>
+                                </div>
+                            </div>
+                            <p class="text-[10px] font-semibold text-slate-500 text-center">¡Importante: Guarda el enlace administrativo en tus favoritos! Es la única forma de acceder a tu panel.</p>
+                        </div>
+                    `;
+                    resultEl.classList.remove('hidden');
+                }
+                showToast('Cuenta creada correctamente', 'success');
+            } catch (err) {
+                mostrarErrorRegistroLanding('Error de conexión al crear cuenta.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-70', 'cursor-wait');
+                    submitBtn.innerHTML = '<i class="fa-solid fa-store"></i> Guardar y crear catálogo';
+                }
+            }
+        }
+        window.registrarCuentaSaasLanding = registrarCuentaSaasLanding;
+
+        window.trialCountdownInterval = null;
+        function iniciarTrialCountdown(trialEndDateISO) {
+            if (window.trialCountdownInterval) {
+                clearInterval(window.trialCountdownInterval);
+                window.trialCountdownInterval = null;
+            }
+
+            const banner = document.getElementById('trial-countdown-banner');
+            const timerEl = document.getElementById('trial-countdown-timer');
+            if (!banner || !timerEl) return;
+
+            if (!trialEndDateISO) {
+                banner.classList.add('hidden');
+                return;
+            }
+
+            const targetDate = new Date(trialEndDateISO).getTime();
+            if (isNaN(targetDate)) {
+                banner.classList.add('hidden');
+                return;
+            }
+
+            function actualizarTimer() {
+                const now = new Date().getTime();
+                const diff = targetDate - now;
+
+                if (diff <= 0) {
+                    timerEl.innerText = "Expirado";
+                    banner.classList.remove('bg-amber-50', 'border-amber-200/60', 'text-amber-900');
+                    banner.classList.add('bg-rose-50', 'border-rose-200/60', 'text-rose-900');
+                    const badge = banner.querySelector('.bg-amber-500');
+                    if (badge) {
+                        badge.classList.remove('bg-amber-500');
+                        badge.classList.add('bg-rose-500');
+                    }
+                    clearInterval(window.trialCountdownInterval);
+                    window.trialCountdownInterval = null;
+                    return;
+                }
+
+                const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+
+                timerEl.innerText = `${dias}d ${horas}h ${minutos}m ${segundos}s`;
+            }
+
+            actualizarTimer();
+            banner.classList.remove('hidden');
+            banner.classList.add('flex');
+            window.trialCountdownInterval = setInterval(actualizarTimer, 1000);
+        }
+        window.iniciarTrialCountdown = iniciarTrialCountdown;
+
         async function iniciarApp() {
+            if (isLandingPage) {
+                cargarSoporteSaas();
+                if (isResetRoute && resetToken) {
+                    abrirAuthModal();
+                }
+                return;
+            }
+
             cargarSoporteSaas();
             if (isAdminRoute) {
                 const rutaAdminValida = await validarRutaAdmin();
                 if (!rutaAdminValida) {
-                    document.getElementById('client-view').classList.remove('hidden');
+                    const clientView = document.getElementById('client-view');
+                    if (clientView) clientView.classList.remove('hidden');
                     ocultarAuthModalInmediato();
                     await cargarConfiguracionPublica();
                     await cargarCategorias();

@@ -14,21 +14,25 @@ Configura el proyecto con:
 - Environment Variable:
   - `PUBLIC_BACKEND_URL=https://TU-BACKEND.railway.app`
 
-## Railway
+## Railway (Backend)
 
 Configura el servicio con:
 
 - Root Directory: `catalogo-backend`
 - Start Command: `npm start`
 - Healthcheck Path: `/health`
-- Environment Variables:
+- Environment Variables Obligatorias:
   - `NODE_ENV=production`
-  - `MONGODB_URI=...`
-  - `FRONTEND_URL=https://TU-FRONTEND.vercel.app`
-  - `CLOUDINARY_CLOUD_NAME=...`
+  - `MONGODB_URI=mongodb+srv://...`
+  - `FRONTEND_URL=https://TU-FRONTEND.vercel.app` (acepta varios separados por coma)
+  - `SUPER_ADMIN_USER=tu-usuario-superadmin`
+  - `SUPER_ADMIN_PASSWORD=tu-password-seguro`
+  
+- Environment Variables Opcionales:
+  - `SUPER_ADMIN_EMAIL=correo@ejemplo.com`
+  - `SUPER_ADMIN_NAME=Super Admin`
+  - `CLOUDINARY_CLOUD_NAME=...` (para subida de imágenes)
   - `CLOUDINARY_API_KEY=...`
   - `CLOUDINARY_API_SECRET=...`
-  - `RESEND_API_KEY=...` opcional para recuperación por correo
-  - `AUTH_EMAIL_FROM=...` opcional para recuperación por correo
 
-`FRONTEND_URL` acepta varios dominios separados por coma si necesitas previews o dominio propio.
+**Nota de Seguridad:** Asegúrate de configurar `SUPER_ADMIN_USER` y `SUPER_ADMIN_PASSWORD` en tu entorno de producción de Railway para proteger el panel principal del SaaS.

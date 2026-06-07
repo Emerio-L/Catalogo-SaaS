@@ -1,0 +1,301 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Plan {
+  id           String   @id @default(uuid())
+  name         String
+  monthlyPrice Decimal  @db.Decimal(10, 2)
+  trialDays    Int      @default(0)
+  graceDays    Int      @default(0)
+  productLimit Int?
+  features     String[] // Soportado de forma nativa por PostgreSQL
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenants      Tenant[]
+
+  @@index([isActive])
+}
+
+model Tenant {
+  id                 String              @id @default(uuid())
+  slug               String              @unique
+  nombre             String
+  descripcion        String              @default("")
+  ownerName          String              @default("")
+  email              String              @default("")
+  tipoNegocio        String              @default("personalizado")
+  logo               String              @default("")
+  colorPrimario      String              @default("#10b981")
+  whatsapp           String
+  adminAccessKey     String              @unique
+  activo             Boolean             @default(true)
+  status             String              @default("trial") // trial, active, pending_payment, suspended, deleted
+  planId             String?
+  plan               Plan?               @relation(fields: [planId], references: [id])
+  monthlyPrice       Decimal             @default(0.00) @db.Decimal(10, 2)
+  trialStartDate     DateTime?
+  trialEndDate       DateTime?
+  billingDay         Int?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  paymentDueDate     DateTime?
+  lastPaymentAt      DateTime?
+  suspendedAt        DateTime?
+  deletedAt          DateTime?
+  deletedReason      String              @default("")
+  creadoEn           DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  users              User[]
+  settings           Settings?
+  categories         Category[]
+  products           Product[]
+  orders             Order[]
+  payments           Payment[]
+  sessions           Session[]
+  passwordResetTokens PasswordResetToken[]
+  accountStatusLogs  AccountStatusLog[]
+  auditLogs          AuditLog[]
+
+  @@index([status])
+  @@index([planId])
+}
+
+model User {
+  id                  String              @id @default(uuid())
+  tenantId            String
+  tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nombre              String              @default("Administrador")
+  email               String
+  usuario             String
+  passwordHash        String
+  rol                 String              @default("owner") // super_admin, owner, admin, tenant_admin
+  activo              Boolean             @default(true)
+  mustChangePassword  Boolean             @default(false)
+  failedLoginAttempts Int                 @default(0)
+  lockedUntil         DateTime?
+  ultimoLogin         DateTime?
+  creadoEn            DateTime            @default(now())
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+  approvedPayments    Payment[]           @relation("ApprovedBy")
+  changedStatusLogs   AccountStatusLog[]
+  auditLogs           AuditLog[]
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, usuario])
+  @@index([tenantId])
+}
+
+model Settings {
+  id                     String   @id @default(uuid())
+  tenantId               String   @unique
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  whatsapp               String
+  colorPrimario          String   @default("#10b981")
+  logo                   String   @default("")
+  logoCloudinaryPublicId String   @default("")
+  logoShape              String   @default("rectangle") // rectangle, circle
+  catalogTitle           String   @default("Catalogo de productos")
+  tema                   String   @default("emerald")
+  theme                  Json?    // Guarda el theme flexible
+  mostrarBuscador        Boolean  @default(true)
+  mostrarCategorias      Boolean  @default(true)
+  mostrarDescripcion     Boolean  @default(true)
+  vistaPredeterminada    String   @default("grid")
+  monedaVisible          String   @default("GTQ")
+
+  @@index([tenantId])
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nombre    String
+  orden     Int       @default(999)
+  deletedAt DateTime?
+  products  Product[]
+
+  @@unique([tenantId, nombre])
+  @@index([tenantId])
+}
+
+model Product {
+  id                 String    @id @default(uuid())
+  tenantId           String
+  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  categoriaId        String?
+  category           Category? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  categoria          String?   // Guarda texto compatible con mongo
+  nombre             String
+  precio             Decimal   @db.Decimal(10, 2)
+  unidad             String?
+  unidadMedida       String?
+  imagen             String?
+  imagenUrl          String?
+  cloudinaryPublicId String?
+  activo             Boolean   @default(true)
+  orden              Int?
+  ordenVisualizacion Int       @default(999)
+  creadoEn           DateTime  @default(now())
+  deletedAt          DateTime?
+
+  @@index([tenantId])
+  @@index([categoriaId])
+  @@index([activo])
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  tenantId  String
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cliente   Json        // Estructura { nombre, telefono }
+  telefono  String?
+  productos OrderItem[]
+  total     Decimal     @db.Decimal(10, 2)
+  pdfUrl    String      @default("")
+  fecha     DateTime    @default(now())
+
+  @@index([tenantId])
+  @@index([fecha])
+}
+
+model OrderItem {
+  id       String  @id @default(uuid())
+  orderId  String
+  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  nombre   String
+  precio   Decimal @db.Decimal(10, 2)
+  cantidad Float
+  unidad   String
+
+  @@index([orderId])
+}
+
+model Payment {
+  id              String    @id @default(uuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  amount          Decimal   @db.Decimal(10, 2)
+  paymentMonth    String
+  paymentMethod   String    @default("")
+  receiptUrl      String    @default("")
+  status          String    @default("pendiente") // pendiente, aprobado, rechazado
+  paidAt          DateTime?
+  approvedAt      DateTime?
+  approvedById    String?
+  approvedBy      User?     @relation("ApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  rejectionReason String    @default("")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  ip        String    @default("")
+  creadoEn  DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Session {
+  id             String   @id @default(uuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash      String   @unique
+  expiresAt      DateTime
+  lastActivityAt DateTime @default(now())
+  ip             String   @default("")
+  userAgent      String   @default("")
+  creadoEn       DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([lastActivityAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tipo      String
+  ip        String   @default("")
+  userAgent String   @default("")
+  metadata  Json?
+  fecha     DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([fecha])
+}
+
+model AccountStatusLog {
+  id             String   @id @default(uuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  previousStatus String   @default("")
+  newStatus      String
+  reason         String   @default("")
+  changedById    String?
+  changedBy      User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model SaasSettings {
+  id                               String   @id @default("global")
+  key                              String   @unique @default("global")
+  supportWhatsapp                  String   @default("")
+  supportMessage                   String   @default("Hola, necesito ayuda con mi catalogo.")
+  emulatorUrl                      String   @default("")
+  emulatorEnabled                  Boolean  @default(false)
+  logoUrl                          String   @default("")
+  logoCloudinaryPublicId           String   @default("")
+  monthlyPrice                     Decimal  @default(50.00) @db.Decimal(10, 2)
+  freeTrialDays                    Int      @default(7)
+  logoAltText                      String   @default("SEDELYNK")
+  primaryColor                     String   @default("#7C3AED")
+  secondaryColor                   String   @default("#D946EF")
+  accentColor                      String   @default("#FF6B1A")
+  showPrice                        Boolean  @default(true)
+  platformName                     String   @default("sedelynk")
+  supportEmail                     String   @default("soporte@sedelynk.com")
+  supportUrl                       String   @default("https://soporte.sedelynk.com")
+  timezone                         String   @default("America/Guatemala")
+  currency                         String   @default("GTQ")
+  faviconUrl                       String   @default("")
+  landingHeroText                  String   @default("Crea tu tienda en línea, recibe pedidos y haz crecer tu negocio. Sin comisiones, sin complicaciones.")
+  landingTitle                     String   @default("Vende cualquier producto en línea por")
+  landingSubtitle                  String   @default("carrito y WhatsApp")
+  landingFaqs                      String   @default("[]")
+  notificationEmails               Boolean  @default(true)
+  notificationPaymentReminders     Boolean  @default(true)
+  notificationUpcomingExpirations  Boolean  @default(true)
+  notificationWelcomeMessages      Boolean  @default(true)
+  updatedAt                        DateTime @updatedAt
+}

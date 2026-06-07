@@ -1,4 +1,4 @@
-const Tenant = require('../models/Tenant');
+const { Tenant } = require('../db-compat');
 
 async function tenantMiddleware(req, res, next) {
     try {
@@ -8,6 +8,7 @@ async function tenantMiddleware(req, res, next) {
         }
 
         const tenant = await Tenant.findOne({ slug });
+
         if (!tenant) {
             return res.status(404).json({ error: 'Catalogo no encontrado' });
         }
@@ -16,7 +17,7 @@ async function tenantMiddleware(req, res, next) {
         }
 
         req.tenant = tenant;
-        req.tenantId = tenant._id;
+        req.tenantId = tenant.id;
         next();
     } catch (err) {
         next(err);
@@ -24,3 +25,4 @@ async function tenantMiddleware(req, res, next) {
 }
 
 module.exports = tenantMiddleware;
+

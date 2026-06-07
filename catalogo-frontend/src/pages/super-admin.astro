@@ -37,18 +37,17 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 </div>
             </form>
         </div>
-
         <div id="super-app" class="hidden min-h-screen lg:flex">
             <aside class="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-white/8 bg-[#081225] lg:flex lg:flex-col">
                 <div class="flex h-full flex-col p-5">
                     <div class="mb-8 flex items-center gap-3">
-                        <span class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-violet-600 text-xl shadow-lg shadow-violet-950/50">
-                            <img id="super-sidebar-logo" src="" alt="Logo SaaS" class="hidden h-full w-full object-cover">
-                            <i class="fa-solid fa-bag-shopping"></i>
+                        <span class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-[#0b1428] text-xl border border-white/10 shadow-lg">
+                            <img id="super-sidebar-logo" src="" alt="Logo SaaS" class="hidden h-full w-full object-contain p-1">
+                            <i id="super-sidebar-logo-fallback" class="fa-solid fa-bag-shopping text-violet-500"></i>
                         </span>
                         <div>
-                            <p class="text-base font-black">Mi SaaS</p>
-                            <p class="text-xs font-semibold text-slate-400">Panel Administrador</p>
+                            <p id="super-sidebar-brand-name" class="text-base font-black uppercase tracking-tight">Mi SaaS</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Super User</p>
                         </div>
                     </div>
                     <nav class="space-y-2">
@@ -57,7 +56,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <button onclick="setSuperTab('pagos')" data-super-tab="pagos" class="super-nav"><i class="fa-solid fa-wallet"></i><span>Pagos</span></button>
                         <button onclick="setSuperTab('planes')" data-super-tab="planes" class="super-nav"><i class="fa-solid fa-calendar-check"></i><span>Planes</span></button>
                         <button onclick="setSuperTab('trash')" data-super-tab="trash" class="super-nav"><i class="fa-solid fa-trash-can"></i><span>Trash</span></button>
-                        <button onclick="setSuperTab('soporte')" data-super-tab="soporte" class="super-nav"><i class="fa-solid fa-headset"></i><span>Soporte</span></button>
+                        <button onclick="setSuperTab('configuracion')" data-super-tab="configuracion" class="super-nav"><i class="fa-solid fa-gears"></i><span>Configuración</span></button>
                     </nav>
                     <div class="mt-auto border-t border-white/8 pt-5">
                         <div class="flex items-center gap-3">
@@ -71,7 +70,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     </div>
                 </div>
             </aside>
-
+ 
             <section class="min-h-screen flex-1 px-4 py-5 lg:ml-64 lg:px-9 lg:py-8">
                 <div class="mb-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -83,60 +82,108 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <span id="super-current-date"></span>
                     </div>
                 </div>
-
+ 
                 <div class="mb-5 flex gap-2 overflow-x-auto pb-1 lg:hidden">
                     <button onclick="setSuperTab('dashboard')" data-super-mobile-tab="dashboard" class="super-mobile-tab super-mobile-active">Dashboard</button>
                     <button onclick="setSuperTab('clientes')" data-super-mobile-tab="clientes" class="super-mobile-tab">Clientes</button>
                     <button onclick="setSuperTab('pagos')" data-super-mobile-tab="pagos" class="super-mobile-tab">Pagos</button>
                     <button onclick="setSuperTab('planes')" data-super-mobile-tab="planes" class="super-mobile-tab">Planes</button>
                     <button onclick="setSuperTab('trash')" data-super-mobile-tab="trash" class="super-mobile-tab">Trash</button>
-                    <button onclick="setSuperTab('soporte')" data-super-mobile-tab="soporte" class="super-mobile-tab">Soporte</button>
+                    <button onclick="setSuperTab('configuracion')" data-super-mobile-tab="configuracion" class="super-mobile-tab">Configuración</button>
                 </div>
 
                 <section id="super-section-dashboard" class="space-y-5">
-                    <div id="super-metrics" class="grid grid-cols-1 gap-5 md:grid-cols-3"></div>
+                    <div id="super-metrics" class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"></div>
                 </section>
 
                 <section id="super-section-clientes" class="hidden space-y-5">
                     <div class="super-panel">
-                        <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <h3 class="text-lg font-black">Clientes / Suscriptores</h3>
-                                <p class="text-sm font-semibold text-slate-400">Todos los negocios registrados en la base de datos.</p>
+                        <div class="mb-6 space-y-4">
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <h3 class="text-lg font-black text-white">Clientes / Suscriptores</h3>
+                                    <p class="text-sm font-semibold text-slate-400">Administra y filtra todos los negocios registrados en la plataforma.</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="exportTenantsCSV()" class="rounded-xl bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/30 px-4 py-2.5 text-xs font-black transition flex items-center gap-2">
+                                        <i class="fa-solid fa-file-csv text-sm"></i> Exportar CSV
+                                    </button>
+                                </div>
                             </div>
-                            <select id="tenant-status-filter" onchange="loadTenants()" class="super-input md:w-56">
-                                <option value="">Todos los estados</option>
-                                <option value="trial">En prueba gratis</option>
-                                <option value="active">Activos</option>
-                                <option value="pending_payment">Pago pendiente</option>
-                                <option value="suspended">Suspendidos</option>
-                            </select>
+                            
+                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-3 flex items-center text-slate-500">
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                    </span>
+                                    <input id="tenant-search-input" oninput="filterTenants()" type="text" class="super-input pl-9 text-xs" placeholder="Buscar negocio, propietario, email, whatsapp...">
+                                </div>
+                                <div>
+                                    <select id="tenant-status-filter" onchange="filterTenants()" class="super-input text-xs">
+                                        <option value="">Todos los estados</option>
+                                        <option value="trial">En prueba gratis</option>
+                                        <option value="active">Activos</option>
+                                        <option value="pending_payment">Pago pendiente</option>
+                                        <option value="suspended">Suspendidos</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <select id="tenant-plan-filter" onchange="filterTenants()" class="super-input text-xs">
+                                        <option value="">Todos los planes</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <button onclick="resetTenantsFilters()" class="w-full rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 text-slate-300 py-2.5 text-xs font-black transition">
+                                        Limpiar filtros
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 border-t border-white/5 pt-3">
+                                <div>
+                                    <label class="block">
+                                        <span class="mb-1 block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fecha Creación Desde</span>
+                                        <input id="tenant-created-start" type="date" onchange="filterTenants()" class="super-input text-xs py-1.5">
+                                    </label>
+                                </div>
+                                <div>
+                                    <label class="block">
+                                        <span class="mb-1 block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fecha Creación Hasta</span>
+                                        <input id="tenant-created-end" type="date" onchange="filterTenants()" class="super-input text-xs py-1.5">
+                                    </label>
+                                </div>
+                                <div>
+                                    <label class="block">
+                                        <span class="mb-1 block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Corte / Vence Desde</span>
+                                        <input id="tenant-payment-start" type="date" onchange="filterTenants()" class="super-input text-xs py-1.5">
+                                    </label>
+                                </div>
+                                <div>
+                                    <label class="block">
+                                        <span class="mb-1 block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Corte / Vence Hasta</span>
+                                        <input id="tenant-payment-end" type="date" onchange="filterTenants()" class="super-input text-xs py-1.5">
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full min-w-[1280px] text-left text-sm">
-                                <thead class="text-xs uppercase tracking-wider text-slate-500">
+
+                        <div class="overflow-x-auto rounded-xl border border-white/8 bg-[#0b1428]">
+                            <table class="w-full min-w-[900px] text-left text-sm border-collapse">
+                                <thead class="text-xs uppercase tracking-wider text-slate-500 bg-[#081225]">
                                     <tr>
                                         <th class="px-4 py-3">Negocio</th>
                                         <th class="px-4 py-3">Propietario</th>
-                                        <th class="px-4 py-3">WhatsApp</th>
-                                        <th class="px-4 py-3">Email</th>
+                                        <th class="px-4 py-3">Contacto</th>
                                         <th class="px-4 py-3">Plan</th>
                                         <th class="px-4 py-3">Estado</th>
-                                        <th class="px-4 py-3">Creación</th>
-                                        <th class="px-4 py-3">Inicio prueba</th>
-                                        <th class="px-4 py-3">Fin prueba</th>
-                                        <th class="px-4 py-3">Corte</th>
-                                        <th class="px-4 py-3">Límite pago</th>
-                                        <th class="px-4 py-3">Mensualidad</th>
-                                        <th class="px-4 py-3">Último pago</th>
-                                        <th class="px-4 py-3 text-right">Acciones</th>
+                                        <th class="px-4 py-3">Próximo Pago</th>
+                                        <th class="px-4 py-3 text-right sticky right-0 bg-[#081225] z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.3)]">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="super-tenants-body" class="divide-y divide-white/8"></tbody>
                             </table>
                         </div>
                     </div>
-                    <div id="super-tenant-detail" class="hidden super-panel"></div>
                 </section>
 
                 <section id="super-section-trash" class="hidden space-y-5">
@@ -174,13 +221,13 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                 <h3 class="text-lg font-black">Nuevo plan</h3>
                                 <p class="text-sm font-semibold text-slate-400">El precio queda guardado en base de datos.</p>
                             </div>
-                            <input id="plan-name" class="super-input" placeholder="Nombre del plan">
-                            <input id="plan-price" type="number" min="0" step="0.01" class="super-input" placeholder="Precio mensual">
+                            <input id="plan-name" class="super-input" placeholder="Nombre del plan" required>
+                            <input id="plan-price" type="number" min="0" step="0.01" class="super-input" placeholder="Precio mensual" required>
                             <div class="grid grid-cols-2 gap-3">
-                                <input id="plan-trial-days" type="number" min="0" step="1" class="super-input" placeholder="Días prueba">
-                                <input id="plan-grace-days" type="number" min="0" step="1" class="super-input" placeholder="Días gracia">
+                                <input id="plan-trial-days" type="number" min="0" step="1" class="super-input" placeholder="Días prueba" required>
+                                <input id="plan-grace-days" type="number" min="0" step="1" class="super-input" placeholder="Días gracia" required>
                             </div>
-                            <input id="plan-product-limit" type="number" min="0" step="1" class="super-input" placeholder="Límite de productos">
+                            <input id="plan-product-limit" type="number" min="0" step="1" class="super-input" placeholder="Límite de productos (vacío para ilimitado)">
                             <textarea id="plan-features" class="super-input min-h-24" placeholder="Funciones incluidas, una por línea"></textarea>
                             <button class="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-violet-950/40 transition hover:bg-violet-500">Crear plan</button>
                         </form>
@@ -194,53 +241,269 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     </div>
                 </section>
 
-                <section id="super-section-soporte" class="hidden space-y-5">
-                    <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-                        <form onsubmit="saveSaasSupport(event)" class="super-panel space-y-4">
-                            <div>
-                                <h3 class="text-lg font-black">Soporte del SaaS</h3>
-                                <p class="text-sm font-semibold text-slate-400">Este WhatsApp se muestra en el panel de todos tus suscriptores.</p>
-                            </div>
-                            <label class="block">
-                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">WhatsApp de soporte</span>
-                                <input id="support-whatsapp" class="super-input" placeholder="502XXXXXXXX">
-                            </label>
-                            <label class="block">
-                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Logo de tu SaaS</span>
-                                <input id="saas-logo-input" type="file" accept="image/*" class="super-input">
-                            </label>
-                            <label class="block">
-                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Mensaje predeterminado</span>
-                                <textarea id="support-message" class="super-input min-h-24" placeholder="Mensaje inicial para WhatsApp"></textarea>
-                            </label>
-                            <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
-                                <div class="mb-3 flex items-start justify-between gap-3">
+                <section id="super-section-configuracion" class="hidden space-y-5">
+                    <div class="grid gap-5 lg:grid-cols-[240px_1fr]">
+                        <div class="super-panel flex flex-row flex-wrap gap-2 lg:flex-col lg:items-stretch h-fit">
+                            <button onclick="setConfigSubTab('general')" data-config-tab="general" class="config-sub-tab config-sub-tab-active">
+                                <i class="fa-solid fa-globe mr-2"></i>General
+                            </button>
+                            <button onclick="setConfigSubTab('landing')" data-config-tab="landing" class="config-sub-tab">
+                                <i class="fa-solid fa-pager mr-2"></i>Landing Page
+                            </button>
+                            <button onclick="setConfigSubTab('users')" data-config-tab="users" class="config-sub-tab">
+                                <i class="fa-solid fa-users-gear mr-2"></i>Usuarios
+                            </button>
+                            <button onclick="setConfigSubTab('security')" data-config-tab="security" class="config-sub-tab">
+                                <i class="fa-solid fa-shield-halved mr-2"></i>Seguridad
+                            </button>
+                            <button onclick="setConfigSubTab('notifications')" data-config-tab="notifications" class="config-sub-tab">
+                                <i class="fa-solid fa-bell mr-2"></i>Notificaciones
+                            </button>
+                        </div>
+
+                        <div class="space-y-5">
+                            <div id="config-panel-general" class="config-panel space-y-5">
+                                <form onsubmit="saveSaasGeneralSettings(event)" class="super-panel space-y-4">
                                     <div>
-                                        <p class="text-sm font-black">Emulador futuro</p>
-                                        <p class="mt-1 text-xs font-semibold text-slate-400">Deja la ruta preparada; cuando construyas el emulador solo activas este acceso.</p>
+                                        <h3 class="text-lg font-black">Configuración General</h3>
+                                        <p class="text-sm font-semibold text-slate-400">Parámetros globales de funcionamiento de la plataforma.</p>
                                     </div>
-                                    <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-black text-slate-300">
-                                        <input id="emulator-enabled" type="checkbox" class="h-4 w-4 accent-violet-500">
-                                        Activo
-                                    </label>
-                                </div>
-                                <input id="emulator-url" class="super-input" placeholder="/emulador o URL completa">
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Nombre de la Plataforma</span>
+                                            <input id="config-platform-name" class="super-input" placeholder="sedelynk">
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Moneda</span>
+                                            <input id="config-currency" class="super-input" placeholder="GTQ">
+                                        </label>
+                                    </div>
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Email de Soporte</span>
+                                            <input id="config-support-email" type="email" class="super-input" placeholder="soporte@sedelynk.com">
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">URL de Soporte</span>
+                                            <input id="config-support-url" type="url" class="super-input" placeholder="https://soporte.sedelynk.com">
+                                        </label>
+                                    </div>
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Zona Horaria</span>
+                                            <input id="config-timezone" class="super-input" placeholder="America/Guatemala">
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Favicon URL</span>
+                                            <input id="config-favicon-url" type="url" class="super-input" placeholder="https://ejemplo.com/favicon.ico">
+                                        </label>
+                                    </div>
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">WhatsApp de soporte</span>
+                                            <input id="config-support-whatsapp" class="super-input" placeholder="502XXXXXXXX">
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Mensaje de WhatsApp</span>
+                                            <textarea id="config-support-message" class="super-input min-h-20" placeholder="Mensaje inicial para WhatsApp"></textarea>
+                                        </label>
+                                    </div>
+                                    <button class="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-violet-950/40 transition hover:bg-violet-500" type="submit">Guardar General</button>
+                                </form>
                             </div>
-                            <button class="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-violet-950/40 transition hover:bg-violet-500">Guardar soporte</button>
-                        </form>
-                        <div class="super-panel">
-                            <h3 class="text-lg font-black">Vista para suscriptores</h3>
-                            <div class="mt-5 rounded-3xl border border-white/8 bg-[#081225] p-5">
-                                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-300 text-xl">
-                                    <i class="fa-brands fa-whatsapp"></i>
+
+                            <div id="config-panel-landing" class="config-panel hidden space-y-5">
+                                <form onsubmit="saveSaasLandingSettings(event)" class="super-panel space-y-4">
+                                    <div>
+                                        <h3 class="text-lg font-black">Personalización de Landing Page</h3>
+                                        <p class="text-sm font-semibold text-slate-400">Edita la apariencia, costos y textos principales de tu landing page.</p>
+                                    </div>
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Título Principal Landing (Parte 1)</span>
+                                            <input id="config-landing-title" class="super-input" placeholder="Vende cualquier producto en línea por">
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Subtítulo Resaltado Landing (Parte 2)</span>
+                                            <input id="config-landing-subtitle" class="super-input" placeholder="carrito y WhatsApp">
+                                        </label>
+                                    </div>
+                                    <label class="block">
+                                        <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Texto Descriptivo Hero</span>
+                                        <textarea id="config-landing-hero-text" class="super-input min-h-20" placeholder="Crea tu tienda en línea..."></textarea>
+                                    </label>
+                                    
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Precio Mensual (Q)</span>
+                                            <input id="config-saas-monthly-price" type="number" min="0" class="super-input" placeholder="50">
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Días de Prueba Gratis</span>
+                                            <input id="config-saas-trial-days" type="number" min="0" class="super-input" placeholder="7">
+                                        </label>
+                                    </div>
+
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Logotipo (Imagen)</span>
+                                            <input id="config-saas-logo-input" type="file" accept="image/*" class="super-input">
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Texto Alternativo / Marca</span>
+                                            <input id="config-saas-logo-alt" type="text" class="super-input" placeholder="SEDELYNK">
+                                        </label>
+                                    </div>
+
+                                    <div class="grid gap-4 grid-cols-3">
+                                        <label class="block">
+                                            <span class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Color Primario</span>
+                                            <div class="flex items-center gap-2">
+                                                <input id="config-saas-primary-color" type="color" class="h-10 w-10 cursor-pointer rounded-lg border-0 bg-transparent" value="#7C3AED">
+                                                <span id="config-saas-primary-color-text" class="text-xs font-bold font-mono">#7C3AED</span>
+                                            </div>
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Color Secundario</span>
+                                            <div class="flex items-center gap-2">
+                                                <input id="config-saas-secondary-color" type="color" class="h-10 w-10 cursor-pointer rounded-lg border-0 bg-transparent" value="#D946EF">
+                                                <span id="config-saas-secondary-color-text" class="text-xs font-bold font-mono">#D946EF</span>
+                                            </div>
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Color Acento</span>
+                                            <div class="flex items-center gap-2">
+                                                <input id="config-saas-accent-color" type="color" class="h-10 w-10 cursor-pointer rounded-lg border-0 bg-transparent" value="#FF6B1A">
+                                                <span id="config-saas-accent-color-text" class="text-xs font-bold font-mono">#FF6B1A</span>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-black text-slate-300">
+                                        <input id="config-saas-show-price" type="checkbox" class="h-4 w-4 accent-violet-500" checked>
+                                        Mostrar precio y secciones de costo en la Landing Page
+                                    </label>
+
+                                    <div class="border-t border-white/8 pt-4">
+                                        <h4 class="mb-3 text-sm font-black text-slate-300">Preguntas Frecuentes (FAQs)</h4>
+                                        <div id="faq-list-container" class="space-y-3"></div>
+                                        <button type="button" onclick="addFaqItem()" class="mt-3 rounded-xl bg-white/8 px-4 py-2 text-xs font-black hover:bg-white/12 text-white">
+                                            <i class="fa-solid fa-plus mr-1"></i> Agregar Pregunta
+                                        </button>
+                                    </div>
+
+                                    <button class="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-violet-950/40 transition hover:bg-violet-500" type="submit">Guardar Landing</button>
+                                </form>
+                            </div>
+
+                            <div id="config-panel-users" class="config-panel hidden space-y-5">
+                                <div class="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
+                                    <form onsubmit="createSuperAdminUser(event)" class="super-panel space-y-4 h-fit">
+                                        <div>
+                                            <h3 class="text-base font-black">Nuevo Super Administrador</h3>
+                                            <p class="text-xs font-semibold text-slate-400">Registra un nuevo usuario con acceso total a este panel.</p>
+                                        </div>
+                                        <label class="block">
+                                            <span class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Nombre Completo</span>
+                                            <input id="new-user-nombre" class="super-input" placeholder="Nombre completo" required>
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Usuario / Username</span>
+                                            <input id="new-user-usuario" class="super-input" placeholder="Nombre de usuario" required>
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Email</span>
+                                            <input id="new-user-email" type="email" class="super-input" placeholder="correo@ejemplo.com" required>
+                                        </label>
+                                        <label class="block">
+                                            <span class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Contraseña</span>
+                                            <input id="new-user-password" type="password" class="super-input" placeholder="Mínimo 8 caracteres, 1 número, 1 mayúscula" required>
+                                        </label>
+                                        <p id="new-user-error" class="hidden rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-200"></p>
+                                        <p id="new-user-success" class="hidden rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-200"></p>
+                                        <button class="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-violet-950/40 transition hover:bg-violet-500" type="submit">Crear Usuario</button>
+                                    </form>
+                                    <div class="super-panel">
+                                        <h3 class="mb-3 text-base font-black">Administradores del Sistema</h3>
+                                        <div class="overflow-x-auto rounded-xl border border-white/8 bg-[#0b1428]">
+                                            <table class="w-full text-left text-sm">
+                                                <thead class="text-xs uppercase tracking-wider text-slate-500 bg-[#081225]">
+                                                    <tr>
+                                                        <th class="px-3 py-2">Nombre</th>
+                                                        <th class="px-3 py-2">Usuario</th>
+                                                        <th class="px-3 py-2">Email</th>
+                                                        <th class="px-3 py-2 text-right">Acción</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="super-users-table-body" class="divide-y divide-white/8"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
-                                <p class="text-sm font-extrabold text-white">Soporte por WhatsApp</p>
-                                <p class="mt-1 text-xs font-semibold text-slate-400">Ayuda para usar el sistema.</p>
-                                <p id="support-preview-whatsapp" class="mt-4 text-sm font-black text-emerald-300">Sin WhatsApp configurado</p>
-                                <div class="mt-4 grid gap-2">
-                                    <button type="button" class="rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white">Abrir WhatsApp</button>
-                                    <button type="button" class="rounded-2xl bg-white/8 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-300">Ver emulador</button>
-                                </div>
+                            </div>
+
+                            <div id="config-panel-security" class="config-panel hidden space-y-5">
+                                <form onsubmit="changeSuperAdminPassword(event)" class="super-panel max-w-xl space-y-4">
+                                    <div>
+                                        <h3 class="text-lg font-black">Seguridad y Contraseña</h3>
+                                        <p class="text-sm font-semibold text-slate-400">Actualiza tu contraseña de acceso. Se cerrará la sesión al guardarla.</p>
+                                    </div>
+                                    <label class="block">
+                                        <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Contraseña Actual</span>
+                                        <input id="change-pass-current" type="password" class="super-input" placeholder="Tu contraseña actual" required autocomplete="current-password">
+                                    </label>
+                                    <label class="block">
+                                        <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Nueva Contraseña</span>
+                                        <input id="change-pass-new" type="password" class="super-input" placeholder="Nueva contraseña (min 8 caracteres, 1 num, 1 mayus)" required autocomplete="new-password">
+                                    </label>
+                                    <label class="block">
+                                        <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Confirmar Nueva Contraseña</span>
+                                        <input id="change-pass-confirm" type="password" class="super-input" placeholder="Confirma tu nueva contraseña" required autocomplete="new-password">
+                                    </label>
+                                    <p id="change-pass-error" class="hidden rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-bold text-rose-200"></p>
+                                    <p id="change-pass-success" class="hidden rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-200"></p>
+                                    <button class="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-violet-950/40 transition hover:bg-violet-500" type="submit">Cambiar Contraseña</button>
+                                </form>
+                            </div>
+
+                            <div id="config-panel-notifications" class="config-panel hidden space-y-5">
+                                <form onsubmit="saveSaasNotificationsSettings(event)" class="super-panel max-w-xl space-y-4">
+                                    <div>
+                                        <h3 class="text-lg font-black">Alertas y Notificaciones</h3>
+                                        <p class="text-sm font-semibold text-slate-400">Controla el envío de correos y alertas automáticas a clientes.</p>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <label class="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-4 cursor-pointer hover:bg-white/8 transition">
+                                            <input id="notify-emails" type="checkbox" class="mt-1 h-4 w-4 accent-violet-500">
+                                            <div>
+                                                <span class="block text-sm font-black text-white">Notificaciones por Correo Electrónico</span>
+                                                <span class="text-xs font-semibold text-slate-400">Activar/Desactivar el envío de correos del sistema.</span>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-4 cursor-pointer hover:bg-white/8 transition">
+                                            <input id="notify-reminders" type="checkbox" class="mt-1 h-4 w-4 accent-violet-500">
+                                            <div>
+                                                <span class="block text-sm font-black text-white">Recordatorios de Pago</span>
+                                                <span class="text-xs font-semibold text-slate-400">Enviar alertas automáticas cuando se acerque la fecha de corte.</span>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-4 cursor-pointer hover:bg-white/8 transition">
+                                            <input id="notify-expirations" type="checkbox" class="mt-1 h-4 w-4 accent-violet-500">
+                                            <div>
+                                                <span class="block text-sm font-black text-white">Vencimientos Próximos</span>
+                                                <span class="text-xs font-semibold text-slate-400">Notificar a los administradores sobre clientes que están a punto de vencer.</span>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-4 cursor-pointer hover:bg-white/8 transition">
+                                            <input id="notify-welcome" type="checkbox" class="mt-1 h-4 w-4 accent-violet-500">
+                                            <div>
+                                                <span class="block text-sm font-black text-white">Mensaje de Bienvenida</span>
+                                                <span class="text-xs font-semibold text-slate-400">Enviar correo automatizado con credenciales de acceso al registrarse un negocio.</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <button class="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-violet-950/40 transition hover:bg-violet-500" type="submit">Guardar Notificaciones</button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -299,7 +562,112 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 </form>
             </div>
         </div>
+
+        <div id="super-drawer-backdrop" onclick="closeTenantDrawer()" class="fixed inset-0 z-40 hidden bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0"></div>
+        <div id="super-tenant-drawer" class="fixed inset-y-0 right-0 z-50 w-full max-w-[550px] translate-x-full border-l border-white/10 bg-[#070e1c] p-6 shadow-2xl transition-transform duration-300 ease-in-out flex flex-col">
+            <div class="mb-5 flex items-start justify-between gap-3 border-b border-white/8 pb-4">
+                <div>
+                    <h3 id="drawer-business-name" class="text-xl font-black text-white">Negocio</h3>
+                    <div id="drawer-owner-info" class="text-sm font-semibold text-slate-400 mt-1">Propietario · Email</div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="drawer-status-badge"></span>
+                    <button onclick="openResetCredentialsModal()" title="Resetear credenciales del cliente" class="flex h-10 items-center gap-1.5 px-3 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-black transition hover:bg-amber-500/25 hover:text-amber-200" type="button">
+                        <i class="fa-solid fa-key"></i><span class="hidden sm:inline">Reset</span>
+                    </button>
+                    <button onclick="closeTenantDrawer()" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/8 text-slate-300 transition hover:bg-white/12 hover:text-white" type="button">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto pr-1 space-y-6">
+                <div class="grid grid-cols-2 gap-3" id="drawer-stats-grid"></div>
+                
+                <div class="space-y-4">
+                    <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
+                        <h4 class="mb-3 text-sm font-black text-violet-300"><i class="fa-solid fa-wallet mr-2"></i>Historial de Pagos</h4>
+                        <div id="drawer-history-payments" class="space-y-2 text-xs font-semibold text-slate-300 max-h-48 overflow-y-auto pr-1"></div>
+                    </div>
+
+                    <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
+                        <h4 class="mb-3 text-sm font-black text-violet-300"><i class="fa-solid fa-clock-rotate-left mr-2"></i>Cambios de Estado</h4>
+                        <div id="drawer-history-status" class="space-y-2 text-xs font-semibold text-slate-300 max-h-48 overflow-y-auto pr-1"></div>
+                    </div>
+
+                    <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
+                        <h4 class="mb-3 text-sm font-black text-violet-300"><i class="fa-solid fa-hexagon-exclamation mr-2"></i>Suspensiones</h4>
+                        <div id="drawer-history-suspensions" class="space-y-2 text-xs font-semibold text-slate-300 max-h-48 overflow-y-auto pr-1"></div>
+                    </div>
+
+                    <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
+                        <h4 class="mb-3 text-sm font-black text-violet-300"><i class="fa-regular fa-file-pdf mr-2"></i>Comprobantes de Pago</h4>
+                        <div id="drawer-history-receipts" class="space-y-2 text-xs font-semibold text-slate-300 max-h-48 overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
+
+    <!-- ── RESET CREDENTIALS MODAL ──────────────────────────────────────── -->
+    <div id="reset-creds-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-md rounded-3xl border border-white/10 bg-[#0d1526] shadow-2xl p-6 space-y-5 relative">
+            <button onclick="closeResetCredentialsModal()" class="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-slate-400 transition hover:bg-white/12 hover:text-white" type="button">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400 text-xl">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-white">Reset de Credenciales</h3>
+                        <p class="text-xs font-semibold text-slate-400">Actualiza los accesos del cliente</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs font-semibold text-amber-300 flex items-start gap-2">
+                <i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i>
+                <span>Al guardar, el cliente <strong>deberá cambiar su contraseña</strong> la próxima vez que inicie sesión. Completa solo los campos que deseas cambiar.</span>
+            </div>
+
+            <div id="reset-creds-error" class="hidden rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-300"></div>
+            <div id="reset-creds-success" class="hidden rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-300"></div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-400">Nuevo usuario (opcional)</label>
+                    <input type="text" id="reset-creds-usuario" placeholder="Ej: juanlopez" autocomplete="off"
+                        class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-400">Nuevo correo (opcional)</label>
+                    <input type="email" id="reset-creds-email" placeholder="nuevo@correo.com" autocomplete="off"
+                        class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-400">Contraseña temporal (opcional, mín. 8 caracteres)</label>
+                    <input type="text" id="reset-creds-password" placeholder="Contraseña temporal segura" autocomplete="new-password"
+                        class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10">
+                    <p class="mt-1.5 text-[10px] font-semibold text-slate-500">
+                        <i class="fa-solid fa-shield-halved mr-1 text-slate-600"></i>
+                        Se mostrará en texto plano para que puedas compartirla con el cliente de forma segura.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-1">
+                <button onclick="closeResetCredentialsModal()" class="flex-1 rounded-2xl border border-white/10 bg-white/5 py-3 text-xs font-black text-slate-300 transition hover:bg-white/10" type="button">
+                    Cancelar
+                </button>
+                <button id="reset-creds-submit" onclick="submitResetCredentials()" class="flex-1 rounded-2xl bg-amber-500 py-3 text-xs font-black text-black transition hover:bg-amber-400 flex items-center justify-center gap-1.5" type="button">
+                    <i class="fa-solid fa-key"></i> Resetear credenciales
+                </button>
+            </div>
+        </div>
+    </div>
 
     <style is:inline>
         body { padding-bottom: 0 !important; background: #020816; }
@@ -316,12 +684,30 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         .super-input { width: 100%; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.055); padding: 0.82rem 1rem; color: #fff; font-size: 0.86rem; font-weight: 800; outline: none; }
         .super-input:focus { border-color: rgba(124,58,237,0.9); box-shadow: 0 0 0 4px rgba(124,58,237,0.14); }
         .super-input::placeholder { color: #64748b; }
+        
+        .config-sub-tab { display: flex; align-items: center; border-radius: 0.75rem; padding: 0.75rem 1rem; color: #cbd5e1; font-size: 0.85rem; font-weight: 800; transition: 0.2s; text-align: left; }
+        .config-sub-tab:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .config-sub-tab-active { background: rgba(124, 58, 237, 0.15); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.3); }
+
         .status-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.35rem 0.7rem; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
         .status-trial { background: rgba(37, 99, 235, 0.14); color: #60a5fa; }
         .status-active { background: rgba(16, 185, 129, 0.14); color: #34d399; }
         .status-pending_payment { background: rgba(249, 115, 22, 0.14); color: #fb923c; }
         .status-suspended { background: rgba(244, 63, 94, 0.14); color: #fb7185; }
         .status-deleted { background: rgba(148, 163, 184, 0.12); color: #cbd5e1; }
+        
+        .overflow-x-auto {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
+        
+        .faq-item {
+            transition: all 0.2s ease-in-out;
+        }
+        .faq-item:hover {
+            border-color: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+        }
     </style>
 
     <script is:inline>
@@ -333,13 +719,20 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         );
         const SUPER_API = `${BACKEND_URL}/api/super-admin`;
         const SUPER_TOKEN_KEY = 'catalogo_super_admin_dev_session';
+        
         let superDashboard = null;
         let superTenants = [];
+        let filteredTenantsList = [];
         let superPayments = [];
         let superPlans = [];
         let superTrash = [];
         let superSettings = null;
         let selectedTenantId = '';
+        
+        let currentConfigSubTab = 'general';
+        let faqList = [];
+        let superAdminUsers = [];
+        let currentSuperUser = null;
 
         function authHeaders() {
             const token = sessionStorage.getItem(SUPER_TOKEN_KEY);
@@ -413,6 +806,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const data = await res.json().catch(() => ({}));
             if (!res.ok) return showSuperLogin(data.error || 'No se pudo iniciar sesión');
             if (data.devSessionToken) sessionStorage.setItem(SUPER_TOKEN_KEY, data.devSessionToken);
+            currentSuperUser = data.user;
             showSuperApp(data.user);
             await loadSuperData();
         }
@@ -424,7 +818,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         function setSuperTab(tab) {
-            ['dashboard', 'clientes', 'pagos', 'planes', 'trash', 'soporte'].forEach((name) => {
+            ['dashboard', 'clientes', 'pagos', 'planes', 'trash', 'configuracion'].forEach((name) => {
                 document.getElementById(`super-section-${name}`)?.classList.toggle('hidden', name !== tab);
                 document.querySelector(`[data-super-tab="${name}"]`)?.classList.toggle('super-nav-active', name === tab);
                 document.querySelector(`[data-super-mobile-tab="${name}"]`)?.classList.toggle('super-mobile-active', name === tab);
@@ -433,27 +827,50 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             if (tab === 'pagos') loadPayments();
             if (tab === 'planes') loadPlans();
             if (tab === 'trash') loadTrash();
-            if (tab === 'soporte') loadSaasSettings();
+            if (tab === 'configuracion') {
+                loadSaasSettings();
+                setConfigSubTab(currentConfigSubTab);
+            }
         }
 
         function renderMetrics() {
+            const totalClientes = superTenants.length;
+            const activos = superTenants.filter(t => t.status === 'active').length;
+            const pruebaGratis = superTenants.filter(t => t.status === 'trial').length;
+            
+            const now = new Date();
+            const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const vencenEstaSemana = superTenants.filter(t => {
+                if (t.status === 'deleted' || t.status === 'suspended') return false;
+                const targetDateStr = t.status === 'trial' ? t.trialEndDate : t.currentPeriodEnd;
+                if (!targetDateStr) return false;
+                const targetDate = new Date(targetDateStr);
+                return targetDate >= now && targetDate <= oneWeekFromNow;
+            }).length;
+
+            const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const ingresosMes = superPayments
+                .filter(p => p.status === 'aprobado' && p.paymentMonth === currentYearMonth)
+                .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
             const items = [
-                { label: 'Clientes activos', value: superDashboard?.clientesActivos || 0, icon: 'fa-users', color: 'text-violet-400', bg: 'bg-violet-600/25', action: 'Ver clientes', tab: 'clientes' },
-                { label: 'En prueba gratis', value: superDashboard?.clientesPruebaGratis || 0, icon: 'fa-clock', color: 'text-blue-400', bg: 'bg-blue-600/20', action: 'Ver clientes', tab: 'clientes' },
-                { label: 'Pagos pendientes', value: superDashboard?.pagosPendientes || 0, icon: 'fa-wallet', color: 'text-orange-400', bg: 'bg-orange-600/20', action: 'Ver pagos', tab: 'pagos' },
-                { label: 'Cuentas suspendidas', value: superDashboard?.cuentasSuspendidas || 0, icon: 'fa-hexagon-exclamation', color: 'text-rose-400', bg: 'bg-rose-600/20', action: 'Ver clientes', tab: 'clientes', wide: true },
-                { label: 'Récord de cuentas eliminadas', value: superDashboard?.cuentasEliminadas || 0, icon: 'fa-trash-can', color: 'text-pink-400', bg: 'bg-pink-600/20', action: 'Abrir trash', tab: 'trash', wide: true }
+                { label: 'Total Clientes', value: totalClientes, icon: 'fa-users', color: 'text-violet-400', bg: 'bg-violet-600/25', action: 'Ver clientes', tab: 'clientes' },
+                { label: 'Clientes Activos', value: activos, icon: 'fa-user-check', color: 'text-emerald-400', bg: 'bg-emerald-600/20', action: 'Ver clientes', tab: 'clientes' },
+                { label: 'En prueba gratis', value: pruebaGratis, icon: 'fa-clock', color: 'text-blue-400', bg: 'bg-blue-600/20', action: 'Ver clientes', tab: 'clientes' },
+                { label: 'Vencen esta semana', value: vencenEstaSemana, icon: 'fa-calendar-day', color: 'text-orange-400', bg: 'bg-orange-600/20', action: 'Ver clientes', tab: 'clientes' },
+                { label: 'Ingresos del mes', value: fmtMoney(ingresosMes), icon: 'fa-wallet', color: 'text-pink-400', bg: 'bg-pink-600/20', action: 'Ver pagos', tab: 'pagos', wide: true }
             ];
+
             document.getElementById('super-metrics').innerHTML = items.map(item => `
-                <article class="metric-card ${item.wide ? 'metric-wide md:col-span-3 xl:col-span-1' : ''}">
+                <article class="metric-card ${item.wide ? 'metric-wide md:col-span-2 lg:col-span-3 xl:col-span-1' : ''}">
                     <div class="${item.wide ? 'flex items-center gap-6' : 'flex h-full flex-col items-center justify-center text-center'}">
                         <span class="flex h-16 w-16 items-center justify-center rounded-2xl ${item.bg} ${item.color} text-3xl">
                             <i class="fa-solid ${item.icon}"></i>
                         </span>
                         <div class="${item.wide ? '' : 'mt-5'}">
                             <p class="text-sm font-black text-slate-300">${item.label}</p>
-                            <p class="mt-3 text-5xl font-black ${item.color}">${item.value}</p>
-                            <button onclick="setSuperTab('${item.tab}')" class="mt-4 text-sm font-black ${item.color}">${item.action} <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                            <p class="${item.wide ? 'text-3xl' : 'text-5xl'} mt-3 font-black ${item.color}">${item.value}</p>
+                            <button onclick="setSuperTab('${item.tab}')" class="mt-4 text-xs font-black ${item.color} hover:underline">${item.action} <i class="fa-solid fa-arrow-right ml-1"></i></button>
                         </div>
                     </div>
                 </article>
@@ -468,56 +885,191 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         async function loadTenants() {
-            const status = document.getElementById('tenant-status-filter')?.value || '';
-            const res = await superFetch(`/tenants${status ? `?status=${encodeURIComponent(status)}` : ''}`);
+            const res = await superFetch('/tenants');
             if (!res.ok) return;
             superTenants = await res.json();
+            populatePlanFilterOptions();
+            filterTenants();
+        }
+
+        function filterTenants() {
+            const searchQuery = (document.getElementById('tenant-search-input')?.value || '').toLowerCase().trim();
+            const statusFilter = document.getElementById('tenant-status-filter')?.value || '';
+            const planFilter = document.getElementById('tenant-plan-filter')?.value || '';
+            const createdStart = document.getElementById('tenant-created-start')?.value || '';
+            const createdEnd = document.getElementById('tenant-created-end')?.value || '';
+            const paymentStart = document.getElementById('tenant-payment-start')?.value || '';
+            const paymentEnd = document.getElementById('tenant-payment-end')?.value || '';
+
+            filteredTenantsList = superTenants.filter(tenant => {
+                if (searchQuery) {
+                    const matchName = String(tenant.businessName || '').toLowerCase().includes(searchQuery);
+                    const matchSlug = String(tenant.slug || '').toLowerCase().includes(searchQuery);
+                    const matchEmail = String(tenant.email || '').toLowerCase().includes(searchQuery);
+                    const matchWhatsapp = String(tenant.whatsapp || '').toLowerCase().includes(searchQuery);
+                    const matchOwner = String(tenant.ownerName || '').toLowerCase().includes(searchQuery);
+                    if (!matchName && !matchSlug && !matchEmail && !matchWhatsapp && !matchOwner) {
+                        return false;
+                    }
+                }
+
+                if (statusFilter && tenant.status !== statusFilter) {
+                    return false;
+                }
+
+                if (planFilter) {
+                    const planId = tenant.plan?.id || tenant.planId;
+                    if (String(planId) !== String(planFilter)) {
+                        return false;
+                    }
+                }
+
+                if (createdStart) {
+                    const dateVal = new Date(tenant.createdAt);
+                    const startVal = new Date(createdStart);
+                    dateVal.setHours(0,0,0,0);
+                    startVal.setHours(0,0,0,0);
+                    if (dateVal < startVal) return false;
+                }
+                if (createdEnd) {
+                    const dateVal = new Date(tenant.createdAt);
+                    const endVal = new Date(createdEnd);
+                    dateVal.setHours(0,0,0,0);
+                    endVal.setHours(0,0,0,0);
+                    if (dateVal > endVal) return false;
+                }
+
+                const paymentDateStr = tenant.status === 'trial' ? tenant.trialEndDate : tenant.currentPeriodEnd;
+                if (paymentStart && paymentDateStr) {
+                    const dateVal = new Date(paymentDateStr);
+                    const startVal = new Date(paymentStart);
+                    dateVal.setHours(0,0,0,0);
+                    startVal.setHours(0,0,0,0);
+                    if (dateVal < startVal) return false;
+                }
+                if (paymentEnd && paymentDateStr) {
+                    const dateVal = new Date(paymentDateStr);
+                    const endVal = new Date(paymentEnd);
+                    dateVal.setHours(0,0,0,0);
+                    endVal.setHours(0,0,0,0);
+                    if (dateVal > endVal) return false;
+                }
+
+                return true;
+            });
+
             renderTenants();
+            renderMetrics();
+        }
+
+        function resetTenantsFilters() {
+            if (document.getElementById('tenant-search-input')) document.getElementById('tenant-search-input').value = '';
+            if (document.getElementById('tenant-status-filter')) document.getElementById('tenant-status-filter').value = '';
+            if (document.getElementById('tenant-plan-filter')) document.getElementById('tenant-plan-filter').value = '';
+            if (document.getElementById('tenant-created-start')) document.getElementById('tenant-created-start').value = '';
+            if (document.getElementById('tenant-created-end')) document.getElementById('tenant-created-end').value = '';
+            if (document.getElementById('tenant-payment-start')) document.getElementById('tenant-payment-start').value = '';
+            if (document.getElementById('tenant-payment-end')) document.getElementById('tenant-payment-end').value = '';
+            filterTenants();
+        }
+
+        function populatePlanFilterOptions() {
+            const select = document.getElementById('tenant-plan-filter');
+            if (!select) return;
+            const currentSelected = select.value;
+            select.innerHTML = '<option value="">Todos los planes</option>' + 
+                superPlans.map(plan => `<option value="${plan._id}">${plan.name}</option>`).join('');
+            select.value = currentSelected;
         }
 
         function renderTenants() {
             const body = document.getElementById('super-tenants-body');
-            if (!superTenants.length) {
-                body.innerHTML = `<tr><td colspan="14" class="px-4 py-10 text-center text-sm font-bold text-slate-400">No hay clientes para este filtro.</td></tr>`;
+            if (!body) return;
+            if (!filteredTenantsList.length) {
+                body.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-sm font-bold text-slate-400">No hay clientes para este filtro.</td></tr>`;
                 return;
             }
-            body.innerHTML = superTenants.map((tenant) => `
-                <tr class="text-slate-300">
-                    <td class="px-4 py-4"><div class="font-black text-white">${tenant.businessName}</div><div class="text-xs text-slate-500">${tenant.slug}</div></td>
-                    <td class="px-4 py-4">${tenant.ownerName || 'Sin propietario'}</td>
-                    <td class="px-4 py-4">${tenant.whatsapp || 'Sin WhatsApp'}</td>
-                    <td class="px-4 py-4">${tenant.email || 'Sin email'}</td>
-                    <td class="px-4 py-4">${tenant.planName}</td>
-                    <td class="px-4 py-4">${statusBadge(tenant.status, tenant.statusLabel)}</td>
-                    <td class="px-4 py-4">${fmtDate(tenant.createdAt)}</td>
-                    <td class="px-4 py-4">${fmtDate(tenant.trialStartDate)}</td>
-                    <td class="px-4 py-4">${fmtDate(tenant.trialEndDate)}</td>
-                    <td class="px-4 py-4">${fmtDate(tenant.currentPeriodEnd)}</td>
-                    <td class="px-4 py-4">${fmtDate(tenant.paymentDueDate)}</td>
-                    <td class="px-4 py-4 font-black text-white">${fmtMoney(tenant.monthlyPrice)}</td>
-                    <td class="px-4 py-4">${tenant.lastPayment ? fmtDate(tenant.lastPayment.paidAt || tenant.lastPayment.approvedAt) : 'Sin pagos'}</td>
-                    <td class="px-4 py-4 text-right">
-                        <div class="flex flex-wrap justify-end gap-2">
-                            <button onclick="loadTenantDetail('${tenant.id}')" class="rounded-xl bg-white/8 px-3 py-2 text-xs font-black transition hover:bg-white/12">Ver</button>
-                            <button onclick="openTenantPaymentModal('${tenant.id}')" class="rounded-xl bg-blue-600 px-3 py-2 text-xs font-black transition hover:bg-blue-500">Confirmar pago</button>
-                            ${tenant.status === 'active'
-                                ? `<button onclick="updateTenantStatus('${tenant.id}', 'suspended')" class="rounded-xl bg-rose-600/90 px-3 py-2 text-xs font-black transition hover:bg-rose-500">Suspender</button>`
-                                : `<button onclick="updateTenantStatus('${tenant.id}', 'active')" class="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black transition hover:bg-emerald-500">Activar</button>`
-                            }
-                            ${tenant.status !== 'deleted'
-                                ? `<button onclick="openTenantCancelModal('${tenant.id}')" class="rounded-xl bg-white/8 px-3 py-2 text-xs font-black text-rose-200 transition hover:bg-rose-500/20">Cancelar</button>`
-                                : `<button onclick="updateTenantStatus('${tenant.id}', 'active')" class="rounded-xl bg-blue-600 px-3 py-2 text-xs font-black transition hover:bg-blue-500">Restaurar</button>`
-                            }
-                            <button onclick="openTenantPlanModal('${tenant.id}')" class="rounded-xl bg-violet-600 px-3 py-2 text-xs font-black transition hover:bg-violet-500">Cambiar plan</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+            body.innerHTML = filteredTenantsList.map((tenant) => {
+                const nextPaymentDate = tenant.status === 'trial' ? tenant.trialEndDate : tenant.currentPeriodEnd;
+                const contactHtml = `
+                    <div class="flex flex-col gap-1 text-xs">
+                        ${tenant.whatsapp ? `<a href="https://wa.me/${tenant.whatsapp}" target="_blank" class="hover:text-emerald-400 transition inline-flex items-center gap-1 font-bold"><i class="fa-brands fa-whatsapp text-emerald-400"></i> ${tenant.whatsapp}</a>` : '<span class="text-slate-500 font-semibold">Sin WhatsApp</span>'}
+                        ${tenant.email ? `<a href="mailto:${tenant.email}" class="hover:text-blue-400 transition inline-flex items-center gap-1 font-semibold text-slate-400"><i class="fa-regular fa-envelope text-slate-500"></i> ${tenant.email}</a>` : '<span class="text-slate-500 font-semibold">Sin email</span>'}
+                    </div>
+                `;
+
+                return `
+                    <tr class="text-slate-300 hover:bg-white/5 transition duration-150">
+                        <td class="px-4 py-4">
+                            <div class="font-black text-white">${tenant.businessName}</div>
+                            <div class="text-xs font-semibold text-violet-400">${tenant.slug}</div>
+                        </td>
+                        <td class="px-4 py-4 font-bold text-slate-200">${tenant.ownerName || 'Sin propietario'}</td>
+                        <td class="px-4 py-4">${contactHtml}</td>
+                        <td class="px-4 py-4">
+                            <div class="font-black text-white">${tenant.planName}</div>
+                            <div class="text-xs font-semibold text-slate-400">${fmtMoney(tenant.monthlyPrice)} / mes</div>
+                        </td>
+                        <td class="px-4 py-4">${statusBadge(tenant.status, tenant.statusLabel)}</td>
+                        <td class="px-4 py-4 font-semibold text-slate-300">${fmtDate(nextPaymentDate)}</td>
+                        <td class="px-4 py-4 text-right sticky right-0 bg-[#0b1428] z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.3)]">
+                            <div class="flex flex-wrap justify-end gap-1">
+                                <button onclick="openTenantDrawer('${tenant.id}')" class="rounded-xl bg-white/8 px-2.5 py-1.5 text-xs font-black transition hover:bg-white/12 text-white" title="Ver detalle"><i class="fa-regular fa-eye"></i> Ver</button>
+                                <button onclick="openTenantPaymentModal('${tenant.id}')" class="rounded-xl bg-blue-600 px-2.5 py-1.5 text-xs font-black transition hover:bg-blue-500 text-white" title="Confirmar pago"><i class="fa-solid fa-receipt"></i> Pago</button>
+                                ${tenant.status === 'active'
+                                    ? `<button onclick="updateTenantStatus('${tenant.id}', 'suspended')" class="rounded-xl bg-rose-600/20 text-rose-300 border border-rose-500/20 px-2.5 py-1.5 text-xs font-black transition hover:bg-rose-600 hover:text-white" title="Suspender cuenta"><i class="fa-solid fa-ban"></i> Suspender</button>`
+                                    : `<button onclick="updateTenantStatus('${tenant.id}', 'active')" class="rounded-xl bg-emerald-600 px-2.5 py-1.5 text-xs font-black transition hover:bg-emerald-500 text-white" title="Activar cuenta"><i class="fa-solid fa-check"></i> Activar</button>`
+                                }
+                                ${tenant.status !== 'deleted'
+                                    ? `<button onclick="openTenantCancelModal('${tenant.id}')" class="rounded-xl bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs font-black text-rose-400 transition hover:bg-rose-600 hover:text-white" title="Cancelar cuenta"><i class="fa-regular fa-trash-can"></i> Cancelar</button>`
+                                    : `<button onclick="updateTenantStatus('${tenant.id}', 'active')" class="rounded-xl bg-blue-600 px-2.5 py-1.5 text-xs font-black transition hover:bg-blue-500 text-white" title="Restaurar cuenta"><i class="fa-solid fa-rotate-left"></i> Restaurar</button>`
+                                }
+                                <button onclick="openTenantPlanModal('${tenant.id}')" class="rounded-xl bg-violet-600 px-2.5 py-1.5 text-xs font-black transition hover:bg-violet-500 text-white" title="Cambiar plan"><i class="fa-solid fa-gear"></i> Plan</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportTenantsCSV() {
+            if (filteredTenantsList.length === 0) {
+                alert('No hay clientes para exportar.');
+                return;
+            }
+            const headers = ['Negocio', 'Propietario', 'Slug', 'Email', 'WhatsApp', 'Plan', 'Estado', 'Precio Mensual', 'Fecha Creacion', 'Fecha Corte'];
+            const rows = filteredTenantsList.map(t => [
+                t.businessName || '',
+                t.ownerName || '',
+                t.slug || '',
+                t.email || '',
+                t.whatsapp || '',
+                t.planName || '',
+                t.statusLabel || t.status,
+                t.monthlyPrice || 0,
+                t.createdAt ? new Date(t.createdAt).toISOString().split('T')[0] : '',
+                t.status === 'trial' 
+                    ? (t.trialEndDate ? new Date(t.trialEndDate).toISOString().split('T')[0] : '')
+                    : (t.currentPeriodEnd ? new Date(t.currentPeriodEnd).toISOString().split('T')[0] : '')
+            ]);
+
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+                + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `clientes_saas_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         async function refreshTenantViews() {
-            await Promise.all([loadDashboard(), loadTenants()]);
-            if (selectedTenantId) await loadTenantDetail(selectedTenantId);
+            await Promise.all([loadDashboard(), loadTenants(), loadPayments()]);
+            if (selectedTenantId) {
+                loadTenantDrawerDetail(selectedTenantId);
+            }
         }
 
         async function updateTenantStatus(id, status) {
@@ -644,6 +1196,114 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             await refreshTenantViews();
         }
 
+        function openTenantDrawer(id) {
+            selectedTenantId = id;
+            loadTenantDrawerDetail(id);
+            
+            const backdrop = document.getElementById('super-drawer-backdrop');
+            const drawer = document.getElementById('super-tenant-drawer');
+            
+            backdrop.classList.remove('hidden');
+            backdrop.offsetHeight;
+            backdrop.classList.add('opacity-100');
+            drawer.classList.remove('translate-x-full');
+        }
+
+        function closeTenantDrawer() {
+            const backdrop = document.getElementById('super-drawer-backdrop');
+            const drawer = document.getElementById('super-tenant-drawer');
+            
+            backdrop.classList.remove('opacity-100');
+            drawer.classList.add('translate-x-full');
+            
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 300);
+        }
+
+        async function loadTenantDrawerDetail(id) {
+            const res = await superFetch(`/tenants/${id}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const tenant = data.tenant;
+            
+            document.getElementById('drawer-business-name').innerText = tenant.businessName;
+            document.getElementById('drawer-owner-info').innerHTML = `
+                <div class="font-bold text-slate-200">${tenant.ownerName || 'Sin propietario'}</div>
+                <div class="text-xs text-slate-400 mt-0.5">${tenant.email || 'Sin email'} · ${tenant.whatsapp || 'Sin WhatsApp'}</div>
+            `;
+            document.getElementById('drawer-status-badge').innerHTML = statusBadge(tenant.status, tenant.statusLabel);
+            
+            const stats = [
+                { label: 'Plan actual', value: tenant.planName },
+                { label: 'Mensualidad', value: fmtMoney(tenant.monthlyPrice) },
+                { label: 'Fecha de corte', value: fmtDate(tenant.currentPeriodEnd) },
+                { label: 'Límite de pago', value: fmtDate(tenant.paymentDueDate) },
+                { label: 'Días prueba rest.', value: tenant.trialDaysRemaining ?? 'Sin prueba' },
+                { label: 'Inicio prueba', value: fmtDate(tenant.trialStartDate) },
+                { label: 'Fin prueba', value: fmtDate(tenant.trialEndDate) },
+                { label: 'Último pago', value: tenant.lastPayment ? fmtDate(tenant.lastPayment.paidAt || tenant.lastPayment.approvedAt) : 'Sin pagos' }
+            ];
+            
+            document.getElementById('drawer-stats-grid').innerHTML = stats.map(s => `
+                <div class="rounded-xl border border-white/5 bg-white/5 p-3">
+                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">${s.label}</p>
+                    <p class="mt-1 text-xs font-black text-white truncate" title="${s.value}">${s.value}</p>
+                </div>
+            `).join('');
+            
+            document.getElementById('drawer-history-payments').innerHTML = data.payments.length 
+                ? data.payments.map(p => `
+                    <div class="flex items-center justify-between border-b border-white/5 pb-1 mb-1 gap-2">
+                        <div class="min-w-0 flex-1">
+                            <span class="font-bold text-slate-200 text-xs">${fmtMoney(p.amount)}</span>
+                            <span class="text-slate-500 text-[10px]">(${p.paymentMonth})</span>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <span class="text-[10px] text-slate-400">${fmtDate(p.paidAt || p.createdAt)}</span>
+                                <span class="text-[10px] font-black uppercase text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">${p.status}</span>
+                            </div>
+                        </div>
+                        <button onclick="deletePaymentFromDrawer('${p.id || p._id}')" title="Eliminar este registro de pago" class="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 transition hover:bg-rose-500/25 hover:text-rose-300 text-[10px]">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `).join('')
+                : '<p class="text-slate-500 italic text-[11px]">Sin pagos registrados</p>';
+                
+            document.getElementById('drawer-history-status').innerHTML = data.statusLogs.length 
+                ? data.statusLogs.map(l => `
+                    <div class="border-b border-white/5 pb-1 mb-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-300 text-[11px]">${l.previousStatus || 'nuevo'} &rarr; ${l.newStatus}</span>
+                            <span class="text-slate-500 text-[10px]">${fmtDate(l.createdAt)}</span>
+                        </div>
+                        ${l.reason ? `<p class="text-[10px] text-slate-400 italic mt-0.5">${l.reason}</p>` : ''}
+                    </div>
+                `).join('')
+                : '<p class="text-slate-500 italic text-[11px]">Sin cambios de estado</p>';
+                
+            document.getElementById('drawer-history-suspensions').innerHTML = data.suspensionLogs.length 
+                ? data.suspensionLogs.map(l => `
+                    <div class="border-b border-white/5 pb-1 mb-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-rose-300 text-[11px]">${l.newStatus}</span>
+                            <span class="text-slate-500 text-[10px]">${fmtDate(l.createdAt)}</span>
+                        </div>
+                        ${l.reason ? `<p class="text-[10px] text-slate-400 italic mt-0.5">${l.reason}</p>` : ''}
+                    </div>
+                `).join('')
+                : '<p class="text-slate-500 italic text-[11px]">Sin suspensiones registradas</p>';
+                
+            document.getElementById('drawer-history-receipts').innerHTML = data.receipts.length 
+                ? data.receipts.map(p => `
+                    <div class="flex items-center justify-between border-b border-white/5 pb-1 mb-1">
+                        <span class="font-bold text-slate-300 text-[11px]">${p.paymentMonth}</span>
+                        <a class="text-blue-400 hover:text-blue-300 underline text-[11px] font-bold" href="${assetUrl(p.receiptUrl)}" target="_blank">Ver PDF/Imagen &nearr;</a>
+                    </div>
+                `).join('')
+                : '<p class="text-slate-500 italic text-[11px]">Sin comprobantes subidos</p>';
+        }
+
         async function loadTrash() {
             const res = await superFetch('/trash');
             if (!res.ok) return;
@@ -669,54 +1329,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             await Promise.all([loadDashboard(), loadTrash()]);
         }
 
-        async function loadTenantDetail(id) {
-            selectedTenantId = id;
-            const res = await superFetch(`/tenants/${id}`);
-            if (!res.ok) return;
-            const data = await res.json();
-            const tenant = data.tenant;
-            const detail = document.getElementById('super-tenant-detail');
-            detail.classList.remove('hidden');
-            detail.innerHTML = `
-                <div class="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                        <h3 class="text-xl font-black">${tenant.businessName}</h3>
-                        <p class="text-sm font-semibold text-slate-400">${tenant.ownerName || 'Sin propietario'} · ${tenant.email || 'Sin email'} · ${tenant.whatsapp || 'Sin WhatsApp'}</p>
-                    </div>
-                    ${statusBadge(tenant.status, tenant.statusLabel)}
-                </div>
-                <div class="grid gap-3 md:grid-cols-4">
-                    ${detailStat('Plan actual', tenant.planName)}
-                    ${detailStat('Mensualidad actual', fmtMoney(tenant.monthlyPrice))}
-                    ${detailStat('Fecha de corte', fmtDate(tenant.currentPeriodEnd))}
-                    ${detailStat('Límite de pago', fmtDate(tenant.paymentDueDate))}
-                    ${detailStat('Días prueba restantes', tenant.trialDaysRemaining ?? 'Sin prueba')}
-                    ${detailStat('Inicio prueba', fmtDate(tenant.trialStartDate))}
-                    ${detailStat('Fin prueba', fmtDate(tenant.trialEndDate))}
-                    ${detailStat('Último pago', tenant.lastPayment ? fmtDate(tenant.lastPayment.paidAt || tenant.lastPayment.approvedAt) : 'Sin pagos')}
-                </div>
-                <div class="mt-6 grid gap-5 xl:grid-cols-2">
-                    ${historyBlock('Historial de pagos', data.payments.map(p => `${fmtDate(p.paidAt || p.createdAt)} · ${fmtMoney(p.amount)} · ${p.status}`).join('') || 'Sin pagos')}
-                    ${historyBlock('Historial de cambios de estado', data.statusLogs.map(l => `${fmtDate(l.createdAt)} · ${l.previousStatus || 'nuevo'} → ${l.newStatus} · ${l.reason || ''}`).join('') || 'Sin cambios')}
-                    ${historyBlock('Historial de suspensiones', data.suspensionLogs.map(l => `${fmtDate(l.createdAt)} · ${l.reason || l.newStatus}`).join('') || 'Sin suspensiones')}
-                    ${historyBlock('Historial de comprobantes', data.receipts.map(p => `<a class="text-blue-300 underline" href="${assetUrl(p.receiptUrl)}" target="_blank">${fmtDate(p.createdAt)} · ${p.paymentMonth}</a>`).join('') || 'Sin comprobantes')}
-                </div>
-            `;
-        }
-
-        function detailStat(label, value) {
-            return `<div class="rounded-2xl border border-white/8 bg-white/5 p-4"><p class="text-xs font-black uppercase tracking-wider text-slate-500">${label}</p><p class="mt-2 text-sm font-black text-white">${value}</p></div>`;
-        }
-
-        function historyBlock(title, content) {
-            return `<div class="rounded-2xl border border-white/8 bg-white/5 p-4"><h4 class="mb-3 text-sm font-black">${title}</h4><div class="space-y-2 text-sm font-semibold text-slate-300">${content}</div></div>`;
-        }
-
         async function loadPayments() {
             const status = document.getElementById('payment-status-filter')?.value || '';
             const res = await superFetch(`/payments${status ? `?status=${encodeURIComponent(status)}` : ''}`);
             if (!res.ok) return;
             superPayments = await res.json();
+            renderMetrics();
             document.getElementById('super-payments-list').innerHTML = superPayments.length ? superPayments.map(payment => `
                 <div class="flex flex-col gap-3 rounded-2xl border border-white/8 bg-white/5 p-4 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -728,6 +1346,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <span class="status-badge ${payment.status === 'aprobado' ? 'status-active' : payment.status === 'rechazado' ? 'status-suspended' : 'status-pending_payment'}">${payment.status}</span>
                         <button onclick="approvePayment('${payment.id}')" class="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black transition hover:bg-emerald-500">Aprobar</button>
                         <button onclick="rejectPayment('${payment.id}')" class="rounded-xl bg-rose-600 px-3 py-2 text-xs font-black transition hover:bg-rose-500">Rechazar</button>
+                        <button onclick="deletePaymentById('${payment.id}')" title="Eliminar registro de pago" class="rounded-xl bg-slate-700 px-3 py-2 text-xs font-black transition hover:bg-slate-600 text-slate-300"><i class="fa-solid fa-trash-can mr-1"></i>Eliminar</button>
                     </div>
                 </div>
             `).join('') : '<p class="rounded-2xl bg-white/5 p-6 text-center text-sm font-bold text-slate-400">No hay pagos para este filtro.</p>';
@@ -735,15 +1354,96 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function approvePayment(id) {
             await superFetch(`/payments/${id}/approve`, { method: 'PATCH' });
-            await Promise.all([loadDashboard(), loadPayments(), loadTenants()]);
-            if (selectedTenantId) await loadTenantDetail(selectedTenantId);
+            await refreshTenantViews();
         }
 
         async function rejectPayment(id) {
-            await superFetch(`/payments/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason: prompt('Motivo de rechazo') || '' }) });
-            await Promise.all([loadDashboard(), loadPayments(), loadTenants()]);
-            if (selectedTenantId) await loadTenantDetail(selectedTenantId);
+            const reason = prompt('Motivo de rechazo') || '';
+            await superFetch(`/payments/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) });
+            await refreshTenantViews();
         }
+
+        async function deletePaymentById(id) {
+            if (!confirm('¿Eliminar este registro de pago? Esta acción no se puede deshacer.')) return;
+            const res = await superFetch(`/payments/${id}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) { showSuperToast(data.error || 'Error al eliminar pago', 'error'); return; }
+            showSuperToast('Registro de pago eliminado.', 'success');
+            await refreshTenantViews();
+        }
+
+        async function deletePaymentFromDrawer(id) {
+            if (!confirm('¿Eliminar este registro de pago? Esta acción no se puede deshacer.')) return;
+            const res = await superFetch(`/payments/${id}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) { showSuperToast(data.error || 'Error al eliminar pago', 'error'); return; }
+            showSuperToast('Registro de pago eliminado.', 'success');
+            if (selectedTenantId) loadTenantDrawerDetail(selectedTenantId);
+            await loadPayments();
+        }
+
+        // ─── RESET CREDENTIALS ──────────────────────────────────────────────
+        function openResetCredentialsModal() {
+            document.getElementById('reset-creds-usuario').value = '';
+            document.getElementById('reset-creds-email').value = '';
+            document.getElementById('reset-creds-password').value = '';
+            document.getElementById('reset-creds-error').classList.add('hidden');
+            document.getElementById('reset-creds-success').classList.add('hidden');
+            document.getElementById('reset-creds-modal').classList.remove('hidden');
+            document.getElementById('reset-creds-modal').classList.add('flex');
+        }
+        window.openResetCredentialsModal = openResetCredentialsModal;
+
+        function closeResetCredentialsModal() {
+            document.getElementById('reset-creds-modal').classList.add('hidden');
+            document.getElementById('reset-creds-modal').classList.remove('flex');
+        }
+        window.closeResetCredentialsModal = closeResetCredentialsModal;
+
+        async function submitResetCredentials() {
+            const newUsuario = document.getElementById('reset-creds-usuario').value.trim();
+            const newEmail   = document.getElementById('reset-creds-email').value.trim();
+            const newPassword= document.getElementById('reset-creds-password').value;
+            const errEl = document.getElementById('reset-creds-error');
+            const okEl  = document.getElementById('reset-creds-success');
+            errEl.classList.add('hidden');
+            okEl.classList.add('hidden');
+
+            if (!newUsuario && !newEmail && !newPassword) {
+                errEl.innerText = 'Completa al menos un campo para actualizar.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            const btn = document.getElementById('reset-creds-submit');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Actualizando...';
+
+            const payload = {};
+            if (newUsuario) payload.newUsuario = newUsuario;
+            if (newEmail)   payload.newEmail   = newEmail;
+            if (newPassword) payload.newPassword = newPassword;
+
+            const res = await superFetch(`/tenants/${selectedTenantId}/reset-credentials`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-key mr-1"></i> Resetear credenciales';
+
+            if (!res.ok) {
+                errEl.innerText = data.error || 'Error al resetear credenciales';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            okEl.innerText = '✅ ' + (data.message || 'Credenciales actualizadas. El cliente deberá cambiar su contraseña al ingresar.');
+            okEl.classList.remove('hidden');
+            document.getElementById('reset-creds-usuario').value = '';
+            document.getElementById('reset-creds-email').value = '';
+            document.getElementById('reset-creds-password').value = '';
+            showSuperToast('Credenciales reseteadas con éxito.', 'success');
+        }
+        window.submitResetCredentials = submitResetCredentials;
 
         async function loadPlans() {
             const res = await superFetch('/plans');
@@ -792,13 +1492,54 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const res = await superFetch('/settings');
             if (!res.ok) return;
             superSettings = await res.json();
-            document.getElementById('support-whatsapp').value = superSettings.supportWhatsapp || '';
-            document.getElementById('support-message').value = superSettings.supportMessage || '';
-            document.getElementById('emulator-url').value = superSettings.emulatorUrl || '';
-            document.getElementById('emulator-enabled').checked = Boolean(superSettings.emulatorEnabled);
-            document.getElementById('support-preview-whatsapp').innerText = superSettings.supportWhatsapp
-                ? `+${superSettings.supportWhatsapp}`
-                : 'Sin WhatsApp configurado';
+            
+            // General settings
+            document.getElementById('config-platform-name').value = superSettings.platformName || 'sedelynk';
+            document.getElementById('config-currency').value = superSettings.currency || 'GTQ';
+            document.getElementById('config-support-email').value = superSettings.supportEmail || 'soporte@sedelynk.com';
+            document.getElementById('config-support-url').value = superSettings.supportUrl || 'https://soporte.sedelynk.com';
+            document.getElementById('config-timezone').value = superSettings.timezone || 'America/Guatemala';
+            document.getElementById('config-favicon-url').value = superSettings.faviconUrl || '';
+            document.getElementById('config-support-whatsapp').value = superSettings.supportWhatsapp || '';
+            document.getElementById('config-support-message').value = superSettings.supportMessage || '';
+
+            // Landing settings
+            document.getElementById('config-landing-title').value = superSettings.landingTitle || 'Vende cualquier producto en línea por';
+            document.getElementById('config-landing-subtitle').value = superSettings.landingSubtitle || 'carrito y WhatsApp';
+            document.getElementById('config-landing-hero-text').value = superSettings.landingHeroText || '';
+            document.getElementById('config-saas-monthly-price').value = superSettings.monthlyPrice !== undefined ? superSettings.monthlyPrice : 50;
+            document.getElementById('config-saas-trial-days').value = superSettings.freeTrialDays !== undefined ? superSettings.freeTrialDays : 7;
+            document.getElementById('config-saas-logo-alt').value = superSettings.logoAltText || 'SEDELYNK';
+            
+            const primaryColor = superSettings.primaryColor || '#7C3AED';
+            const secondaryColor = superSettings.secondaryColor || '#D946EF';
+            const accentColor = superSettings.accentColor || '#FF6B1A';
+            
+            document.getElementById('config-saas-primary-color').value = primaryColor;
+            document.getElementById('config-saas-primary-color-text').innerText = primaryColor.toUpperCase();
+            
+            document.getElementById('config-saas-secondary-color').value = secondaryColor;
+            document.getElementById('config-saas-secondary-color-text').innerText = secondaryColor.toUpperCase();
+            
+            document.getElementById('config-saas-accent-color').value = accentColor;
+            document.getElementById('config-saas-accent-color-text').innerText = accentColor.toUpperCase();
+            
+            document.getElementById('config-saas-show-price').checked = superSettings.showPrice !== false;
+
+            // Notifications settings
+            document.getElementById('notify-emails').checked = superSettings.notificationEmails !== false;
+            document.getElementById('notify-reminders').checked = superSettings.notificationPaymentReminders !== false;
+            document.getElementById('notify-expirations').checked = superSettings.notificationUpcomingExpirations !== false;
+            document.getElementById('notify-welcome').checked = superSettings.notificationWelcomeMessages !== false;
+
+            // Load FAQ
+            try {
+                faqList = JSON.parse(superSettings.landingFaqs || '[]');
+            } catch (e) {
+                faqList = [];
+            }
+            renderFaqs();
+
             actualizarLogoSaasUI();
         }
 
@@ -810,35 +1551,314 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         function actualizarLogoSaasUI() {
             const logo = normalizarAssetUrl(superSettings?.logoUrl || '');
             const img = document.getElementById('super-sidebar-logo');
-            if (!img) return;
-            img.src = logo;
-            img.classList.toggle('hidden', !logo);
-            img.nextElementSibling?.classList.toggle('hidden', Boolean(logo));
+            if (img) {
+                img.src = logo;
+                img.classList.toggle('hidden', !logo);
+                img.nextElementSibling?.classList.toggle('hidden', Boolean(logo));
+            }
+            const brandText = document.getElementById('super-sidebar-brand-name');
+            if (brandText && superSettings?.platformName) {
+                brandText.innerText = superSettings.platformName;
+            }
         }
 
-        async function saveSaasSupport(event) {
-            event.preventDefault();
-            const payload = {
-                supportWhatsapp: document.getElementById('support-whatsapp').value.trim(),
-                supportMessage: document.getElementById('support-message').value.trim(),
-                emulatorUrl: document.getElementById('emulator-url').value.trim(),
-                emulatorEnabled: document.getElementById('emulator-enabled').checked
-            };
+        function setConfigSubTab(tabName) {
+            currentConfigSubTab = tabName;
+            document.querySelectorAll('[data-config-tab]').forEach(btn => {
+                const isActive = btn.getAttribute('data-config-tab') === tabName;
+                btn.classList.toggle('config-sub-tab-active', isActive);
+            });
+            document.querySelectorAll('.config-panel').forEach(panel => {
+                panel.classList.toggle('hidden', panel.id !== `config-panel-${tabName}`);
+            });
+            if (tabName === 'users') {
+                loadSuperAdminUsers();
+            }
+        }
+
+        function renderFaqs() {
+            const container = document.getElementById('faq-list-container');
+            if (!container) return;
+            if (faqList.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-500 italic">No hay preguntas frecuentes agregadas.</p>';
+                return;
+            }
+            container.innerHTML = faqList.map((faq, idx) => `
+                <div class="faq-item flex flex-col gap-2 rounded-xl border border-white/5 bg-white/5 p-3 relative">
+                    <button type="button" onclick="removeFaqItem(${idx})" class="absolute top-2 right-2 text-rose-400 hover:text-rose-300 text-xs">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                    <div class="pr-6">
+                        <label class="block mb-1">
+                            <span class="text-[10px] font-black uppercase text-slate-400">Pregunta</span>
+                            <input type="text" oninput="updateFaqItem(${idx}, 'q', this.value)" value="${escapeHtml(faq.q || '')}" class="super-input py-1 text-xs" placeholder="¿Cómo funciona...?">
+                        </label>
+                        <label class="block">
+                            <span class="text-[10px] font-black uppercase text-slate-400">Respuesta</span>
+                            <textarea oninput="updateFaqItem(${idx}, 'a', this.value)" class="super-input py-1 text-xs min-h-12" placeholder="Explicación...">${escapeHtml(faq.a || '')}</textarea>
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function addFaqItem() {
+            faqList.push({ q: '', a: '' });
+            renderFaqs();
+        }
+
+        function removeFaqItem(idx) {
+            faqList.splice(idx, 1);
+            renderFaqs();
+        }
+
+        function updateFaqItem(idx, field, value) {
+            if (faqList[idx]) {
+                faqList[idx][field] = value;
+            }
+        }
+
+        async function patchSettings(payload) {
             const res = await superFetch('/settings', {
                 method: 'PATCH',
                 body: JSON.stringify(payload)
             });
-            if (!res.ok) return;
+            if (res.ok) {
+                superSettings = await res.json();
+                await loadSaasSettings();
+                return true;
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || 'Error al guardar configuración');
+                return false;
+            }
+        }
+
+        async function saveSaasGeneralSettings(event) {
+            event.preventDefault();
+            const payload = {
+                platformName: document.getElementById('config-platform-name').value.trim(),
+                currency: document.getElementById('config-currency').value.trim(),
+                supportEmail: document.getElementById('config-support-email').value.trim(),
+                supportUrl: document.getElementById('config-support-url').value.trim(),
+                timezone: document.getElementById('config-timezone').value.trim(),
+                faviconUrl: document.getElementById('config-favicon-url').value.trim(),
+                supportWhatsapp: document.getElementById('config-support-whatsapp').value.trim(),
+                supportMessage: document.getElementById('config-support-message').value.trim()
+            };
+            if (await patchSettings(payload)) {
+                alert('Configuración general guardada');
+            }
+        }
+
+        async function saveSaasLandingSettings(event) {
+            event.preventDefault();
+            const payload = {
+                landingTitle: document.getElementById('config-landing-title').value.trim(),
+                landingSubtitle: document.getElementById('config-landing-subtitle').value.trim(),
+                landingHeroText: document.getElementById('config-landing-hero-text').value.trim(),
+                monthlyPrice: Number(document.getElementById('config-saas-monthly-price').value || 0),
+                freeTrialDays: Number(document.getElementById('config-saas-trial-days').value || 0),
+                logoAltText: document.getElementById('config-saas-logo-alt').value.trim(),
+                primaryColor: document.getElementById('config-saas-primary-color').value,
+                secondaryColor: document.getElementById('config-saas-secondary-color').value,
+                accentColor: document.getElementById('config-saas-accent-color').value,
+                showPrice: document.getElementById('config-saas-show-price').checked,
+                landingFaqs: JSON.stringify(faqList)
+            };
+
+            const res = await superFetch('/settings', {
+                method: 'PATCH',
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || 'Error al guardar la configuración de landing');
+                return;
+            }
             superSettings = await res.json();
-            const logoFile = document.getElementById('saas-logo-input')?.files?.[0];
+
+            const logoFile = document.getElementById('config-saas-logo-input')?.files?.[0];
             if (logoFile) {
                 const formData = new FormData();
                 formData.append('logo', logoFile);
                 const logoRes = await superFetch('/settings/logo', { method: 'POST', body: formData });
                 if (logoRes.ok) superSettings = await logoRes.json();
             }
+
+            const logoInput = document.getElementById('config-saas-logo-input');
+            if (logoInput) logoInput.value = '';
+
             await loadSaasSettings();
+            alert('Configuración de Landing Page guardada con éxito');
         }
+
+        async function saveSaasNotificationsSettings(event) {
+            event.preventDefault();
+            const payload = {
+                notificationEmails: document.getElementById('notify-emails').checked,
+                notificationPaymentReminders: document.getElementById('notify-reminders').checked,
+                notificationUpcomingExpirations: document.getElementById('notify-expirations').checked,
+                notificationWelcomeMessages: document.getElementById('notify-welcome').checked
+            };
+            if (await patchSettings(payload)) {
+                alert('Configuración de notificaciones guardada');
+            }
+        }
+
+        async function loadSuperAdminUsers() {
+            const res = await superFetch('/users');
+            if (!res.ok) return;
+            superAdminUsers = await res.json();
+            renderSuperAdminUsers();
+        }
+
+        function renderSuperAdminUsers() {
+            const body = document.getElementById('super-users-table-body');
+            if (!body) return;
+            body.innerHTML = superAdminUsers.map(user => {
+                const isSelf = currentSuperUser && String(currentSuperUser._id || currentSuperUser.id) === String(user._id || user.id);
+                return `
+                    <tr class="text-slate-300 text-xs">
+                        <td class="px-3 py-3 font-bold text-white">${user.nombre}</td>
+                        <td class="px-3 py-3">${user.usuario}</td>
+                        <td class="px-3 py-3">${user.email}</td>
+                        <td class="px-3 py-3 text-right">
+                            ${isSelf 
+                                ? '<span class="text-slate-500 font-bold italic">Tú</span>' 
+                                : `<button onclick="deleteSuperAdminUser('${user._id || user.id}')" class="text-rose-400 hover:text-rose-300 transition" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function createSuperAdminUser(event) {
+            event.preventDefault();
+            const err = document.getElementById('new-user-error');
+            const succ = document.getElementById('new-user-success');
+            err.classList.add('hidden');
+            succ.classList.add('hidden');
+
+            const payload = {
+                nombre: document.getElementById('new-user-nombre').value.trim(),
+                usuario: document.getElementById('new-user-usuario').value.trim(),
+                email: document.getElementById('new-user-email').value.trim(),
+                password: document.getElementById('new-user-password').value
+            };
+
+            const res = await superFetch('/users', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                err.innerText = data.error || 'Error al crear usuario';
+                err.classList.remove('hidden');
+                return;
+            }
+            succ.innerText = 'Usuario creado con éxito';
+            succ.classList.remove('hidden');
+            event.target.reset();
+            await loadSuperAdminUsers();
+        }
+
+        async function deleteSuperAdminUser(id) {
+            if (!confirm('¿Está seguro de eliminar a este super administrador?')) return;
+            const res = await superFetch(`/users/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                await loadSuperAdminUsers();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || 'Error al eliminar usuario');
+            }
+        }
+
+        async function changeSuperAdminPassword(event) {
+            event.preventDefault();
+            const err = document.getElementById('change-pass-error');
+            const succ = document.getElementById('change-pass-success');
+            err.classList.add('hidden');
+            succ.classList.add('hidden');
+
+            const currentPassword = document.getElementById('change-pass-current').value;
+            const newPassword = document.getElementById('change-pass-new').value;
+            const confirmPassword = document.getElementById('change-pass-confirm').value;
+
+            if (newPassword !== confirmPassword) {
+                err.innerText = 'La nueva contraseña y su confirmación no coinciden.';
+                err.classList.remove('hidden');
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                err.innerText = 'La nueva contraseña debe tener al menos 8 caracteres.';
+                err.classList.remove('hidden');
+                return;
+            }
+
+            if (!/[A-Z]/.test(newPassword)) {
+                err.innerText = 'La nueva contraseña debe incluir al menos una letra mayúscula.';
+                err.classList.remove('hidden');
+                return;
+            }
+
+            if (!/[0-9]/.test(newPassword)) {
+                err.innerText = 'La nueva contraseña debe incluir al menos un número.';
+                err.classList.remove('hidden');
+                return;
+            }
+
+            const res = await superFetch('/auth/password', {
+                method: 'PUT',
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                err.innerText = data.error || 'Error al cambiar la contraseña';
+                err.classList.remove('hidden');
+                return;
+            }
+
+            succ.innerText = 'Contraseña cambiada con éxito. Cerrando sesión...';
+            succ.classList.remove('hidden');
+            event.target.reset();
+            
+            setTimeout(async () => {
+                await superLogout();
+            }, 2500);
+        }
+
+        // Setup color picker visual updates
+        document.addEventListener('DOMContentLoaded', () => {
+            const pColor = document.getElementById('config-saas-primary-color');
+            const sColor = document.getElementById('config-saas-secondary-color');
+            const aColor = document.getElementById('config-saas-accent-color');
+            
+            if (pColor) {
+                pColor.addEventListener('input', (e) => {
+                    const text = document.getElementById('config-saas-primary-color-text');
+                    if (text) text.innerText = e.target.value.toUpperCase();
+                });
+            }
+            if (sColor) {
+                sColor.addEventListener('input', (e) => {
+                    const text = document.getElementById('config-saas-secondary-color-text');
+                    if (text) text.innerText = e.target.value.toUpperCase();
+                });
+            }
+            if (aColor) {
+                aColor.addEventListener('input', (e) => {
+                    const text = document.getElementById('config-saas-accent-color-text');
+                    if (text) text.innerText = e.target.value.toUpperCase();
+                });
+            }
+        });
 
         async function loadSuperData() {
             document.getElementById('super-current-date').innerText = new Intl.DateTimeFormat('es-GT', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
@@ -850,6 +1870,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const res = await superFetch('/auth/me');
             if (!res.ok) return showSuperLogin();
             const data = await res.json();
+            currentSuperUser = data.user;
             showSuperApp(data.user);
             await loadSuperData();
         }

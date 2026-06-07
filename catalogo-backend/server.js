@@ -1,29 +1,35 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const multer = require('multer');
 const sharp = require('sharp');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const { v2: cloudinary } = require('cloudinary');
+const helmet = require('helmet');
+const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { z } = require('zod');
-const Tenant = require('./models/Tenant');
-const Category = require('./models/Category');
-const Producto = require('./models/Product');
-const Settings = require('./models/Settings');
-const Pedido = require('./models/Order');
-const User = require('./models/User');
-const Session = require('./models/Session');
-const PasswordResetToken = require('./models/PasswordResetToken');
-const AuditLog = require('./models/AuditLog');
-const Plan = require('./models/Plan');
-const Payment = require('./models/Payment');
-const AccountStatusLog = require('./models/AccountStatusLog');
-const SaasSettings = require('./models/SaasSettings');
+const {
+    Tenant,
+    Category,
+    Producto,
+    Settings,
+    Pedido,
+    User,
+    Session,
+    PasswordResetToken,
+    AuditLog,
+    Plan,
+    Payment,
+    AccountStatusLog,
+    SaasSettings,
+    isPrisma,
+    isValidId,
+    prisma
+} = require('./db-compat');
 const tenantMiddleware = require('./middleware/tenant.middleware');
 
 const app = express();
@@ -47,6 +53,10 @@ app.use(cors({
     },
     credentials: true
 }));
+app.use(helmet({
+    crossOriginResourcePolicy: false, // Permitir cargar imágenes en frontend externo temporalmente si fuera necesario
+}));
+app.use(compression());
 app.use(express.json());
 app.use(cookieParser());
 
@@ -95,40 +105,33 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
-// Conexión a MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/catalogo_db';
-mongoose.connect(MONGODB_URI)
-    .then(() => {
-        console.log('Conectado a MongoDB');
-        inicializarBase();
-    })
-    .catch(err => console.error('Error de conexión a MongoDB:', err));
+// Conexión de Base de Datos
+console.log('Utilizando base de datos relacional PostgreSQL con Prisma');
+inicializarBase()
+    .then(() => console.log('Inicialización de base de datos Postgres completada'))
+    .catch(err => console.error('Error al inicializar base de datos Postgres:', err));
 
 // Configuración de almacenamiento en memoria para Multer
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 } // límite de 5MB
+    limits: { fileSize: 5 * 1024 * 1024 }, // límite de 5MB
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/') || file.mimetype.includes('pdf')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Formato no soportado: ' + file.mimetype));
+        }
+    }
 });
 
-// Modelo de Configuración de Seguridad
-const ConfiguracionSchema = new mongoose.Schema({
-    clave: { type: String, default: 'admin_config', unique: true },
-    password: { type: String, default: 'admin123' },
-    recoveryPin: { type: String, default: '987654' },
-    preguntaSeguridad: { type: String, default: '¿Cómo se llamaba tu primera mascota?' },
-    respuestaSeguridad: { type: String, default: 'mascota123' },
-    tema: { type: String, default: 'emerald' },
-    telefonoWhatsApp: { type: String, default: '50235387468' }
-});
 
-const Configuracion = mongoose.models.Configuracion || mongoose.model('Configuracion', ConfiguracionSchema);
 
 app.get('/health', (req, res) => {
     res.json({
         ok: true,
         service: 'catalogo-backend',
-        mongo: mongoose.connection.readyState,
+        postgres: 'connected',
         cloudinary: cloudinaryEnabled
     });
 });
@@ -275,6 +278,10 @@ async function ensureTenantBillingDefaults(tenant) {
         tenant.trialStartDate = tenant.creadoEn || now;
         changed = true;
     }
+    if (tenant.status === 'trial' && !tenant.trialEndDate) {
+        tenant.trialEndDate = addDays(tenant.trialStartDate || now, 7);
+        changed = true;
+    }
     if (!tenant.billingDay) {
         tenant.billingDay = (tenant.creadoEn || now).getDate();
         changed = true;
@@ -405,6 +412,34 @@ function saasSettingsPayload(settings) {
         emulatorUrl: settings.emulatorUrl || '',
         emulatorEnabled: Boolean(settings.emulatorEnabled),
         logoUrl: settings.logoUrl || '',
+        monthlyPrice: typeof settings.monthlyPrice === 'number' ? settings.monthlyPrice : 50,
+        freeTrialDays: typeof settings.freeTrialDays === 'number' ? settings.freeTrialDays : 7,
+        logoAltText: settings.logoAltText || 'SEDELYNK',
+        primaryColor: settings.primaryColor || '#7C3AED',
+        secondaryColor: settings.secondaryColor || '#D946EF',
+        accentColor: settings.accentColor || '#FF6B1A',
+        showPrice: settings.showPrice !== false,
+        
+        // New global settings
+        platformName: settings.platformName || 'sedelynk',
+        supportEmail: settings.supportEmail || 'soporte@sedelynk.com',
+        supportUrl: settings.supportUrl || 'https://soporte.sedelynk.com',
+        timezone: settings.timezone || 'America/Guatemala',
+        currency: settings.currency || 'GTQ',
+        faviconUrl: settings.faviconUrl || '',
+        
+        // Landing contents
+        landingHeroText: settings.landingHeroText || 'Crea tu tienda en línea, recibe pedidos y haz crecer tu negocio. Sin comisiones, sin complicaciones.',
+        landingTitle: settings.landingTitle || 'Vende cualquier producto en línea por',
+        landingSubtitle: settings.landingSubtitle || 'carrito y WhatsApp',
+        landingFaqs: settings.landingFaqs || '[]',
+        
+        // Notifications configs
+        notificationEmails: settings.notificationEmails !== false,
+        notificationPaymentReminders: settings.notificationPaymentReminders !== false,
+        notificationUpcomingExpirations: settings.notificationUpcomingExpirations !== false,
+        notificationWelcomeMessages: settings.notificationWelcomeMessages !== false,
+
         updatedAt: settings.updatedAt
     };
 }
@@ -433,6 +468,14 @@ function requireTenantOperational(req, res, next) {
         return res.status(404).json({ error: 'Catalogo no encontrado', status: req.tenant.status });
     }
     if (req.tenant.status === 'suspended') {
+        const esAdmin = req.originalUrl && req.originalUrl.includes('/admin/');
+        if (!esAdmin) {
+            return res.status(403).json({
+                error: 'Este catálogo no está disponible temporalmente.',
+                status: req.tenant.status,
+                statusLabel: 'No disponible'
+            });
+        }
         return res.status(403).json({
             error: 'Cuenta suspendida. Realiza el pago para reactivar el catalogo.',
             status: req.tenant.status,
@@ -572,7 +615,7 @@ function productoResponse(producto, categoria) {
 }
 
 async function buscarCategoriaTenant(tenantId, categoriaInput) {
-    if (categoriaInput && mongoose.Types.ObjectId.isValid(categoriaInput)) {
+    if (categoriaInput && isValidId(categoriaInput)) {
         const categoriaPorId = await Category.findOne({ _id: categoriaInput, tenantId });
         if (categoriaPorId) return categoriaPorId;
     }
@@ -584,9 +627,8 @@ async function buscarCategoriaTenant(tenantId, categoriaInput) {
 
 async function asegurarTenantDefault() {
     let tenant = await Tenant.findOne({ slug: 'default' });
-    const config = await Configuracion.findOne({ clave: 'admin_config' });
-    const whatsapp = config?.telefonoWhatsApp || '50235387468';
-    const tema = config?.tema || 'emerald';
+    const whatsapp = '50235387468';
+    const tema = 'emerald';
 
     if (!tenant) {
         tenant = await Tenant.create({
@@ -683,9 +725,14 @@ async function asegurarSuperAdminBootstrap() {
     const existing = await User.findOne({ rol: 'super_admin' });
     if (existing) return;
 
+    const isProd = process.env.NODE_ENV === 'production';
     const usuario = (process.env.SUPER_ADMIN_USER || 'superadmin').toLowerCase().trim();
     const email = (process.env.SUPER_ADMIN_EMAIL || 'superadmin@local.test').toLowerCase().trim();
     const password = process.env.SUPER_ADMIN_PASSWORD || 'Super-Admin-2026!';
+
+    if (isProd && (!process.env.SUPER_ADMIN_USER || !process.env.SUPER_ADMIN_PASSWORD)) {
+        console.warn('¡ADVERTENCIA CRITICA! Usando credenciales de superadmin por defecto en produccion.');
+    }
 
     await User.create({
         tenantId: tenant._id,
@@ -700,7 +747,6 @@ async function asegurarSuperAdminBootstrap() {
 }
 
 async function inicializarBase() {
-    await inicializarConfiguracion();
     await asegurarTenantDefault();
     await asegurarSuperAdminBootstrap();
     const purged = await purgeDeletedTenants();
@@ -820,42 +866,7 @@ async function requireSuperAdminAuth(req, res, next) {
         next(err);
     }
 }
-// Inicializar configuración con valores por defecto si está vacía
-async function inicializarConfiguracion() {
-    try {
-        const config = await Configuracion.findOne({ clave: 'admin_config' });
-        if (!config) {
-            const nuevaConfig = new Configuracion();
-            await nuevaConfig.save();
-            console.log('Configuración de seguridad inicializada con valores por defecto.');
-        } else {
-            // Asegurar que existan los campos de pregunta y respuesta en registros antiguos
-            let modificado = false;
-            if (!config.preguntaSeguridad) {
-                config.preguntaSeguridad = '¿Cómo se llamaba tu primera mascota?';
-                modificado = true;
-            }
-            if (!config.respuestaSeguridad) {
-                config.respuestaSeguridad = 'mascota123';
-                modificado = true;
-            }
-            if (!config.tema) {
-                config.tema = 'emerald';
-                modificado = true;
-            }
-            if (!config.telefonoWhatsApp) {
-                config.telefonoWhatsApp = '50235387468';
-                modificado = true;
-            }
-            if (modificado) {
-                await config.save();
-                console.log('Campos de configuración actualizados en base de datos.');
-            }
-        }
-    } catch (err) {
-        console.error('Error al inicializar la configuración de seguridad:', err);
-    }
-}
+
 
 // Crear archivo placeholder.webp si no existe
 const placeholderPath = path.join(uploadsDir, 'placeholder.webp');
@@ -983,7 +994,11 @@ async function eliminarImagen(rutaImagen, publicId = '') {
     if (!rutaImagen || rutaImagen === '/uploads/placeholder.webp' || !rutaImagen.startsWith('/uploads/')) {
         return;
     }
-    const rutaAbsoluta = path.join(__dirname, rutaImagen);
+    const rutaAbsoluta = path.resolve(__dirname, '.' + rutaImagen);
+    if (!rutaAbsoluta.startsWith(uploadsDir)) {
+        console.warn(`Intento de path traversal detectado: ${rutaImagen}`);
+        return;
+    }
     fs.unlink(rutaAbsoluta, (err) => {
         if (err) console.error(`No se pudo eliminar la imagen antigua: ${rutaAbsoluta}`, err);
         else console.log(`Imagen antigua eliminada: ${rutaAbsoluta}`);
@@ -994,22 +1009,7 @@ async function eliminarImagen(rutaImagen, publicId = '') {
    RUTAS DE LA API - SEGURIDAD Y CONFIGURACIÓN
    ========================================================================== */
 
-app.post('/api/admin/auth', async (req, res) => {
-    res.status(410).json({ error: 'Ruta descontinuada. Usa /api/:tenant/auth/login.' });
-});
 
-app.post('/api/admin/auth/recovery', async (req, res) => {
-    res.status(410).json({ error: 'Ruta descontinuada. Usa la recuperación segura por tenant.' });
-});
-
-// Obtener la pregunta de seguridad para el cliente
-app.get('/api/admin/auth/recovery-question', async (req, res) => {
-    res.status(410).json({ error: 'Ruta descontinuada. Usa la recuperación segura por tenant.' });
-});
-
-app.post('/api/admin/auth/recovery-question', async (req, res) => {
-    res.status(410).json({ error: 'Ruta descontinuada. Usa la recuperación segura por tenant.' });
-});
 
 // Obtener configuración pública (tema visual y teléfono WhatsApp)
 app.get('/api/config', async (req, res) => {
@@ -1148,6 +1148,107 @@ app.post('/api/super-admin/auth/logout', requireSuperAdminAuth, async (req, res)
     res.json({ success: true });
 });
 
+app.put('/api/super-admin/auth/password', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const currentPassword = String(req.body.currentPassword || '');
+        const newPassword = String(req.body.newPassword || '');
+        if (!currentPassword || newPassword.length < 8) {
+            return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
+        }
+        const hasUppercase = /[A-Z]/.test(newPassword);
+        const hasNumber = /[0-9]/.test(newPassword);
+        if (!hasUppercase || !hasNumber) {
+            return res.status(400).json({ error: 'La nueva contraseña debe incluir al menos una mayúscula y un número.' });
+        }
+        
+        const validPassword = await bcrypt.compare(currentPassword, req.user.passwordHash);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+        }
+        
+        req.user.passwordHash = await bcrypt.hash(newPassword, 12);
+        await req.user.save();
+        res.json({ success: true, message: 'Contraseña cambiada exitosamente' });
+    } catch (err) {
+        console.error('Error al cambiar contraseña de superadmin:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+app.get('/api/super-admin/users', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const users = await User.find({ rol: 'super_admin' }).sort({ creadoEn: -1 });
+        res.json(users.map(u => ({
+            id: u._id,
+            nombre: u.nombre,
+            email: u.email,
+            usuario: u.usuario,
+            activo: u.activo,
+            creadoEn: u.creadoEn
+        })));
+    } catch (err) {
+        res.status(500).json({ error: 'Error al obtener usuarios administradores' });
+    }
+});
+
+app.post('/api/super-admin/users', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const { nombre, email, usuario, password } = req.body;
+        if (!nombre || !email || !usuario || !password || password.length < 8) {
+            return res.status(400).json({ error: 'Datos de usuario inválidos o contraseña menor a 8 caracteres' });
+        }
+        const tenant = await Tenant.findOne({ slug: 'default' });
+        if (!tenant) return res.status(500).json({ error: 'Tenant default no encontrado' });
+        
+        const existing = await User.findOne({ 
+            $or: [
+                { email: email.toLowerCase().trim() }, 
+                { usuario: usuario.toLowerCase().trim() }
+            ]
+        });
+        if (existing) {
+            return res.status(409).json({ error: 'El nombre de usuario o correo ya está registrado' });
+        }
+        
+        const newUser = await User.create({
+            tenantId: tenant._id,
+            nombre,
+            email: email.toLowerCase().trim(),
+            usuario: usuario.toLowerCase().trim(),
+            passwordHash: await bcrypt.hash(password, 12),
+            rol: 'super_admin',
+            activo: true
+        });
+        
+        res.status(201).json({
+            id: newUser._id,
+            nombre: newUser.nombre,
+            email: newUser.email,
+            usuario: newUser.usuario,
+            activo: newUser.activo,
+            creadoEn: newUser.creadoEn
+        });
+    } catch (err) {
+        console.error('Error creando usuario super admin:', err);
+        res.status(500).json({ error: 'Error al crear usuario administrador' });
+    }
+});
+
+app.delete('/api/super-admin/users/:id', requireSuperAdminAuth, async (req, res) => {
+    try {
+        if (String(req.user._id) === String(req.params.id)) {
+            return res.status(400).json({ error: 'No puedes eliminar tu propio usuario' });
+        }
+        const deleted = await User.deleteOne({ _id: req.params.id, rol: 'super_admin' });
+        if (deleted.deletedCount === 0) {
+            return res.status(404).json({ error: 'Usuario administrador no encontrado' });
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al eliminar usuario administrador' });
+    }
+});
+
 app.get('/api/saas/settings', async (req, res) => {
     try {
         res.json(saasSettingsPayload(await saasSettings()));
@@ -1168,7 +1269,30 @@ const saasSettingsSchema = z.object({
     supportWhatsapp: z.string().trim().max(30).optional(),
     supportMessage: z.string().trim().max(180).optional(),
     emulatorUrl: z.string().trim().max(300).optional(),
-    emulatorEnabled: z.boolean().optional()
+    emulatorEnabled: z.boolean().optional(),
+    monthlyPrice: z.number().min(0).max(1000000).optional(),
+    freeTrialDays: z.number().min(0).max(365).optional(),
+    logoAltText: z.string().trim().max(100).optional(),
+    primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+    secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+    accentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+    showPrice: z.boolean().optional(),
+    
+    // New fields
+    platformName: z.string().trim().max(100).optional(),
+    supportEmail: z.string().trim().max(100).optional(),
+    supportUrl: z.string().trim().max(300).optional(),
+    timezone: z.string().trim().max(100).optional(),
+    currency: z.string().trim().max(10).optional(),
+    faviconUrl: z.string().trim().max(300).optional(),
+    landingHeroText: z.string().trim().max(1000).optional(),
+    landingTitle: z.string().trim().max(200).optional(),
+    landingSubtitle: z.string().trim().max(200).optional(),
+    landingFaqs: z.string().trim().optional(),
+    notificationEmails: z.boolean().optional(),
+    notificationPaymentReminders: z.boolean().optional(),
+    notificationUpcomingExpirations: z.boolean().optional(),
+    notificationWelcomeMessages: z.boolean().optional()
 });
 
 app.patch('/api/super-admin/settings', requireSuperAdminAuth, async (req, res) => {
@@ -1179,10 +1303,34 @@ app.patch('/api/super-admin/settings', requireSuperAdminAuth, async (req, res) =
         if (data.supportMessage !== undefined) settings.supportMessage = data.supportMessage;
         if (data.emulatorUrl !== undefined) settings.emulatorUrl = data.emulatorUrl;
         if (data.emulatorEnabled !== undefined) settings.emulatorEnabled = data.emulatorEnabled;
+        if (data.monthlyPrice !== undefined) settings.monthlyPrice = data.monthlyPrice;
+        if (data.freeTrialDays !== undefined) settings.freeTrialDays = data.freeTrialDays;
+        if (data.logoAltText !== undefined) settings.logoAltText = data.logoAltText;
+        if (data.primaryColor !== undefined) settings.primaryColor = data.primaryColor;
+        if (data.secondaryColor !== undefined) settings.secondaryColor = data.secondaryColor;
+        if (data.accentColor !== undefined) settings.accentColor = data.accentColor;
+        if (data.showPrice !== undefined) settings.showPrice = data.showPrice;
+        
+        // New fields
+        if (data.platformName !== undefined) settings.platformName = data.platformName;
+        if (data.supportEmail !== undefined) settings.supportEmail = data.supportEmail;
+        if (data.supportUrl !== undefined) settings.supportUrl = data.supportUrl;
+        if (data.timezone !== undefined) settings.timezone = data.timezone;
+        if (data.currency !== undefined) settings.currency = data.currency;
+        if (data.faviconUrl !== undefined) settings.faviconUrl = data.faviconUrl;
+        if (data.landingHeroText !== undefined) settings.landingHeroText = data.landingHeroText;
+        if (data.landingTitle !== undefined) settings.landingTitle = data.landingTitle;
+        if (data.landingSubtitle !== undefined) settings.landingSubtitle = data.landingSubtitle;
+        if (data.landingFaqs !== undefined) settings.landingFaqs = data.landingFaqs;
+        if (data.notificationEmails !== undefined) settings.notificationEmails = data.notificationEmails;
+        if (data.notificationPaymentReminders !== undefined) settings.notificationPaymentReminders = data.notificationPaymentReminders;
+        if (data.notificationUpcomingExpirations !== undefined) settings.notificationUpcomingExpirations = data.notificationUpcomingExpirations;
+        if (data.notificationWelcomeMessages !== undefined) settings.notificationWelcomeMessages = data.notificationWelcomeMessages;
+
         await settings.save();
         res.json(saasSettingsPayload(settings));
     } catch (err) {
-        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Configuracion invalida' });
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Configuracion invalida', detalles: err.issues });
         res.status(500).json({ error: 'Error al guardar configuracion del SaaS' });
     }
 });
@@ -1531,6 +1679,96 @@ app.patch('/api/super-admin/payments/:id/reject', requireSuperAdminAuth, async (
     }
 });
 
+// ─── RESET CREDENTIALS (Super Admin) ─────────────────────────────────────────
+app.post('/api/super-admin/tenants/:id/reset-credentials', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenant = await Tenant.findById(req.params.id);
+        if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
+
+        const user = await User.findOne({ tenantId: tenant._id, activo: true, $or: [{ rol: 'owner' }, { rol: 'tenant_admin' }] })
+            .sort({ creadoEn: 1 });
+        if (!user) return res.status(404).json({ error: 'Usuario principal del cliente no encontrado' });
+
+        const { newUsuario, newEmail, newPassword } = req.body;
+        const changes = {};
+
+        if (newUsuario) {
+            const normalized = String(newUsuario).toLowerCase().trim();
+            if (normalized.length < 3) return res.status(400).json({ error: 'El usuario debe tener al menos 3 caracteres' });
+            const existing = await User.findOne({ tenantId: tenant._id, usuario: normalized, _id: { $ne: user._id } });
+            if (existing) return res.status(409).json({ error: 'Ese nombre de usuario ya está en uso en esta cuenta' });
+            user.usuario = normalized;
+            changes.usuario = normalized;
+        }
+
+        if (newEmail) {
+            const normalizedEmail = String(newEmail).toLowerCase().trim();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+                return res.status(400).json({ error: 'Formato de correo inválido' });
+            }
+            const existing = await User.findOne({ tenantId: tenant._id, email: normalizedEmail, _id: { $ne: user._id } });
+            if (existing) return res.status(409).json({ error: 'Ese correo ya está en uso en esta cuenta' });
+            user.email = normalizedEmail;
+            changes.email = normalizedEmail;
+        }
+
+        if (newPassword) {
+            if (String(newPassword).length < 8) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
+            user.passwordHash = await bcrypt.hash(String(newPassword), 12);
+            changes.password = '***';
+        }
+
+        if (Object.keys(changes).length === 0) {
+            return res.status(400).json({ error: 'Indica al menos un campo a actualizar: newUsuario, newEmail o newPassword' });
+        }
+
+        // Force client to change password on next login
+        user.mustChangePassword = true;
+        user.failedLoginAttempts = 0;
+        user.lockedUntil = undefined;
+        await user.save();
+
+        await auditLog(req, 'super_admin_reset_credentials', {
+            tenantId: tenant._id,
+            tenantSlug: tenant.slug,
+            targetUserId: user._id,
+            changes: Object.keys(changes)
+        });
+
+        res.json({
+            success: true,
+            message: `Credenciales actualizadas. El cliente deberá cambiar su contraseña al ingresar.`,
+            updatedFields: Object.keys(changes)
+        });
+    } catch (err) {
+        console.error('Error resetting credentials:', err);
+        res.status(500).json({ error: 'Error al resetear credenciales' });
+    }
+});
+
+// ─── DELETE SINGLE PAYMENT (Super Admin) ─────────────────────────────────────
+app.delete('/api/super-admin/payments/:id', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id).populate('tenantId', 'slug nombre');
+        if (!payment) return res.status(404).json({ error: 'Pago no encontrado' });
+
+        await auditLog(req, 'super_admin_delete_payment', {
+            paymentId: payment._id,
+            tenantId: payment.tenantId?._id,
+            tenantSlug: payment.tenantId?.slug,
+            amount: payment.amount,
+            paymentMonth: payment.paymentMonth,
+            status: payment.status
+        });
+
+        await Payment.deleteOne({ _id: payment._id });
+        res.json({ success: true, message: 'Registro de pago eliminado correctamente' });
+    } catch (err) {
+        console.error('Error deleting payment:', err);
+        res.status(500).json({ error: 'Error al eliminar pago' });
+    }
+});
+
 app.get('/api/super-admin/plans', requireSuperAdminAuth, async (req, res) => {
     try {
         const plans = await Plan.find({}).sort({ createdAt: -1 });
@@ -1705,11 +1943,10 @@ app.post('/api/:tenant/admin/payments/receipt', tenantMiddleware, requireAdminAu
             paidAt: now
         });
         const previousStatus = req.tenant.status;
-        req.tenant.status = 'active';
-        req.tenant.activo = true;
-        req.tenant.suspendedAt = null;
+        req.tenant.status = 'pending_payment';
+        req.tenant.activo = true; 
         await req.tenant.save();
-        await logAccountStatus(req.tenant, previousStatus, 'active', 'Pago reportado por cliente en revision', req.user._id);
+        await logAccountStatus(req.tenant, previousStatus, 'pending_payment', 'Pago reportado por cliente en revision', req.user._id);
         res.status(201).json({ success: true, payment, account: tenantBillingPayload(req.tenant, req.tenant.planId ? await Plan.findById(req.tenant.planId) : null) });
     } catch (err) {
         console.error('Error subiendo comprobante:', err);
@@ -1787,7 +2024,7 @@ const registerTenantSchema = z.object({
     usuario: z.string().trim().min(3).max(40),
     email: z.string().trim().email().optional(),
     password: z.string().min(8).max(100),
-    tipoNegocio: z.enum(['verduleria', 'abarrotes', 'electronica', 'personalizado']).default('personalizado')
+    tipoNegocio: z.string().trim().max(50).optional().default('personalizado')
 });
 
 app.post('/api/tenants/register', authLimiter, async (req, res) => {
@@ -1799,8 +2036,9 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
         const email = (data.email || `${usuario}@${slug}.local`).toLowerCase().trim();
         const whatsapp = data.whatsapp.replace(/\D/g, '');
 
-        if (!slug || slug === 'admin' || slug === 'api') {
-            return res.status(400).json({ error: 'Slug inválido para el negocio' });
+        const reservedSlugs = ['admin', 'api', 'super-admin', 'health', 'uploads', 'default', 'c', 'p', 'auth', 'login', 'register'];
+        if (!slug || reservedSlugs.includes(slug)) {
+            return res.status(400).json({ error: 'Slug inválido o reservado para el negocio' });
         }
         if (whatsapp.length < 8) {
             return res.status(400).json({ error: 'WhatsApp inválido' });
@@ -1907,7 +2145,31 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
             ]);
         }
         if (err instanceof z.ZodError) {
-            return res.status(400).json({ error: 'Datos inválidos para crear la cuenta' });
+            const fieldNames = {
+                nombre: 'Nombre del negocio',
+                slug: 'Enlace del catálogo',
+                whatsapp: 'WhatsApp',
+                usuario: 'Tu nombre',
+                email: 'Correo',
+                password: 'Contraseña',
+                tipoNegocio: 'Tipo de negocio'
+            };
+            const details = err.issues.map(e => {
+                const rawField = e.path.join('.');
+                const field = fieldNames[rawField] || rawField;
+                let msg = e.message;
+                if (e.code === 'too_small') {
+                    msg = `debe tener al menos ${e.minimum} caracteres`;
+                } else if (e.code === 'too_big') {
+                    msg = `debe tener un máximo de ${e.maximum} caracteres`;
+                } else if ((e.code === 'invalid_string' && e.validation === 'email') || (e.code === 'invalid_format' && e.format === 'email')) {
+                    msg = `debe ser un correo electrónico válido`;
+                } else if (e.code === 'invalid_type') {
+                    msg = `es requerido o tiene un formato inválido`;
+                }
+                return `${field} (${msg})`;
+            }).join(', ');
+            return res.status(400).json({ error: `Datos inválidos: ${details}` });
         }
         if (err.code === 11000) {
             return res.status(409).json({ error: 'El negocio o usuario ya existe' });
@@ -1932,6 +2194,83 @@ app.get('/api/:tenant/admin/access/:key', tenantMiddleware, async (req, res) => 
 const loginSchema = z.object({
     identifier: z.string().trim().min(1),
     password: z.string().min(1)
+});
+
+app.post('/api/auth/login', authLimiter, async (req, res) => {
+    try {
+        const { identifier, password } = loginSchema.parse(req.body);
+        const normalized = identifier.toLowerCase().trim();
+        const user = await User.findOne({
+            activo: true,
+            $or: [{ email: normalized }, { usuario: normalized }]
+        });
+
+        const genericError = { error: 'Credenciales inválidas' };
+        if (!user) {
+            return res.status(401).json(genericError);
+        }
+
+        const tenant = await Tenant.findById(user.tenantId);
+        if (!tenant || !tenant.activo || tenant.status === 'deleted') {
+            return res.status(401).json({ error: 'Catálogo no encontrado o inactivo' });
+        }
+
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+            return res.status(423).json({ error: 'Cuenta bloqueada temporalmente. Intenta más tarde.' });
+        }
+
+        const validPassword = await bcrypt.compare(password, user.passwordHash);
+        if (!validPassword) {
+            user.failedLoginAttempts += 1;
+            if (user.failedLoginAttempts >= 5) {
+                user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+            }
+            await user.save();
+            return res.status(401).json(genericError);
+        }
+
+        user.failedLoginAttempts = 0;
+        user.lockedUntil = undefined;
+        user.ultimoLogin = new Date();
+        await user.save();
+
+        const token = crearTokenSeguro();
+        await Session.create({
+            tenantId: tenant._id,
+            userId: user._id,
+            tokenHash: sha256(token),
+            expiresAt: nuevaExpiracionSesion(),
+            lastActivityAt: new Date(),
+            ip: req.ip,
+            userAgent: req.get('user-agent') || ''
+        });
+
+        res.cookie(cookieName(tenant.slug), token, cookieOptions());
+
+        const response = {
+            success: true,
+            tenantSlug: tenant.slug,
+            adminAccessKey: user.rol !== 'super_admin' ? tenant.adminAccessKey : undefined,
+            user: {
+                nombre: user.nombre,
+                email: user.email,
+                usuario: user.usuario,
+                rol: user.rol,
+                adminAccessKey: user.rol !== 'super_admin' ? tenant.adminAccessKey : undefined
+            },
+            adminAccessKey: user.rol !== 'super_admin' ? tenant.adminAccessKey : undefined
+        };
+        if (process.env.NODE_ENV !== 'production') {
+            response.devSessionToken = token;
+        }
+        res.json(response);
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Datos inválidos', detalles: err.issues });
+        }
+        console.error('Error en login global:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
 });
 
 app.post('/api/:tenant/auth/login', tenantMiddleware, authLimiter, async (req, res) => {
@@ -1990,8 +2329,12 @@ app.post('/api/:tenant/auth/login', tenantMiddleware, authLimiter, async (req, r
                 nombre: user.nombre,
                 email: user.email,
                 usuario: user.usuario,
-                rol: user.rol
-            }
+                rol: user.rol,
+                mustChangePassword: user.mustChangePassword === true,
+                adminAccessKey: user.rol === 'tenant_admin' ? req.tenant.adminAccessKey : undefined
+            },
+            mustChangePassword: user.mustChangePassword === true,
+            adminAccessKey: user.rol === 'tenant_admin' ? req.tenant.adminAccessKey : undefined
         };
         if (process.env.NODE_ENV !== 'production') {
             response.devSessionToken = token;
@@ -2021,6 +2364,30 @@ app.post('/api/:tenant/auth/logout', tenantMiddleware, requireAdminAuth, async (
     res.clearCookie(cookieName(req.tenant.slug), clearCookieOptions());
     await auditLog(req, 'logout');
     res.json({ success: true });
+});
+
+// Force-change-password: called when mustChangePassword=true (post super-admin reset).
+// Does NOT require the current password — the temporary password was already verified at login.
+app.post('/api/:tenant/auth/force-change-password', tenantMiddleware, requireAdminAuth, authLimiter, async (req, res) => {
+    try {
+        if (!req.user.mustChangePassword) {
+            return res.status(403).json({ error: 'No se requiere cambio de contraseña forzado para este usuario' });
+        }
+        const newPassword = String(req.body.newPassword || '');
+        if (newPassword.length < 8) {
+            return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
+        }
+        req.user.passwordHash = await bcrypt.hash(newPassword, 12);
+        req.user.mustChangePassword = false;
+        await req.user.save();
+        // Invalidate all other active sessions so only this one persists
+        await Session.deleteMany({ tenantId: req.tenantId, userId: req.user._id, _id: { $ne: req.session._id } });
+        await auditLog(req, 'force_password_changed', { userId: req.user._id });
+        res.json({ success: true, message: 'Contraseña actualizada correctamente. Bienvenido.' });
+    } catch (err) {
+        console.error('Error in force-change-password:', err);
+        res.status(500).json({ error: 'Error al cambiar contraseña' });
+    }
 });
 
 app.put('/api/:tenant/auth/password', tenantMiddleware, requireAdminAuth, authLimiter, async (req, res) => {
@@ -2213,11 +2580,37 @@ app.get('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, async
     }
 });
 
+const productSchema = z.object({
+    nombre: z.string().min(1).max(100),
+    precio: z.string().or(z.number()).transform(val => parseFloat(val)),
+    unidad: z.string().min(1).max(30),
+    unidadMedida: z.string().max(30).optional(),
+    categoriaId: z.string().optional(),
+    categoria: z.string().optional(),
+    orden: z.string().or(z.number()).transform(val => parseInt(val)).optional(),
+    ordenVisualizacion: z.string().or(z.number()).transform(val => parseInt(val)).optional(),
+    activo: z.string().or(z.boolean()).transform(val => val === 'true' || val === true).optional()
+}).refine(data => data.categoriaId || data.categoria, {
+    message: "Debe proporcionar una categoria"
+});
+
 app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requireTenantOperational, upload.single('foto'), async (req, res) => {
     try {
-        const categoria = await buscarCategoriaTenant(req.tenantId, req.body.categoriaId || req.body.categoria);
+        const data = productSchema.parse(req.body);
+        
+        if (req.tenant.planId) {
+            const plan = await Plan.findById(req.tenant.planId);
+            if (plan) {
+                const count = await Producto.countDocuments({ tenantId: req.tenantId });
+                if (count >= plan.productLimit) {
+                    return res.status(403).json({ error: `Límite de productos alcanzado para tu plan (${plan.productLimit}).` });
+                }
+            }
+        }
+
+        const categoria = await buscarCategoriaTenant(req.tenantId, data.categoriaId || data.categoria);
         if (!categoria) {
-            return res.status(400).json({ error: 'Categoria requerida' });
+            return res.status(400).json({ error: 'Categoria no encontrada o inválida' });
         }
 
         const imagenGuardada = await guardarImagenProducto(req.file, req.tenant.slug);
@@ -2227,21 +2620,22 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requ
             tenantId: req.tenantId,
             categoriaId: categoria._id,
             categoria: categoria.nombre,
-            nombre: req.body.nombre,
-            precio: parseFloat(req.body.precio),
-            unidad: req.body.unidad,
-            unidadMedida: req.body.unidadMedida || req.body.unidad,
+            nombre: data.nombre,
+            precio: data.precio,
+            unidad: data.unidad,
+            unidadMedida: data.unidadMedida || data.unidad,
             imagen: rutaImagen,
             imagenUrl: rutaImagen,
             cloudinaryPublicId: imagenGuardada.publicId,
-            orden: parseInt(req.body.orden) || 999,
-            ordenVisualizacion: parseInt(req.body.ordenVisualizacion || req.body.orden) || 999,
-            activo: req.body.activo === 'true' || req.body.activo === true
+            orden: data.orden || 999,
+            ordenVisualizacion: data.ordenVisualizacion || data.orden || 999,
+            activo: data.activo !== undefined ? data.activo : true
         });
 
         await nuevoProducto.save();
         res.status(201).json({ mensaje: 'Producto creado exitosamente', producto: productoResponse(nuevoProducto, categoria) });
     } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ error: 'Datos de producto invalidos', detalles: err.issues });
         console.error(err);
         res.status(500).json({ error: 'Error al crear producto' });
     }
@@ -2323,22 +2717,68 @@ app.patch('/api/:tenant/admin/products/:id/toggle', tenantMiddleware, requireAdm
     }
 });
 
-app.post('/api/:tenant/orders', tenantMiddleware, requireTenantOperational, async (req, res) => {
+const orderRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    message: { error: 'Demasiados pedidos desde esta IP, por favor intenta más tarde.' }
+});
+
+const pedidoSchema = z.object({
+    cliente: z.object({
+        nombre: z.string().min(1).max(100),
+        telefono: z.string().min(1).max(20)
+    }),
+    productos: z.array(z.object({
+        productId: z.string().optional(),
+        nombre: z.string(),
+        cantidad: z.number().min(0.01),
+        unidad: z.string(),
+        precio: z.number().optional()
+    })).min(1),
+    total: z.number(),
+    pdfUrl: z.string().optional()
+});
+
+app.post('/api/:tenant/orders', tenantMiddleware, requireTenantOperational, orderRateLimit, async (req, res) => {
     try {
+        const data = pedidoSchema.parse(req.body);
+        let totalCalculado = 0;
+        const productosProcesados = [];
+
+        for (const p of data.productos) {
+            let precioReal = 0;
+            if (p.productId && isValidId(p.productId)) {
+                const dbProd = await Producto.findOne({ _id: p.productId, tenantId: req.tenantId });
+                if (dbProd) {
+                    precioReal = dbProd.precio;
+                }
+            }
+            if (precioReal === 0) {
+                precioReal = p.precio || 0;
+            }
+            totalCalculado += precioReal * p.cantidad;
+            productosProcesados.push({
+                nombre: p.nombre,
+                precio: precioReal,
+                cantidad: p.cantidad,
+                unidad: p.unidad
+            });
+        }
+
         const nuevoPedido = new Pedido({
             tenantId: req.tenantId,
-            cliente: {
-                nombre: req.body.cliente.nombre,
-                telefono: req.body.cliente.telefono
-            },
-            telefono: req.body.cliente.telefono,
-            productos: req.body.productos,
-            total: parseFloat(req.body.total),
-            pdfUrl: req.body.pdfUrl || ''
+            cliente: data.cliente,
+            telefono: data.cliente.telefono,
+            productos: productosProcesados,
+            total: totalCalculado,
+            pdfUrl: data.pdfUrl || ''
         });
         await nuevoPedido.save();
         res.status(201).json({ success: true, mensaje: 'Pedido registrado exitosamente', pedido: nuevoPedido });
     } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Datos invalidos', detalles: err.issues });
+        }
         console.error('Error al registrar pedido:', err);
         res.status(500).json({ error: 'Error al registrar el pedido en la base de datos' });
     }
@@ -2378,230 +2818,29 @@ app.delete('/api/:tenant/admin/orders', tenantMiddleware, requireAdminAuth, asyn
     }
 });
 
-// 1. Obtener productos activos (Para el cliente final)
-app.get('/api/productos', async (req, res) => {
-    try {
-        const tenant = await tenantDefault();
-        const lista = await Producto.find({ tenantId: tenant._id, activo: true }).populate('categoriaId').sort('ordenVisualizacion');
-        res.json(lista.map(producto => productoResponse(producto, producto.categoriaId)));
-    } catch (err) {
-        res.status(500).json({ error: 'Error al obtener productos activos' });
-    }
-});
 
-// 2. Obtener TODOS los productos (Para el panel de administración)
-app.get('/api/admin/productos', tenantDefaultMiddleware, requireAdminAuth, async (req, res) => {
-    try {
-        const tenant = await tenantDefault();
-        const lista = await Producto.find({ tenantId: tenant._id }).populate('categoriaId').sort('ordenVisualizacion');
-        res.json(lista.map(producto => productoResponse(producto, producto.categoriaId)));
-    } catch (err) {
-        res.status(500).json({ error: 'Error al obtener todos los productos' });
-    }
-});
-
-// 3. Crear Producto con conversión automática a .webp
-app.post('/api/admin/productos', tenantDefaultMiddleware, requireAdminAuth, upload.single('foto'), async (req, res) => {
-    try {
-        const tenant = await tenantDefault();
-        const categoria = await buscarCategoriaTenant(tenant._id, req.body.categoria);
-        let rutaImagen = '/uploads/placeholder.webp';
-
-        if (req.file) {
-            const nombreArchivo = `prod-${Date.now()}.webp`;
-            const rutaDestino = path.join(uploadsDir, nombreArchivo);
-
-            // Conversión forzada a WEBP usando Sharp
-            await sharp(req.file.buffer)
-                .webp({ quality: 80 })
-                .toFile(rutaDestino);
-
-            rutaImagen = `/uploads/${nombreArchivo}`;
-        }
-
-        const nuevoProducto = new Producto({
-            tenantId: tenant._id,
-            categoriaId: categoria?._id,
-            categoria: categoria?.nombre || req.body.categoria,
-            nombre: req.body.nombre,
-            precio: parseFloat(req.body.precio),
-            unidad: req.body.unidad,
-            unidadMedida: req.body.unidad,
-            imagen: rutaImagen,
-            imagenUrl: rutaImagen,
-            orden: parseInt(req.body.orden) || 999,
-            ordenVisualizacion: parseInt(req.body.orden) || 999,
-            activo: req.body.activo === 'true' || req.body.activo === true
-        });
-
-        await nuevoProducto.save();
-        res.status(201).json({ mensaje: 'Producto creado exitosamente', producto: productoResponse(nuevoProducto, categoria) });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al crear producto' });
-    }
-});
-
-// 4. Actualizar Producto con soporte para cambiar imagen y limpiar la anterior
-app.put('/api/admin/productos/:id', tenantDefaultMiddleware, requireAdminAuth, upload.single('foto'), async (req, res) => {
-    try {
-        const { id } = req.params;
-        const tenant = await tenantDefault();
-        const productoExistente = await Producto.findOne({ _id: id, tenantId: tenant._id });
-        if (!productoExistente) {
-            return res.status(404).json({ error: 'Producto no encontrado' });
-        }
-        const categoria = await buscarCategoriaTenant(tenant._id, req.body.categoria || productoExistente.categoriaId);
-
-        let rutaImagen = productoExistente.imagenUrl || productoExistente.imagen;
-
-        if (req.file) {
-            // Eliminar imagen anterior si no es el placeholder
-            eliminarImagen(productoExistente.imagen);
-
-            const nombreArchivo = `prod-${Date.now()}.webp`;
-            const rutaDestino = path.join(uploadsDir, nombreArchivo);
-
-            // Convertir nueva imagen
-            await sharp(req.file.buffer)
-                .webp({ quality: 80 })
-                .toFile(rutaDestino);
-
-            rutaImagen = `/uploads/${nombreArchivo}`;
-        }
-
-        if (categoria) {
-            productoExistente.categoriaId = categoria._id;
-            productoExistente.categoria = categoria.nombre;
-        }
-        productoExistente.nombre = req.body.nombre || productoExistente.nombre;
-        productoExistente.precio = req.body.precio !== undefined ? parseFloat(req.body.precio) : productoExistente.precio;
-        productoExistente.unidad = req.body.unidad || productoExistente.unidad;
-        productoExistente.unidadMedida = req.body.unidad || productoExistente.unidadMedida;
-        productoExistente.imagen = rutaImagen;
-        productoExistente.imagenUrl = rutaImagen;
-        productoExistente.orden = req.body.orden !== undefined ? parseInt(req.body.orden) : productoExistente.orden;
-        productoExistente.ordenVisualizacion = req.body.orden !== undefined ? parseInt(req.body.orden) : productoExistente.ordenVisualizacion;
-        
-        if (req.body.activo !== undefined) {
-            productoExistente.activo = req.body.activo === 'true' || req.body.activo === true;
-        }
-
-        await productoExistente.save();
-        res.json({ mensaje: 'Producto actualizado exitosamente', producto: productoResponse(productoExistente, categoria) });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al actualizar producto' });
-    }
-});
-
-// 5. Eliminar Producto y su imagen física
-app.delete('/api/admin/productos/:id', tenantDefaultMiddleware, requireAdminAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const tenant = await tenantDefault();
-        const producto = await Producto.findOne({ _id: id, tenantId: tenant._id });
-        if (!producto) {
-            return res.status(404).json({ error: 'Producto no encontrado' });
-        }
-
-        // Eliminar la imagen del disco
-        eliminarImagen(producto.imagenUrl || producto.imagen);
-
-        await Producto.deleteOne({ _id: id, tenantId: tenant._id });
-        res.json({ mensaje: 'Producto eliminado exitosamente' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al eliminar producto' });
-    }
-});
-
-// 6. Toggle rápido de estado activo/inactivo
-app.patch('/api/admin/productos/:id/toggle', tenantDefaultMiddleware, requireAdminAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const tenant = await tenantDefault();
-        const producto = await Producto.findOne({ _id: id, tenantId: tenant._id });
-        if (!producto) {
-            return res.status(404).json({ error: 'Producto no encontrado' });
-        }
-
-        producto.activo = !producto.activo;
-        await producto.save();
-        res.json({ mensaje: `Producto ${producto.activo ? 'activado' : 'desactivado'} correctamente`, activo: producto.activo });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al cambiar estado del producto' });
-    }
-});
-
-// Registrar un nuevo pedido en la base de datos
-app.post('/api/pedidos', async (req, res) => {
-    try {
-        const tenant = await tenantDefault();
-        const nuevoPedido = new Pedido({
-            tenantId: tenant._id,
-            cliente: {
-                nombre: req.body.cliente.nombre,
-                telefono: req.body.cliente.telefono
-            },
-            telefono: req.body.cliente.telefono,
-            productos: req.body.productos,
-            total: parseFloat(req.body.total),
-            pdfUrl: req.body.pdfUrl || ''
-        });
-        await nuevoPedido.save();
-        res.status(201).json({ success: true, mensaje: 'Pedido registrado exitosamente', pedido: nuevoPedido });
-    } catch (err) {
-        console.error('Error al registrar pedido:', err);
-        res.status(500).json({ error: 'Error al registrar el pedido en la base de datos' });
-    }
-});
-
-// Obtener todos los pedidos (para el historial de administración)
-app.get('/api/admin/pedidos', tenantDefaultMiddleware, requireAdminAuth, async (req, res) => {
-    try {
-        const tenant = await tenantDefault();
-        await limpiarPedidosExpirados(tenant._id);
-        const lista = await Pedido.find({ tenantId: tenant._id }).sort({ fecha: -1 });
-        res.json(lista);
-    } catch (err) {
-        console.error('Error al obtener pedidos:', err);
-        res.status(500).json({ error: 'Error al obtener el historial de pedidos' });
-    }
-});
-
-// Eliminar un pedido individual del historial
-app.delete('/api/admin/pedidos/:id', tenantDefaultMiddleware, requireAdminAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const tenant = await tenantDefault();
-        const pedidoEliminado = await Pedido.findOneAndDelete({ _id: id, tenantId: tenant._id });
-        if (!pedidoEliminado) {
-            return res.status(404).json({ error: 'Pedido no encontrado' });
-        }
-        res.json({ success: true, mensaje: 'Pedido eliminado del historial con éxito' });
-    } catch (err) {
-        console.error('Error al eliminar pedido:', err);
-        res.status(500).json({ error: 'Error al intentar eliminar el pedido del historial' });
-    }
-});
-
-// Limpiar por completo el historial de pedidos
-app.delete('/api/admin/pedidos', tenantDefaultMiddleware, requireAdminAuth, async (req, res) => {
-    try {
-        const tenant = await tenantDefault();
-        await Pedido.deleteMany({ tenantId: tenant._id });
-        res.json({ success: true, mensaje: 'Historial de pedidos limpiado por completo' });
-    } catch (err) {
-        console.error('Error al limpiar historial de pedidos:', err);
-        res.status(500).json({ error: 'Error al intentar vaciar el historial de pedidos' });
-    }
-});
 
 // Ruta comodín para endpoints no encontrados
-app.get('*', (req, res) => {
+app.all('*', (req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada en la API' });
+});
+
+// Global Error Handler (BUG-028)
+app.use((err, req, res, next) => {
+    console.error('Error no manejado:', err);
+    if (err.name === 'ValidationError') {
+        return res.status(400).json({ error: 'Error de validación', detalles: err.message });
+    }
+    if (err.name === 'CastError') {
+        return res.status(400).json({ error: 'ID inválido o formato incorrecto' });
+    }
+    if (err.message && err.message.includes('Formato no soportado')) {
+        return res.status(400).json({ error: err.message });
+    }
+    if (err.type === 'entity.parse.failed') {
+        return res.status(400).json({ error: 'JSON inválido' });
+    }
+    res.status(500).json({ error: 'Error interno del servidor' });
 });
 
 // Escuchar puerto
