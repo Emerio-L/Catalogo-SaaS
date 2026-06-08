@@ -18,15 +18,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
     <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
     {isLandingPage ? (
         <div id="landing-view" class="w-full min-h-screen landing-view text-slate-800 selection:bg-purple-500 selection:text-white font-sans relative flex flex-col justify-between">
-            {/* Soft Background Decorative Lights */}
-            <div class="absolute inset-0 pointer-events-none z-0">
-                {/* General soft gradient background */}
-                <div class="absolute inset-0 bg-gradient-to-tr from-[#E0E7FF] via-[#F3F0FF] to-[#FAF5FF]"></div>
-                {/* Purple wave/blob decoration top left */}
-                <div class="absolute top-0 left-0 w-[480px] h-[480px] bg-gradient-to-br from-[#7C3AED]/18 via-[#7C3AED]/4 to-transparent rounded-br-[340px] blur-sm"></div>
+            {/* CONTENEDOR HERO SECTION (PRIMERA PANTALLA) */}
+            <div class="hero-section relative overflow-hidden flex flex-col justify-between">
                 {/* Dotted grid on the left */}
-                <div class="absolute top-28 left-8 w-36 h-36 dot-pattern opacity-60"></div>
-            </div>
+                <div class="absolute inset-0 pointer-events-none z-0">
+                    <div class="absolute top-28 left-8 w-36 h-36 dot-pattern opacity-60"></div>
+                </div>
 
             {/* STYLE DECLARATIONS */}
             <style is:inline>
@@ -107,38 +104,143 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     transform: rotate(180deg);
                 }
 
-                /* Custom highlighted card styling matching approved design */
-                .cardHighlight {
+                /* Contenedor principal de la primera pantalla visible */
+                .hero-section {
+                  min-height: 100vh;
+                  background:
+                    radial-gradient(circle at 0% 0%, rgba(124, 58, 237, 0.24) 0px, rgba(124, 58, 237, 0.16) 130px, transparent 310px),
+                    radial-gradient(circle at 48% 30%, rgba(124, 58, 237, 0.12) 0px, transparent 380px),
+                    radial-gradient(circle at 100% 20%, rgba(59, 130, 246, 0.08) 0px, transparent 360px),
+                    linear-gradient(135deg, #f8f9ff 0%, #eef2ff 45%, #f7f1ff 100%);
+                }
+
+                /* Medidas y proporción de las tarjetas principales */
+                .heroActionCards {
+                  display: flex;
+                  gap: 28px;
+                  align-items: stretch;
+                }
+
+                .heroActionCard {
+                  width: 300px;
+                  min-height: 500px;
+                  padding: 34px 30px 30px;
+                  border-radius: 30px;
                   background: #ffffff;
-                  border-radius: 28px;
-                  border: 1px solid rgba(139, 92, 246, 0.28);
-                  box-shadow:
-                    0 22px 45px rgba(79, 70, 229, 0.10),
-                    0 8px 18px rgba(15, 23, 42, 0.05);
                   position: relative;
+                  overflow: hidden;
                   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 }
 
-                .cardHighlight::before {
+                .heroActionCard:hover {
+                  transform: translateY(-5px);
+                  box-shadow:
+                    0 35px 75px rgba(124, 58, 237, 0.20),
+                    0 12px 28px rgba(15, 23, 42, 0.08);
+                }
+
+                .heroActionCard.portal:hover {
+                  box-shadow:
+                    0 35px 75px rgba(15, 107, 255, 0.18),
+                    0 12px 28px rgba(15, 23, 42, 0.08);
+                }
+
+                .heroActionCard.signup {
+                  border: 1.5px solid rgba(124, 58, 237, 0.36);
+                  box-shadow:
+                    0 28px 65px rgba(124, 58, 237, 0.16),
+                    0 10px 24px rgba(15, 23, 42, 0.06);
+                }
+
+                .heroActionCard.portal {
+                  border: 1.5px solid rgba(15, 107, 255, 0.36);
+                  box-shadow:
+                    0 28px 65px rgba(15, 107, 255, 0.14),
+                    0 10px 24px rgba(15, 23, 42, 0.06);
+                }
+
+                .heroActionCard::before {
                   content: "";
                   position: absolute;
                   inset: 0;
                   border-radius: inherit;
                   padding: 1px;
-                  background: linear-gradient(135deg, rgba(139,92,246,.45), rgba(37,99,235,.35), rgba(249,115,22,.25));
+                  pointer-events: none;
+                  background: linear-gradient(135deg, rgba(124,58,237,.45), rgba(59,130,246,.35), rgba(249,115,22,.22));
                   -webkit-mask:
                     linear-gradient(#fff 0 0) content-box,
                     linear-gradient(#fff 0 0);
                   -webkit-mask-composite: xor;
                   mask-composite: exclude;
-                  pointer-events: none;
                 }
 
-                .cardHighlight:hover {
-                  transform: translateY(-4px);
-                  box-shadow:
-                    0 28px 60px rgba(79, 70, 229, 0.14),
-                    0 10px 24px rgba(15, 23, 42, 0.07);
+                .heroActionCard .cardBadge {
+                  margin-bottom: 22px;
+                }
+
+                .heroActionCard .cardIcon {
+                  width: 66px;
+                  height: 66px;
+                  margin-bottom: 26px;
+                }
+
+                .heroActionCard h3 {
+                  font-size: 28px;
+                  line-height: 1.08;
+                  margin-bottom: 8px;
+                }
+
+                .heroActionCard .cardSubtitle {
+                  font-size: 15px;
+                  margin-bottom: 26px;
+                }
+
+                .heroActionCard .cardDivider {
+                  margin: 0 0 26px;
+                }
+
+                .heroActionCard ul {
+                  display: grid;
+                  gap: 15px;
+                  margin-bottom: 34px;
+                }
+
+                .heroActionCard ul li {
+                  font-size: 13px;
+                  font-weight: 700;
+                  color: #4B5563;
+                }
+
+                .heroActionCard button,
+                .heroActionCard a.button {
+                  width: 100%;
+                  height: 56px;
+                  border-radius: 14px;
+                  font-weight: 800;
+                }
+
+                /* Responsive */
+                @media (max-width: 1100px) {
+                  .heroActionCards {
+                    gap: 20px;
+                  }
+
+                  .heroActionCard {
+                    width: 280px;
+                    min-height: 480px;
+                  }
+                }
+
+                @media (max-width: 900px) {
+                  .heroActionCards {
+                    flex-direction: column;
+                  }
+
+                  .heroActionCard {
+                    width: 100%;
+                    max-width: 360px;
+                    min-height: auto;
+                  }
                 }
 
                 .dot-pattern {
@@ -276,52 +378,58 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 </div>
 
                 {/* Columna Derecha (Tarjetas de Selección Side by Side) */}
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch w-full lg:col-span-1">
+                <div class="heroActionCards lg:col-span-1">
                     {/* Tarjeta Cliente Nuevo */}
-                    <div class="cardHighlight p-5 flex flex-col justify-between items-stretch bg-white">
-                        <div class="space-y-3.5">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 border border-purple-100/50 shadow-sm"><i class="fa-solid fa-cart-shopping text-base"></i></span>
-                            <span class="inline-block bg-purple-50 border border-purple-100 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-purple-700">¿ERES NUEVO?</span>
+                    <div class="heroActionCard signup flex flex-col justify-between items-stretch">
+                        <div>
+                            <span class="cardIcon flex shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 border border-purple-100/50 shadow-sm text-2xl">
+                                <i class="fa-solid fa-cart-shopping"></i>
+                            </span>
+                            <span class="cardBadge inline-block bg-purple-50 border border-purple-100 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-purple-700">¿ERES NUEVO?</span>
                             <div>
-                                <h3 class="text-lg font-black text-slate-900 leading-tight">Crea tu cuenta</h3>
-                                <p class="text-[10px] font-semibold text-slate-500 mt-0.5">y comienza a vender</p>
+                                <h3 class="font-black text-slate-900 leading-tight">Crea tu cuenta</h3>
+                                <p class="cardSubtitle font-semibold text-slate-500 mt-0.5">y comienza a vender</p>
                             </div>
-                            <ul class="space-y-2 text-[11px] font-bold text-slate-600 border-t border-slate-100/80 pt-3">
-                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-[9px]"></i> <span id="landing-card-trial-text">Prueba 7 días gratis</span></li>
-                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-[9px]"></i> <span id="landing-card-price-text">Plan mensual de Q50</span></li>
-                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-[9px]"></i> Sin comisiones por ventas</li>
-                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-[9px]"></i> Vende cualquier tipo de producto</li>
+                            <hr class="cardDivider border-t border-slate-100/80" />
+                            <ul>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-xs"></i> <span id="landing-card-trial-text">Prueba 7 días gratis</span></li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-xs"></i> <span id="landing-card-price-text">Plan mensual de Q50</span></li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-xs"></i> Sin comisiones por ventas</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-600 text-xs"></i> Vende cualquier tipo de producto</li>
                             </ul>
                         </div>
-                        <div class="mt-5 space-y-2">
-                            <button onclick="mostrarLandingStep('register')" class="w-full py-2.5 text-[11px] font-black uppercase tracking-wider landing-btn-primary shadow-lg shadow-purple-500/15">
+                        <div class="mt-auto space-y-2">
+                            <button onclick="mostrarLandingStep('register')" class="w-full text-xs font-black uppercase tracking-wider landing-btn-primary shadow-lg shadow-purple-500/15">
                                 Comenzar gratis
                             </button>
-                            <p class="text-[9px] font-bold text-slate-400 text-center flex items-center justify-center gap-1.5"><i class="fa-solid fa-lock text-[8px]"></i> Sin tarjeta de crédito</p>
+                            <p class="text-[10px] font-bold text-slate-400 text-center flex items-center justify-center gap-1.5"><i class="fa-solid fa-lock text-[8px]"></i> Sin tarjeta de crédito</p>
                         </div>
                     </div>
 
                     {/* Tarjeta Cliente Existente */}
-                    <div class="cardHighlight p-5 flex flex-col justify-between items-stretch bg-white">
-                        <div class="space-y-3.5">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/50 shadow-sm"><i class="fa-solid fa-user text-base"></i></span>
-                            <span class="inline-block bg-blue-50 border border-blue-100 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-700">¿YA TIENES CUENTA?</span>
+                    <div class="heroActionCard portal flex flex-col justify-between items-stretch">
+                        <div>
+                            <span class="cardIcon flex shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/50 shadow-sm text-2xl">
+                                <i class="fa-solid fa-user"></i>
+                            </span>
+                            <span class="cardBadge inline-block bg-blue-50 border border-blue-100 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-700">¿YA TIENES CUENTA?</span>
                             <div>
-                                <h3 class="text-lg font-black text-slate-900 leading-tight">Ingresa al portal</h3>
-                                <p class="text-[10px] font-semibold text-slate-500 mt-0.5">y administra tu negocio</p>
+                                <h3 class="font-black text-slate-900 leading-tight">Ingresa al portal</h3>
+                                <p class="cardSubtitle font-semibold text-slate-500 mt-0.5">y administra tu negocio</p>
                             </div>
-                            <ul class="space-y-2 text-[11px] font-bold text-slate-600 border-t border-slate-100/80 pt-3">
-                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-[9px]"></i> Gestiona productos y precios</li>
-                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-[9px]"></i> Revisa y responde pedidos</li>
-                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-[9px]"></i> Actualiza tu catálogo</li>
-                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-[9px]"></i> Accede a tus estadísticas</li>
+                            <hr class="cardDivider border-t border-slate-100/80" />
+                            <ul>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-xs"></i> Gestiona productos y precios</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-xs"></i> Revisa y responde pedidos</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-xs"></i> Actualiza tu catálogo</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-600 text-xs"></i> Accede a tus estadísticas</li>
                             </ul>
                         </div>
-                        <div class="mt-5 space-y-2">
-                            <button onclick="mostrarLandingStep('login')" class="w-full py-2.5 text-[11px] font-black uppercase tracking-wider bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-500 active:scale-95 transition-all shadow-lg shadow-blue-500/10">
+                        <div class="mt-auto space-y-2">
+                            <button onclick="mostrarLandingStep('login')" class="w-full text-xs font-black uppercase tracking-wider bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-500 active:scale-95 transition-all shadow-lg shadow-blue-500/10">
                                 Ingresar al portal
                             </button>
-                            <p class="text-[9px] font-bold text-slate-400 text-center flex items-center justify-center gap-1.5"><i class="fa-solid fa-lock text-[8px]"></i> Acceso seguro</p>
+                            <p class="text-[10px] font-bold text-slate-400 text-center flex items-center justify-center gap-1.5"><i class="fa-solid fa-lock text-[8px]"></i> Acceso seguro</p>
                         </div>
                     </div>
                 </div>
@@ -365,6 +473,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <span class="flex items-center gap-1"><i class="fa-solid fa-user-shield text-purple-600 text-[10px]"></i> Privacidad garantizada</span>
                     </div>
                 </div>
+            </div>
             </div>
 
             {/* SECCIÓN RUBROS */}
