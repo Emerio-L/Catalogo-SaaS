@@ -382,7 +382,7 @@ function makeModel(modelName, prismaModelName) {
 
     ModelConstructor.updateOne = async function(mongoQuery, updateObj) {
         const where = mapQuery(modelName, mongoQuery);
-        const updateData = updateObj.$set || updateObj.$setOnInsert || updateObj;
+        const updateData = updateObj.$set || updateObj;
         
         const records = await prisma[prismaModelName].findMany({ where });
         if (records.length === 0) {
@@ -393,9 +393,16 @@ function makeModel(modelName, prismaModelName) {
             return { matchedCount: 0, modifiedCount: 0 };
         }
 
+        const cleanData = {};
+        for (const [k, v] of Object.entries(updateData)) {
+            if (!k.startsWith('$') && k !== 'tenantId') {
+                cleanData[k] = v;
+            }
+        }
+
         await prisma[prismaModelName].update({
             where: { id: records[0].id },
-            data: updateData
+            data: cleanData
         });
         return { matchedCount: 1, modifiedCount: 1 };
     };

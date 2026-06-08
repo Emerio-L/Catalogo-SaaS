@@ -1915,31 +1915,48 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             return res.status(400).json({ error: 'Debes mantener al menos una forma de recibir pedidos activa' });
         }
 
-        await Settings.updateOne(
-            { tenantId: req.tenantId },
-            {
-                $set: {
-                    ...(tema ? { tema } : {}),
-                    ...(telefonoWhatsApp || whatsapp ? { whatsapp: telefonoWhatsApp || whatsapp } : {}),
-                    ...(colorPrimario ? { colorPrimario } : {}),
-                    ...(logo !== undefined ? { logo } : {}),
-                    ...(logoShape ? { logoShape } : {}),
-                    ...(catalogTitle !== undefined ? { catalogTitle: String(catalogTitle).trim() || 'Catalogo de productos' } : {}),
-                    ...(themeNormalizado ? { theme: themeNormalizado } : {}),
-                    ...(mostrarBuscador !== undefined ? { mostrarBuscador: Boolean(mostrarBuscador) } : {}),
-                    ...(mostrarCategorias !== undefined ? { mostrarCategorias: Boolean(mostrarCategorias) } : {}),
-                    ...(mostrarDescripcion !== undefined ? { mostrarDescripcion: Boolean(mostrarDescripcion) } : {}),
-                    ...(vistaPredeterminada ? { vistaPredeterminada } : {}),
-                    ...(monedaVisible ? { monedaVisible } : {}),
-                    ...(nextOrderCartEnabled !== undefined ? { orderCartEnabled: nextOrderCartEnabled } : {}),
-                    ...(nextOrderWhatsappEnabled !== undefined ? { orderWhatsappEnabled: nextOrderWhatsappEnabled } : {}),
-                    ...(validRequirement(addressRequirement) ? { addressRequirement } : {}),
-                    ...(validRequirement(commentRequirement) ? { commentRequirement } : {})
-                },
-                $setOnInsert: { tenantId: req.tenantId }
-            },
-            { upsert: true }
-        );
+        const settingsUpdate = {
+            ...(tema ? { tema } : {}),
+            ...(telefonoWhatsApp || whatsapp ? { whatsapp: telefonoWhatsApp || whatsapp } : {}),
+            ...(colorPrimario ? { colorPrimario } : {}),
+            ...(logo !== undefined ? { logo } : {}),
+            ...(logoShape ? { logoShape } : {}),
+            ...(catalogTitle !== undefined ? { catalogTitle: String(catalogTitle).trim() || 'Catalogo de productos' } : {}),
+            ...(themeNormalizado ? { theme: themeNormalizado } : {}),
+            ...(mostrarBuscador !== undefined ? { mostrarBuscador: Boolean(mostrarBuscador) } : {}),
+            ...(mostrarCategorias !== undefined ? { mostrarCategorias: Boolean(mostrarCategorias) } : {}),
+            ...(mostrarDescripcion !== undefined ? { mostrarDescripcion: Boolean(mostrarDescripcion) } : {}),
+            ...(vistaPredeterminada ? { vistaPredeterminada } : {}),
+            ...(monedaVisible ? { monedaVisible } : {}),
+            ...(nextOrderCartEnabled !== undefined ? { orderCartEnabled: nextOrderCartEnabled } : {}),
+            ...(nextOrderWhatsappEnabled !== undefined ? { orderWhatsappEnabled: nextOrderWhatsappEnabled } : {}),
+            ...(validRequirement(addressRequirement) ? { addressRequirement } : {}),
+            ...(validRequirement(commentRequirement) ? { commentRequirement } : {})
+        };
+
+        const updatedSettings = await prisma.settings.upsert({
+            where: { tenantId: req.tenantId },
+            update: settingsUpdate,
+            create: {
+                tenantId: req.tenantId,
+                whatsapp: telefonoWhatsApp || whatsapp || currentSettings.whatsapp || req.tenant.whatsapp,
+                colorPrimario: colorPrimario || currentSettings.colorPrimario || req.tenant.colorPrimario || '#10b981',
+                logo: logo !== undefined ? logo : currentSettings.logo || '',
+                logoShape: logoShape || currentSettings.logoShape || 'rectangle',
+                catalogTitle: catalogTitle !== undefined ? String(catalogTitle).trim() || 'Catalogo de productos' : currentSettings.catalogTitle || 'Catalogo de productos',
+                tema: tema || currentSettings.tema || 'emerald',
+                theme: themeNormalizado || currentSettings.theme || DEFAULT_TENANT_THEME,
+                mostrarBuscador: mostrarBuscador !== undefined ? Boolean(mostrarBuscador) : currentSettings.mostrarBuscador !== false,
+                mostrarCategorias: mostrarCategorias !== undefined ? Boolean(mostrarCategorias) : currentSettings.mostrarCategorias !== false,
+                mostrarDescripcion: mostrarDescripcion !== undefined ? Boolean(mostrarDescripcion) : currentSettings.mostrarDescripcion !== false,
+                vistaPredeterminada: vistaPredeterminada || currentSettings.vistaPredeterminada || 'grid',
+                monedaVisible: monedaVisible || currentSettings.monedaVisible || 'GTQ',
+                orderCartEnabled: finalOrderCartEnabled,
+                orderWhatsappEnabled: finalOrderWhatsappEnabled,
+                addressRequirement: validRequirement(addressRequirement) || currentSettings.addressRequirement || 'optional',
+                commentRequirement: validRequirement(commentRequirement) || currentSettings.commentRequirement || 'optional'
+            }
+        });
 
         if (telefonoWhatsApp || whatsapp || colorPrimario || logo !== undefined) {
             if (telefonoWhatsApp || whatsapp) req.tenant.whatsapp = telefonoWhatsApp || whatsapp;
@@ -1950,8 +1967,23 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
         if (descripcionNegocio !== undefined) req.tenant.descripcion = String(descripcionNegocio).trim();
         await req.tenant.save();
 
-        res.json({ success: true, mensaje: 'Ajustes del tenant actualizados correctamente' });
+        res.json({
+            success: true,
+            mensaje: 'Ajustes del tenant actualizados correctamente',
+            settings: {
+                mostrarBuscador: updatedSettings.mostrarBuscador,
+                mostrarCategorias: updatedSettings.mostrarCategorias,
+                mostrarDescripcion: updatedSettings.mostrarDescripcion,
+                vistaPredeterminada: updatedSettings.vistaPredeterminada,
+                monedaVisible: updatedSettings.monedaVisible,
+                orderCartEnabled: updatedSettings.orderCartEnabled,
+                orderWhatsappEnabled: updatedSettings.orderWhatsappEnabled,
+                addressRequirement: updatedSettings.addressRequirement,
+                commentRequirement: updatedSettings.commentRequirement
+            }
+        });
     } catch (err) {
+        console.error('Error al actualizar ajustes del tenant:', err);
         res.status(500).json({ error: 'Error al actualizar ajustes del tenant' });
     }
 });
@@ -1960,18 +1992,29 @@ app.post('/api/:tenant/admin/payments/receipt', tenantMiddleware, requireAdminAu
     try {
         const amount = money(req.body.amount || req.tenant.monthlyPrice || 0);
         const now = new Date();
+        const paymentMonth = String(req.body.paymentMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`).trim();
+        const paymentMethod = String(req.body.paymentMethod || 'Transferencia').trim() || 'Transferencia';
         const receipt = req.file
             ? await guardarArchivoGeneral(req.file, `${req.tenant.slug}/receipts`, `receipt-${req.tenant.slug}`)
             : { url: '', publicId: '' };
-        const payment = await Payment.create({
-            tenantId: req.tenantId,
-            amount,
-            paymentMonth: String(req.body.paymentMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`),
-            paymentMethod: String(req.body.paymentMethod || 'Transferencia'),
-            receiptUrl: receipt.url,
-            status: 'pendiente',
-            paidAt: now
-        });
+        let payment = await Payment.findOne({ tenantId: req.tenantId, paymentMonth, status: 'pendiente' }).sort({ createdAt: -1 });
+        if (payment) {
+            payment.amount = amount;
+            payment.paymentMethod = paymentMethod;
+            payment.paidAt = now;
+            if (receipt.url) payment.receiptUrl = receipt.url;
+            await payment.save();
+        } else {
+            payment = await Payment.create({
+                tenantId: req.tenantId,
+                amount,
+                paymentMonth,
+                paymentMethod,
+                receiptUrl: receipt.url,
+                status: 'pendiente',
+                paidAt: now
+            });
+        }
         const previousStatus = req.tenant.status;
         req.tenant.status = 'pending_payment';
         req.tenant.activo = true; 

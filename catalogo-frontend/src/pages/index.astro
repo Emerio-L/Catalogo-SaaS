@@ -1041,23 +1041,25 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             </div>
         </main>
 
-        <!-- FOOTER TOTAL -->
-        <footer class="fixed bottom-6 left-4 right-4 max-w-lg mx-auto z-40">
-            <div class="bg-slate-900/95 backdrop-blur-xl rounded-3xl p-5 shadow-2xl flex justify-between items-center border border-white/10 transition-all duration-300">
+        <!-- MINI CARRITO FLOTANTE -->
+        <div id="mini-cart-summary" class="fixed bottom-32 right-8 z-40 hidden w-80 rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl lg:block">
+            <button type="button" onpointerdown="iniciarDragMiniCarrito(event)" class="mx-auto mb-3 block h-2 w-16 cursor-move rounded-full bg-slate-200 transition hover:bg-slate-300" aria-label="Mover mini carrito"></button>
+            <div class="cursor-move select-none flex items-center justify-between gap-4" onpointerdown="iniciarDragMiniCarrito(event)">
                 <div>
-                    <p class="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">
-                        Monto de tu Orden
-                    </p>
-                    <p id="total-val" class="text-2xl font-black text-white tracking-tight">
-                        Q0.00
-                    </p>
+                    <p class="text-sm font-black text-slate-950">Mi pedido</p>
+                    <p id="mini-cart-count" class="text-xs font-semibold text-slate-500">0 articulos</p>
                 </div>
-                <button onclick="abrirValidacion()"
-                    class="bg-primary-500 hover:bg-primary-400 active:scale-95 text-white px-8 py-4 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-lg transition-all duration-200">
-                    Confirmar Orden <i class="fa-solid fa-circle-check ml-2"></i>
-                </button>
+                <p id="total-val" class="text-xl font-black text-slate-950">Q0.00</p>
             </div>
-        </footer>
+            <div id="mini-cart-thumbs" class="mt-3 flex -space-x-2 overflow-hidden"></div>
+            <button onclick="abrirValidacion()" class="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-xs font-black uppercase tracking-wider text-white transition hover:bg-slate-800">
+                Ver pedido <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+        <button id="floating-cart-btn" onclick="abrirValidacion()" class="fixed bottom-5 right-5 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-[#0F172A] text-white shadow-2xl transition hover:bg-[#111827] active:scale-95 md:bottom-8 md:right-8" aria-label="Abrir carrito">
+            <i class="fa-solid fa-cart-shopping text-xl"></i>
+            <span id="floating-cart-badge" class="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-black text-[#0F172A] shadow-md">0</span>
+        </button>
         </div>
     )}
 
@@ -1067,8 +1069,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         <div class="min-h-screen lg:flex">
             <aside class="fixed inset-y-0 left-0 z-50 hidden w-72 flex-col bg-[#071b33] text-white lg:flex">
                 <div class="flex h-full flex-col p-5">
-                    <div class="mb-8 flex h-32 w-64 max-w-full mx-auto items-center justify-center overflow-visible rounded-[1.5rem] bg-white shadow-xl ring-1 ring-black/5 relative">
-                        <img id="tenant-saas-logo-sidebar" src="" alt="Logo SaaS" class="hidden h-full w-full object-contain p-0 scale-[1.85]">
+                    <div class="mb-6 flex h-24 w-56 max-w-full mx-auto items-center justify-center overflow-hidden rounded-[1.5rem] bg-white p-3 shadow-xl ring-1 ring-black/5 relative">
+                        <img id="tenant-saas-logo-sidebar" src="" alt="Logo SaaS" class="hidden max-h-full max-w-full object-contain">
                         <div id="tenant-saas-placeholder-sidebar" class="flex flex-col items-center justify-center text-slate-400 text-center w-full">
                             <i class="fa-solid fa-bag-shopping text-2xl mb-0.5 text-slate-300"></i>
                             <p class="text-[9px] font-black uppercase tracking-wider text-slate-400">Admin</p>
@@ -1122,8 +1124,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             <main class="min-h-screen flex-1 p-4 lg:ml-72 lg:p-8">
                 <div class="mb-4 rounded-[1.75rem] bg-[#071b33] p-4 text-white shadow-premium ring-1 ring-slate-900/10 lg:hidden">
-                    <div class="mb-4 flex h-24 w-56 max-w-full mx-auto items-center justify-center overflow-hidden rounded-[1.25rem] bg-white shadow-xl ring-1 ring-black/5 relative">
-                        <img id="tenant-saas-logo-mobile" src="" alt="Logo SaaS" class="hidden h-full w-full object-contain p-0 scale-[1.9]">
+                    <div class="mb-4 flex h-20 w-52 max-w-full mx-auto items-center justify-center overflow-hidden rounded-[1.25rem] bg-white p-3 shadow-xl ring-1 ring-black/5 relative">
+                        <img id="tenant-saas-logo-mobile" src="" alt="Logo SaaS" class="hidden max-h-full max-w-full object-contain">
                         <div id="tenant-saas-placeholder-mobile" class="flex flex-col items-center justify-center text-slate-400 text-center w-full">
                             <i class="fa-solid fa-bag-shopping text-xl mb-0.5 text-slate-300"></i>
                             <p class="text-[8px] font-black uppercase tracking-wider text-slate-400">Admin</p>
@@ -2121,6 +2123,99 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         .catalog-search-input::placeholder {
             color: var(--tenant-search-placeholder, rgba(255,255,255,.72));
         }
+        .checkout-input {
+            width: 100%;
+            min-height: 44px;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+            background: #F8FAFC;
+            padding: 0 16px;
+            color: #0F172A;
+            font-size: 14px;
+            font-weight: 700;
+            outline: none;
+            transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+        .checkout-input::placeholder {
+            color: #94A3B8;
+        }
+        .checkout-input:focus {
+            border-color: #94A3B8;
+            background: #FFFFFF;
+            box-shadow: 0 0 0 4px rgba(148, 163, 184, .18);
+        }
+        .checkout-input.checkout-invalid {
+            border-color: #EF4444;
+        }
+        .checkout-error {
+            margin-top: 6px;
+            min-height: 16px;
+            color: #EF4444;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .checkout-action-btn {
+            display: flex;
+            height: 56px;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            transition: background .2s ease, transform .2s ease, opacity .2s ease;
+        }
+        .checkout-action-btn:active {
+            transform: scale(.98);
+        }
+        .checkout-action-btn:disabled {
+            cursor: not-allowed;
+            opacity: .65;
+        }
+        #modal-validacion.checkout-open {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 20px;
+            padding: 24px;
+        }
+        #checkout-panel {
+            max-height: calc(100vh - 48px);
+            margin-left: auto;
+            margin-right: 0;
+        }
+        .checkout-drag-handle {
+            display: block;
+            width: 96px;
+            height: 10px;
+            border: 0;
+            border-radius: 999px;
+            background: #E2E8F0;
+            cursor: move;
+        }
+        .checkout-drag-zone {
+            cursor: move;
+            user-select: none;
+        }
+        @media (max-width: 767px) {
+            .checkout-input {
+                min-height: 52px;
+            }
+            #modal-validacion.checkout-open {
+                align-items: flex-end !important;
+                justify-content: center !important;
+                padding: 0;
+            }
+            #checkout-panel {
+                max-height: 92vh;
+                margin: 0;
+            }
+            .checkout-drag-handle {
+                display: none;
+            }
+        }
     </style>
 
     <!-- SCRIPTS DE LA APLICACION -->
@@ -2515,6 +2610,15 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function subirComprobantePago(event) {
             event.preventDefault();
+            const form = event.currentTarget;
+            const submitBtn = form?.querySelector('button[type="submit"]');
+            if (form?.dataset.submitting === 'true') return;
+            if (form) form.dataset.submitting = 'true';
+            const originalSubmit = submitBtn?.innerHTML || '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Enviando...';
+            }
             const file = document.getElementById('payment-receipt-file')?.files?.[0];
             const formData = new FormData();
             if (file) formData.append('receipt', file);
@@ -2541,6 +2645,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 showToast(file ? 'Comprobante enviado para revision' : 'Pago reportado para revision', 'success');
             } catch (err) {
                 showToast('Error de conexion al subir comprobante', 'error');
+            } finally {
+                if (form) form.dataset.submitting = 'false';
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalSubmit;
+                }
             }
         }
 
@@ -3691,7 +3801,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     total += pedido[p.id] * p.p;
                 }
             });
-            document.getElementById("total-val").innerText = "Q" + total.toFixed(2);
+            const totalEl = document.getElementById("total-val");
+            if (totalEl) totalEl.innerText = "Q" + total.toFixed(2);
+            actualizarMiniCarrito();
         }
 
         function filtrar(cat) {
@@ -4933,21 +5045,149 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (!res.ok) throw new Error('Error al guardar preferencias');
-                configuracionNegocio = { ...configuracionNegocio, ...payload };
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Error al guardar preferencias');
+                const savedSettings = data.settings || payload;
+                configuracionNegocio = { ...configuracionNegocio, ...savedSettings };
                 showToast("Ajustes del catálogo guardados", "success");
-                await cargarConfiguracionPublica();
+                actualizarCheckoutOpciones();
                 cargarAjustesCatalogo();
                 renderCategorias();
             } catch (err) {
                 console.error(err);
-                showToast("Error al guardar ajustes", "error");
+                showToast(err.message || "Error al guardar ajustes", "error");
             }
         }
 
         /* ===========================
         MODALES ACCIONES
         =========================== */
+        function itemsPedidoActual() {
+            return productos
+                .filter(p => (pedido[p.id] || 0) > 0)
+                .map(p => ({
+                    ...p,
+                    cantidad: pedido[p.id] || 0,
+                    subtotal: (pedido[p.id] || 0) * p.p
+                }));
+        }
+
+        function obtenerTotalesPedido() {
+            const items = itemsPedidoActual();
+            const subtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
+            return {
+                items,
+                cantidad: items.reduce((acc, item) => acc + item.cantidad, 0),
+                subtotal,
+                total: subtotal
+            };
+        }
+
+        function textoArticulos(cantidad) {
+            return `${cantidad} articulo${cantidad === 1 ? '' : 's'}`;
+        }
+
+        function actualizarMiniCarrito() {
+            const { items, cantidad, total } = obtenerTotalesPedido();
+            const totalText = `Q${total.toFixed(2)}`;
+            const totalEl = document.getElementById("total-val");
+            const badgeEl = document.getElementById("floating-cart-badge");
+            const countEl = document.getElementById("mini-cart-count");
+            const summaryEl = document.getElementById("mini-cart-summary");
+            const thumbsEl = document.getElementById("mini-cart-thumbs");
+            if (totalEl) totalEl.innerText = totalText;
+            if (badgeEl) badgeEl.innerText = cantidad;
+            if (countEl) countEl.innerText = textoArticulos(cantidad);
+            if (summaryEl) summaryEl.classList.toggle('hidden', cantidad <= 0);
+            if (thumbsEl) {
+                thumbsEl.innerHTML = items.slice(0, 5).map(item => `
+                    <img src="${item.img}" alt="${item.n}" class="h-9 w-9 rounded-full border-2 border-white object-cover shadow-sm" onerror="this.src='https://via.placeholder.com/80?text=${encodeURIComponent(item.n)}'">
+                `).join('');
+            }
+        }
+
+        function asegurarCheckoutProfesional() {
+            const modal = document.getElementById("modal-validacion");
+            if (!modal) return;
+            modal.className = "fixed inset-0 z-[60] hidden bg-[rgba(15,23,42,0.72)] transition-all duration-300";
+            modal.innerHTML = `
+                <aside id="checkout-side-summary" class="hidden w-[340px] shrink-0 rounded-[28px] border border-[#E2E8F0] bg-white p-6 text-[#0F172A] opacity-0 shadow-2xl transition-opacity duration-300 lg:block">
+                    <button type="button" onpointerdown="iniciarDragSideSummary(event)" class="checkout-drag-handle mx-auto mb-4 transition hover:bg-[#94A3B8]" aria-label="Mover resumen"></button>
+                    <div class="checkout-drag-zone flex items-start justify-between gap-4" onpointerdown="iniciarDragSideSummary(event)">
+                        <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#F1F5F9] text-[#0F172A]"><i class="fa-solid fa-cart-shopping text-xl"></i></span>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-xl font-black">Mi pedido</h3>
+                            <p id="checkout-side-count" class="mt-1 text-sm font-bold text-[#64748B]">0 articulos</p>
+                        </div>
+                        <p id="checkout-side-total" class="text-xl font-black">Q0.00</p>
+                    </div>
+                    <div id="checkout-side-thumbs" class="mt-6 flex gap-3"></div>
+                    <button type="button" onclick="document.getElementById('checkout-panel')?.scrollIntoView({behavior:'smooth', block:'center'})" class="mt-6 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#0F172A] text-sm font-black uppercase tracking-wider text-white transition hover:bg-[#111827]">
+                        Ver pedido <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </aside>
+                <div id="checkout-panel" class="checkout-panel relative ml-auto flex h-auto w-full max-w-[760px] translate-y-4 scale-95 flex-col overflow-hidden rounded-t-[28px] border border-[#E2E8F0] bg-white text-[#0F172A] opacity-0 shadow-2xl transition-opacity duration-300 md:translate-y-0 md:rounded-[28px]">
+                    <div id="checkout-step-1" class="flex min-h-0 flex-1 flex-col">
+                        <header class="checkout-drag-zone sticky top-0 z-10 border-b border-[#E2E8F0] bg-white px-5 py-4 md:px-7" onpointerdown="iniciarDragCheckout(event)">
+                            <button type="button" onpointerdown="iniciarDragCheckout(event)" class="checkout-drag-handle mx-auto mb-3 transition hover:bg-[#94A3B8]" aria-label="Mover checkout"></button>
+                            <div class="flex items-start gap-4">
+                                <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#F1F5F9] text-[#0F172A]"><i class="fa-solid fa-cart-shopping text-xl"></i></span>
+                                <div class="min-w-0 flex-1">
+                                    <h2 class="text-xl font-black text-[#0F172A] md:text-2xl">Mi pedido</h2>
+                                    <p id="checkout-item-count" class="mt-0.5 text-sm font-semibold text-[#64748B]">0 articulos</p>
+                                </div>
+                                <div class="pr-10 text-right">
+                                    <p class="text-[10px] font-black uppercase text-[#64748B]">Total</p>
+                                    <p id="checkout-total-header" class="text-xl font-black text-[#0F172A] md:text-2xl">Q0.00</p>
+                                </div>
+                                <button onclick="cerrarValidacion()" class="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-[#F8FAFC] text-[#64748B] transition hover:bg-[#E2E8F0]" aria-label="Cerrar carrito"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </header>
+                        <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4 md:px-7 md:py-4">
+                            <div id="checkout-resumen-productos" class="max-h-[230px] overflow-y-auto border-y border-[#E2E8F0] bg-white"></div>
+                            <div class="mt-3 rounded-2xl bg-[#F8FAFC] p-4">
+                                <div class="flex items-center justify-between text-sm font-bold text-[#64748B]"><span>Subtotal</span><span id="checkout-subtotal-resumen">Q0.00</span></div>
+                                <div id="checkout-delivery-row" class="mt-3 hidden items-center justify-between text-sm font-bold text-[#64748B]"><span>Entrega/envio</span><span>Por confirmar</span></div>
+                                <div id="checkout-discount-row" class="mt-3 hidden items-center justify-between text-sm font-bold text-[#64748B]"><span>Descuento</span><span>Q0.00</span></div>
+                                <div class="mt-4 flex items-end justify-between border-t border-[#E2E8F0] pt-4"><span class="text-sm font-black uppercase text-[#0F172A]">Total del pedido</span><span id="checkout-total-resumen" class="text-[22px] font-black text-[#0F172A] md:text-[26px]">Q0.00</span></div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex items-center justify-between gap-3">
+                                    <h3 class="flex items-center gap-2 text-base font-black text-[#0F172A]"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#F8FAFC]"><i class="fa-regular fa-user text-xs"></i></span> Datos de contacto y entrega</h3>
+                                    <i class="fa-solid fa-chevron-up text-xs text-[#64748B]"></i>
+                                </div>
+                                <div class="mt-4 grid gap-3 md:grid-cols-2">
+                                    <div><input type="text" id="nombre-cliente" placeholder="Nombre y Apellido" class="checkout-input"><p id="nombre-cliente-error" class="checkout-error hidden">Ingresa tu nombre y apellido.</p></div>
+                                    <div><input type="tel" id="tel-cliente" placeholder="WhatsApp" class="checkout-input"><p id="tel-cliente-error" class="checkout-error hidden">Ingresa un numero de WhatsApp valido.</p></div>
+                                    <div id="checkout-address-wrapper" class="md:col-span-2"><textarea id="direccion-cliente" rows="2" placeholder="Direccion de entrega" class="checkout-input min-h-[76px] resize-none py-3"></textarea><p id="direccion-cliente-error" class="checkout-error hidden">Ingresa la direccion de entrega.</p></div>
+                                    <div id="checkout-comment-wrapper" class="md:col-span-2"><textarea id="comentario-cliente" rows="2" placeholder="Comentario del pedido" class="checkout-input min-h-[76px] resize-none py-3"></textarea><p id="comentario-cliente-error" class="checkout-error hidden">Ingresa el comentario del pedido.</p></div>
+                                </div>
+                            </div>
+                            <div class="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-[#DCFCE7] p-3 text-xs font-bold text-[#166534]">
+                                <span class="flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> Tu informacion esta segura con nosotros</span>
+                                <span class="hidden items-center gap-2 sm:flex"><i class="fa-solid fa-lock"></i> Compra 100% segura</span>
+                            </div>
+                        </div>
+                        <footer class="sticky bottom-0 z-10 border-t border-[#E2E8F0] bg-white px-5 py-4 md:px-7">
+                            <div id="checkout-actions" class="grid gap-3 md:gap-4">
+                                <button type="button" id="checkout-return-btn" onclick="cerrarValidacion()" class="checkout-action-btn border border-[#E2E8F0] bg-white text-[#0F172A] hover:bg-[#F8FAFC]"><i class="fa-solid fa-arrow-left"></i> Regresar al catalogo</button>
+                                <button id="checkout-cart-btn" onclick="enviarOrden({ whatsapp: false })" class="checkout-action-btn bg-[#0F172A] text-white hover:bg-[#111827]"><i class="fa-solid fa-cart-shopping"></i> Enviar por carrito</button>
+                                <div id="checkout-or-separator" class="hidden items-center justify-center text-xs font-black text-[#94A3B8] md:flex">o</div>
+                                <button id="checkout-whatsapp-btn" onclick="enviarOrden({ whatsapp: true })" class="checkout-action-btn bg-[#22C55E] text-white hover:bg-[#16A34A]"><i class="fa-brands fa-whatsapp text-lg"></i> Enviar por WhatsApp</button>
+                            </div>
+                        </footer>
+                    </div>
+                    <div id="checkout-step-success" class="hidden p-8 text-center">
+                        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-3xl text-emerald-500"><i class="fa-solid fa-circle-check"></i></div>
+                        <h2 class="mb-2 text-2xl font-black text-slate-800">Pedido enviado</h2>
+                        <p id="checkout-success-msg" class="mb-6 text-sm font-bold text-slate-500">Tu pedido ha sido registrado con exito en nuestro sistema.</p>
+                        <button onclick="cerrarValidacion()" class="checkout-action-btn bg-[#0F172A] text-white hover:bg-[#111827]">Entendido</button>
+                    </div>
+                </div>
+            `;
+            modal.dataset.checkoutReady = 'true';
+        }
+
         function actualizarCheckoutOpciones() {
             const cartEnabled = configuracionNegocio.orderCartEnabled !== false;
             const whatsappEnabled = configuracionNegocio.orderWhatsappEnabled !== false;
@@ -4955,13 +5195,30 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const commentRequirement = configuracionNegocio.commentRequirement || 'optional';
             const cartBtn = document.getElementById('checkout-cart-btn');
             const whatsappBtn = document.getElementById('checkout-whatsapp-btn');
+            const actions = document.getElementById('checkout-actions');
+            const separator = document.getElementById('checkout-or-separator');
             const addressWrapper = document.getElementById('checkout-address-wrapper');
             const commentWrapper = document.getElementById('checkout-comment-wrapper');
             const addressInput = document.getElementById('direccion-cliente');
             const commentInput = document.getElementById('comentario-cliente');
 
-            if (cartBtn) cartBtn.classList.toggle('hidden', !cartEnabled);
-            if (whatsappBtn) whatsappBtn.classList.toggle('hidden', !whatsappEnabled);
+            if (cartBtn) {
+                cartBtn.classList.toggle('hidden', !cartEnabled);
+                cartBtn.style.display = cartEnabled ? '' : 'none';
+            }
+            if (whatsappBtn) {
+                whatsappBtn.classList.toggle('hidden', !whatsappEnabled);
+                whatsappBtn.style.display = whatsappEnabled ? '' : 'none';
+            }
+            if (separator) {
+                separator.classList.toggle('hidden', !(cartEnabled && whatsappEnabled));
+                separator.style.display = cartEnabled && whatsappEnabled ? '' : 'none';
+            }
+            if (actions) {
+                actions.className = cartEnabled && whatsappEnabled
+                    ? 'grid gap-3 md:grid-cols-[1fr_1.45fr_auto_1.45fr] md:items-center md:gap-4'
+                    : 'grid gap-3 md:grid-cols-[1fr_1.8fr] md:items-center md:gap-4';
+            }
             if (addressWrapper) addressWrapper.classList.toggle('hidden', addressRequirement === 'disabled');
             if (commentWrapper) commentWrapper.classList.toggle('hidden', commentRequirement === 'disabled');
             if (addressInput) {
@@ -4974,11 +5231,47 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }
         }
 
-        function abrirValidacion() {
+        function posicionarCheckoutDefault() {
+            const modal = document.getElementById("modal-validacion");
+            const panel = document.getElementById("checkout-panel");
+            const sideSummary = document.getElementById("checkout-side-summary");
+            if (!modal || !panel) return;
+
+            modal.classList.add('checkout-open');
+            modal.style.display = 'flex';
+            modal.style.alignItems = window.innerWidth >= 768 ? 'center' : 'flex-end';
+            modal.style.justifyContent = window.innerWidth >= 768 ? 'flex-end' : 'center';
+            modal.style.padding = window.innerWidth >= 768 ? '24px' : '0';
+            modal.style.gap = window.innerWidth >= 1024 ? '20px' : '0';
+
+            panel.dataset.dragX = '0';
+            panel.dataset.dragY = '0';
+            panel.style.transform = 'translate(0px, 0px)';
+            panel.classList.remove('translate-y-4', 'scale-95');
+            panel.style.maxHeight = window.innerWidth >= 768 ? 'calc(100vh - 48px)' : '92vh';
+            panel.style.marginLeft = window.innerWidth >= 768 ? 'auto' : '0';
+            panel.style.marginRight = window.innerWidth >= 768 ? '0' : '0';
+            panel.style.width = window.innerWidth >= 768 ? 'min(760px, calc(100vw - 48px))' : '100%';
+            const productsList = document.getElementById('checkout-resumen-productos');
+            if (productsList) {
+                productsList.style.maxHeight = window.innerWidth >= 768 ? '230px' : '30vh';
+            }
+
+            if (sideSummary) {
+                sideSummary.style.display = window.innerWidth >= 1280 ? 'block' : 'none';
+                sideSummary.dataset.dragX = '0';
+                sideSummary.dataset.dragY = '0';
+                sideSummary.style.transform = 'translate(0px, 0px)';
+            }
+        }
+
+        async function abrirValidacion() {
             if (!Object.values(pedido).some(v => v > 0)) {
                 showToast("Agrega al menos un producto al carrito.", "error");
                 return;
             }
+            await cargarConfiguracionPublica();
+            asegurarCheckoutProfesional();
             if (configuracionNegocio.orderCartEnabled === false && configuracionNegocio.orderWhatsappEnabled === false) {
                 showToast("Este catálogo no tiene métodos de pedido activos.", "error");
                 return;
@@ -4994,6 +5287,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             if (inputDireccion) inputDireccion.value = "";
             if (inputComentario) inputComentario.value = "";
 
+            limpiarErroresCheckout();
+            renderCheckoutResumen();
             // Generar el resumen de productos y total
             const resumenContenedor = document.getElementById("checkout-resumen-productos");
             const totalContenedor = document.getElementById("checkout-total-resumen");
@@ -5018,22 +5313,173 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 totalContenedor.innerText = `Q${total.toFixed(2)}`;
             }
 
+            renderCheckoutResumen();
             // Mostrar el paso 1
             actualizarCheckoutOpciones();
             document.getElementById("checkout-step-1").classList.remove("hidden");
 
             const modal = document.getElementById("modal-validacion");
             modal.classList.remove("hidden");
+            posicionarCheckoutDefault();
             setTimeout(() => {
-                modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+                document.getElementById('checkout-panel')?.classList.remove('translate-y-4', 'scale-95', 'opacity-0');
+                document.getElementById('checkout-side-summary')?.classList.remove('opacity-0');
             }, 10);
         }
 
 
+        function renderCheckoutResumen() {
+            const resumenContenedor = document.getElementById("checkout-resumen-productos");
+            const totalContenedor = document.getElementById("checkout-total-resumen");
+            const subtotalContenedor = document.getElementById("checkout-subtotal-resumen");
+            const totalHeader = document.getElementById("checkout-total-header");
+            const countEl = document.getElementById("checkout-item-count");
+            const sideCountEl = document.getElementById("checkout-side-count");
+            const sideTotalEl = document.getElementById("checkout-side-total");
+            const sideThumbsEl = document.getElementById("checkout-side-thumbs");
+            const { items, cantidad, subtotal, total } = obtenerTotalesPedido();
+            const totalText = `Q${total.toFixed(2)}`;
+            if (resumenContenedor) {
+                resumenContenedor.innerHTML = items.map(item => `
+                    <div class="grid min-h-[70px] grid-cols-[52px_1fr_auto] items-center gap-3 border-b border-[#E2E8F0] px-3 py-2 last:border-b-0 md:grid-cols-[58px_1fr_132px_88px_36px] md:px-0">
+                        <img src="${item.img}" alt="${item.n}" class="h-12 w-12 rounded-xl border border-[#E2E8F0] object-cover md:ml-2" onerror="this.src='https://via.placeholder.com/120?text=${encodeURIComponent(item.n)}'">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-black text-[#0F172A]">${item.n}</p>
+                            <p class="mt-1 text-xs font-bold text-[#64748B]">Q${item.p.toFixed(2)} / ${item.u}</p>
+                        </div>
+                        <div class="col-span-2 ml-[64px] inline-flex h-9 w-fit items-center rounded-2xl md:col-span-1 md:ml-0 md:justify-self-center">
+                            <button onclick="updateCheckoutItem('${item.id}', -1)" class="flex h-8 w-8 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#64748B] hover:text-[#0F172A]" aria-label="Restar"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                            <span class="w-10 text-center text-sm font-black text-[#0F172A]">${item.cantidad}</span>
+                            <button onclick="updateCheckoutItem('${item.id}', 1)" class="flex h-8 w-8 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#64748B] hover:text-[#0F172A]" aria-label="Sumar"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                        </div>
+                        <p class="hidden text-right text-sm font-black text-[#0F172A] md:block">Q${item.subtotal.toFixed(2)}</p>
+                        <button onclick="removeCheckoutItem('${item.id}')" class="hidden h-8 w-8 items-center justify-center rounded-xl bg-[#F8FAFC] text-[#64748B] hover:text-[#EF4444] md:flex" aria-label="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </div>
+                `).join('');
+            }
+            if (totalContenedor) totalContenedor.innerText = totalText;
+            if (subtotalContenedor) subtotalContenedor.innerText = `Q${subtotal.toFixed(2)}`;
+            if (totalHeader) totalHeader.innerText = totalText;
+            if (countEl) countEl.innerText = textoArticulos(cantidad);
+            if (sideCountEl) sideCountEl.innerText = textoArticulos(cantidad);
+            if (sideTotalEl) sideTotalEl.innerText = totalText;
+            if (sideThumbsEl) {
+                sideThumbsEl.innerHTML = items.slice(0, 4).map(item => `
+                    <div class="relative h-14 w-14 rounded-xl border border-[#E2E8F0] bg-white p-1">
+                        <img src="${item.img}" alt="${item.n}" class="h-full w-full rounded-lg object-cover" onerror="this.src='https://via.placeholder.com/120?text=${encodeURIComponent(item.n)}'">
+                        <span class="absolute -right-2 -top-2 flex h-7 min-w-7 items-center justify-center rounded-xl bg-[#F1F5F9] px-2 text-xs font-black text-[#0F172A] shadow-sm">${item.cantidad}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function updateCheckoutItem(id, delta) {
+            update(id, delta);
+            if (!Object.values(pedido).some(v => v > 0)) {
+                cerrarValidacion();
+                return;
+            }
+            renderCheckoutResumen();
+        }
+        window.updateCheckoutItem = updateCheckoutItem;
+
+        function removeCheckoutItem(id) {
+            pedido[id] = 0;
+            update(id, 0);
+            if (!Object.values(pedido).some(v => v > 0)) {
+                cerrarValidacion();
+                return;
+            }
+            renderCheckoutResumen();
+        }
+        window.removeCheckoutItem = removeCheckoutItem;
+
+        function setCheckoutError(inputId, errorId, visible) {
+            const input = document.getElementById(inputId);
+            const error = document.getElementById(errorId);
+            if (input) input.classList.toggle('checkout-invalid', visible);
+            if (error) error.classList.toggle('hidden', !visible);
+        }
+
+        function limpiarErroresCheckout() {
+            setCheckoutError('nombre-cliente', 'nombre-cliente-error', false);
+            setCheckoutError('tel-cliente', 'tel-cliente-error', false);
+            setCheckoutError('direccion-cliente', 'direccion-cliente-error', false);
+            setCheckoutError('comentario-cliente', 'comentario-cliente-error', false);
+        }
+
+        function validarCheckoutCliente({ nombre, tel, direccion, comentario }) {
+            limpiarErroresCheckout();
+            const telValido = String(tel || '').replace(/\D/g, '').length >= 8;
+            const errores = {
+                nombre: !nombre,
+                tel: !telValido,
+                direccion: (configuracionNegocio.addressRequirement || 'optional') === 'required' && !direccion,
+                comentario: (configuracionNegocio.commentRequirement || 'optional') === 'required' && !comentario
+            };
+            setCheckoutError('nombre-cliente', 'nombre-cliente-error', errores.nombre);
+            setCheckoutError('tel-cliente', 'tel-cliente-error', errores.tel);
+            setCheckoutError('direccion-cliente', 'direccion-cliente-error', errores.direccion);
+            setCheckoutError('comentario-cliente', 'comentario-cliente-error', errores.comentario);
+            return !Object.values(errores).some(Boolean);
+        }
+
+        function moverElementoCheckout(event, element) {
+            if (window.innerWidth < 768) return;
+            if (event.target?.closest?.('button, input, textarea, select, a')) return;
+            if (!element) return;
+            event.preventDefault();
+            const rect = element.getBoundingClientRect();
+            const startX = event.clientX;
+            const startY = event.clientY;
+            const currentX = Number(element.dataset.dragX || 0);
+            const currentY = Number(element.dataset.dragY || 0);
+
+            const onMove = (moveEvent) => {
+                const nextX = currentX + moveEvent.clientX - startX;
+                const nextY = currentY + moveEvent.clientY - startY;
+                const maxLeft = 24 - rect.left + currentX;
+                const maxRight = window.innerWidth - 24 - rect.right + currentX;
+                const maxTop = 24 - rect.top + currentY;
+                const maxBottom = window.innerHeight - 24 - rect.bottom + currentY;
+                const clampedX = Math.min(maxRight, Math.max(maxLeft, nextX));
+                const clampedY = Math.min(maxBottom, Math.max(maxTop, nextY));
+                element.dataset.dragX = String(clampedX);
+                element.dataset.dragY = String(clampedY);
+                element.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
+            };
+
+            const onUp = () => {
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+            };
+
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', onUp, { once: true });
+        }
+
+        function iniciarDragCheckout(event) {
+            moverElementoCheckout(event, document.getElementById('checkout-panel'));
+        }
+        window.iniciarDragCheckout = iniciarDragCheckout;
+
+        function iniciarDragSideSummary(event) {
+            moverElementoCheckout(event, document.getElementById('checkout-side-summary'));
+        }
+        window.iniciarDragSideSummary = iniciarDragSideSummary;
+
+        function iniciarDragMiniCarrito(event) {
+            moverElementoCheckout(event, document.getElementById('mini-cart-summary'));
+        }
+        window.iniciarDragMiniCarrito = iniciarDragMiniCarrito;
+
         function cerrarValidacion() {
             const modal = document.getElementById("modal-validacion");
-            modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+            document.getElementById('checkout-panel')?.classList.add('translate-y-4', 'scale-95', 'opacity-0');
+            document.getElementById('checkout-side-summary')?.classList.add('opacity-0');
             setTimeout(() => {
+                modal.classList.remove('checkout-open');
+                modal.style.display = '';
                 modal.classList.add("hidden");
                 // Restaurar vista de pasos para la próxima vez
                 document.getElementById("checkout-step-1").classList.remove("hidden");
@@ -5404,8 +5850,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const direccion = document.getElementById("direccion-cliente")?.value.trim() || "";
             const comentario = document.getElementById("comentario-cliente")?.value.trim() || "";
             
-            if (!nombre || !tel) {
-                showToast("Por favor, completa tus datos.", "error");
+            if (!validarCheckoutCliente({ nombre, tel, direccion, comentario })) {
                 return;
             }
             if ((configuracionNegocio.addressRequirement || 'optional') === 'required' && !direccion) {
@@ -6159,7 +6604,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function cargarConfiguracionPublica() {
             try {
-                const res = await fetch(`${TENANT_API_URL}/settings`);
+                const res = await fetch(`${TENANT_API_URL}/settings`, { cache: 'no-store' });
                 if (res.ok) {
                     const data = await res.json();
                     configuracionNegocio = { ...configuracionNegocio, ...data };
