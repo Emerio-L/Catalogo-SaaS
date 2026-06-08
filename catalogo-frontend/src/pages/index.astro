@@ -107,25 +107,99 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 /* Contenedor principal de la primera pantalla visible */
                 .hero-section {
                   min-height: 100vh;
+                  justify-content: flex-start;
+                  gap: 14px;
                   background:
-                    radial-gradient(circle at 0% 0%, rgba(124, 58, 237, 0.24) 0px, rgba(124, 58, 237, 0.16) 130px, transparent 310px),
-                    radial-gradient(circle at 48% 30%, rgba(124, 58, 237, 0.12) 0px, transparent 380px),
-                    radial-gradient(circle at 100% 20%, rgba(59, 130, 246, 0.08) 0px, transparent 360px),
-                    linear-gradient(135deg, #f8f9ff 0%, #eef2ff 45%, #f7f1ff 100%);
+                    radial-gradient(circle at -4% 0%, rgba(124, 58, 237, 0.34) 0px, rgba(124, 58, 237, 0.24) 118px, transparent 300px),
+                    radial-gradient(circle at 45% 34%, rgba(124, 58, 237, 0.13) 0px, transparent 390px),
+                    radial-gradient(circle at 96% 24%, rgba(59, 130, 246, 0.08) 0px, transparent 360px),
+                    linear-gradient(135deg, #f6f7ff 0%, #eef3ff 44%, #f8f4ff 100%);
+                }
+
+                .logoContainer {
+                  width: 220px;
+                  height: 72px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: flex-start;
+                  flex-shrink: 0;
+                }
+
+                .logoContainer img {
+                  max-width: 210px;
+                  max-height: 62px;
+                  width: auto;
+                  height: auto;
+                  object-fit: contain;
+                  display: block;
+                  opacity: 1;
+                  filter: none;
+                }
+
+                .logoContainer img.hidden {
+                  display: none;
+                }
+
+                .logoContainer #landing-logo-fallback {
+                  max-width: 210px;
+                  max-height: 62px;
+                  width: 210px;
+                  height: 62px;
+                  align-items: center;
+                  justify-content: flex-start;
+                }
+
+                .logoContainer #landing-logo-fallback svg {
+                  width: 100%;
+                  height: auto;
+                  display: block;
+                }
+
+                .landingHeader,
+                .heroContent,
+                #landing-promo-card {
+                  width: calc(100% - 120px);
+                  max-width: 1500px;
+                }
+
+                .heroContent {
+                  display: grid;
+                  grid-template-columns: minmax(310px, 0.9fr) 360px minmax(500px, 1.05fr);
+                  gap: 24px;
+                  align-items: center;
+                  flex: 0 0 auto;
+                }
+
+                .heroVisual {
+                  width: 360px;
+                  height: 360px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                  position: relative;
+                }
+
+                .heroVisual img {
+                  width: 100%;
+                  max-width: 360px;
+                  height: auto;
+                  object-fit: contain;
+                  display: block;
                 }
 
                 /* Medidas y proporción de las tarjetas principales */
                 .heroActionCards {
                   display: flex;
-                  gap: 28px;
+                  gap: 16px;
                   align-items: stretch;
                 }
 
                 .heroActionCard {
-                  width: 300px;
-                  min-height: 500px;
-                  padding: 34px 30px 30px;
-                  border-radius: 30px;
+                  width: 240px;
+                  min-height: 410px;
+                  padding: 20px 20px 18px;
+                  border-radius: 24px;
                   background: #ffffff;
                   position: relative;
                   overflow: hidden;
@@ -175,38 +249,38 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .heroActionCard .cardBadge {
-                  margin-bottom: 22px;
+                  margin-bottom: 14px;
                 }
 
                 .heroActionCard .cardIcon {
-                  width: 66px;
-                  height: 66px;
-                  margin-bottom: 26px;
+                  width: 46px;
+                  height: 46px;
+                  margin-bottom: 14px;
                 }
 
                 .heroActionCard h3 {
-                  font-size: 28px;
+                  font-size: 21px;
                   line-height: 1.08;
-                  margin-bottom: 8px;
+                  margin-bottom: 6px;
                 }
 
                 .heroActionCard .cardSubtitle {
-                  font-size: 15px;
-                  margin-bottom: 26px;
+                  font-size: 13px;
+                  margin-bottom: 14px;
                 }
 
                 .heroActionCard .cardDivider {
-                  margin: 0 0 26px;
+                  margin: 0 0 14px;
                 }
 
                 .heroActionCard ul {
                   display: grid;
-                  gap: 15px;
-                  margin-bottom: 34px;
+                  gap: 8px;
+                  margin-bottom: 16px;
                 }
 
                 .heroActionCard ul li {
-                  font-size: 13px;
+                  font-size: 11px;
                   font-weight: 700;
                   color: #4B5563;
                 }
@@ -214,12 +288,51 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 .heroActionCard button,
                 .heroActionCard a.button {
                   width: 100%;
-                  height: 56px;
+                  height: 46px;
                   border-radius: 14px;
                   font-weight: 800;
                 }
 
+                #landing-promo-card {
+                  padding-left: 0;
+                  padding-right: 0;
+                  margin-top: 0;
+                }
+
+                @media (min-width: 1400px) {
+                  .heroContent {
+                    grid-template-columns: minmax(350px, 0.95fr) 380px minmax(500px, 1.05fr);
+                    gap: 26px;
+                  }
+
+                  .heroVisual {
+                    width: 380px;
+                    height: 380px;
+                  }
+
+                  .heroVisual img {
+                    max-width: 380px;
+                  }
+                }
+
                 /* Responsive */
+                @media (max-width: 1200px) {
+                  .heroContent {
+                    grid-template-columns: 1fr;
+                    gap: 32px;
+                  }
+
+                  .heroVisual {
+                    width: 320px;
+                    height: 320px;
+                    margin: 0 auto;
+                  }
+
+                  .heroVisual img {
+                    max-width: 320px;
+                  }
+                }
+
                 @media (max-width: 1100px) {
                   .heroActionCards {
                     gap: 20px;
@@ -243,6 +356,42 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   }
                 }
 
+                @media (max-width: 768px) {
+                  .landingHeader,
+                  .heroContent,
+                  #landing-promo-card {
+                    width: calc(100% - 32px);
+                  }
+
+                  .logoContainer {
+                    width: 170px;
+                    height: 58px;
+                  }
+
+                  .logoContainer img {
+                    max-width: 165px;
+                    max-height: 50px;
+                  }
+
+                  .logoContainer #landing-logo-fallback {
+                    max-width: 165px;
+                    max-height: 50px;
+                    width: 165px;
+                    height: 50px;
+                  }
+
+                  .heroVisual {
+                    width: 100%;
+                    max-width: 320px;
+                    height: auto;
+                    margin: 24px auto;
+                  }
+
+                  .heroVisual img {
+                    max-width: 320px;
+                  }
+                }
+
                 .dot-pattern {
                   background-image: radial-gradient(rgba(124, 58, 237, 0.15) 1.5px, transparent 1.5px);
                   background-size: 16px 16px;
@@ -263,12 +412,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             </script>
 
             {/* NAVBAR */}
-            <header class="relative z-50 w-full max-w-6xl mx-auto px-6 py-2.5 flex justify-between items-center bg-white shadow-xl shadow-purple-950/[0.03] border border-slate-100/80 rounded-3xl sticky top-3 mt-3">
+            <header class="landingHeader relative z-50 mx-auto px-8 py-2.5 flex justify-between items-center bg-white shadow-xl shadow-purple-950/[0.03] border border-slate-100/80 rounded-3xl sticky top-3 mt-3">
                 <div class="flex items-center">
                     <a href="/" class="flex items-center gap-3">
-                        <div class="flex items-center shrink-0">
-                            <img id="landing-logo-img" src="" alt="SEDELYNK Logo" class="hidden w-auto max-w-[240px] h-auto max-h-[68px] object-contain" style="opacity: 1 !important; filter: none !important;">
-                            <div id="landing-logo-fallback" class="flex items-center w-auto max-w-[240px] h-auto max-h-[68px]">
+                        <div class="logoContainer">
+                            <img id="landing-logo-img" src="" alt="SEDELYNK Logo" class="hidden" style="opacity: 1 !important; filter: none !important;">
+                            <div id="landing-logo-fallback" class="flex items-center">
                                 <svg class="w-auto h-full" viewBox="0 0 400 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <path d="M40 70H100M20 52H90M30 35H80" stroke="url(#paint0_linear_nav)" stroke-width="4" stroke-linecap="round"/>
                                   <path d="M85 85H140L150 95L155 85H165C175 85 180 80 180 70V50C180 40 175 35 165 35H115C105 35 100 40 100 50V70C100 78 105 85 115 85" stroke="#0B132B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -339,7 +488,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             </div>
 
             {/* HERO SECTION */}
-            <main class="relative z-10 w-full max-w-6xl mx-auto px-6 py-4 lg:py-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.8fr_2.1fr] gap-6 items-center flex-1">
+            <main class="heroContent relative z-10 mx-auto px-0 py-4 lg:py-6 flex-1">
                 {/* Columna Izquierda */}
                 <div class="text-left space-y-4">
                     <h1 id="landing-hero-title" class="text-3xl md:text-4xl lg:text-[2.85rem] font-black tracking-tight text-[#070B24] leading-[1.15] max-w-xl">
@@ -372,9 +521,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 </div>
 
                 {/* Columna Central (Ilustración 3D) */}
-                <div class="hidden lg:flex justify-center items-center relative py-2">
+                <div class="heroVisual">
                     <div class="absolute inset-0 bg-gradient-to-tr from-purple-500/5 to-orange-500/5 rounded-full blur-3xl pointer-events-none"></div>
-                    <img src={heroCommerce.src} alt="Catálogo Digital Ilustración" class="relative z-10 max-h-[350px] w-auto object-contain animate-float -mt-12 lg:-mt-20" />
+                    <img src={heroCommerce.src} alt="Catálogo Digital Ilustración" class="relative z-10 animate-float" />
                 </div>
 
                 {/* Columna Derecha (Tarjetas de Selección Side by Side) */}
@@ -634,7 +783,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <span class="faq-icon text-slate-400 shrink-0 transition-transform duration-200"><i class="fa-solid fa-chevron-down"></i></span>
                         </div>
                         <p class="faq-answer text-xs md:text-sm font-semibold text-slate-500 leading-relaxed">
-                            Los pedidos se organizan en el carrito y se envían directamente a tu WhatsApp.
+                            Los pedidos  se envían por carito o a tu WhatsApp.
                         </p>
                     </div>
 
