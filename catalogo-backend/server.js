@@ -37,7 +37,7 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:4321')
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:4321,http://127.0.0.1:4321')
     .split(',')
     .map(origin => origin.trim().replace(/\/$/, ''))
     .filter(Boolean);
