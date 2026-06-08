@@ -1,0 +1,5 @@
+ALTER TABLE "Settings"
+ADD COLUMN IF NOT EXISTS "orderCartEnabled" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN IF NOT EXISTS "orderWhatsappEnabled" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN IF NOT EXISTS "addressRequirement" TEXT NOT NULL DEFAULT 'optional',
+ADD COLUMN IF NOT EXISTS "commentRequirement" TEXT NOT NULL DEFAULT 'optional';

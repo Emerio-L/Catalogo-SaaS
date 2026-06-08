@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
@@ -664,7 +665,11 @@ async function asegurarTenantDefault() {
                 mostrarCategorias: true,
                 mostrarDescripcion: true,
                 vistaPredeterminada: 'grid',
-                monedaVisible: 'GTQ'
+                monedaVisible: 'GTQ',
+                orderCartEnabled: true,
+                orderWhatsappEnabled: true,
+                addressRequirement: 'optional',
+                commentRequirement: 'optional'
             }
         },
         { upsert: true }
@@ -1565,7 +1570,7 @@ app.post('/api/super-admin/tenants/:id/payments/confirm', requireSuperAdminAuth,
             status: 'aprobado',
             paidAt: now,
             approvedAt: now,
-            approvedBy: req.user._id
+            approvedById: req.user._id
         });
 
         const previousStatus = tenant.status;
@@ -1638,7 +1643,7 @@ app.patch('/api/super-admin/payments/:id/approve', requireSuperAdminAuth, async 
         payment.status = 'aprobado';
         payment.paidAt = payment.paidAt || new Date();
         payment.approvedAt = new Date();
-        payment.approvedBy = req.user._id;
+        payment.approvedById = req.user._id;
         await payment.save();
 
         const plan = tenant.planId;
@@ -1833,6 +1838,10 @@ app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
             mostrarDescripcion: settings.mostrarDescripcion,
             vistaPredeterminada: settings.vistaPredeterminada,
             monedaVisible: settings.monedaVisible,
+            orderCartEnabled: settings.orderCartEnabled !== false,
+            orderWhatsappEnabled: settings.orderWhatsappEnabled !== false,
+            addressRequirement: settings.addressRequirement || 'optional',
+            commentRequirement: settings.commentRequirement || 'optional',
             account: tenantBillingPayload(req.tenant, plan)
         });
     } catch (err) {
@@ -1861,6 +1870,10 @@ app.get('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             mostrarDescripcion: settings.mostrarDescripcion,
             vistaPredeterminada: settings.vistaPredeterminada,
             monedaVisible: settings.monedaVisible,
+            orderCartEnabled: settings.orderCartEnabled !== false,
+            orderWhatsappEnabled: settings.orderWhatsappEnabled !== false,
+            addressRequirement: settings.addressRequirement || 'optional',
+            commentRequirement: settings.commentRequirement || 'optional',
             account: tenantBillingPayload(req.tenant, plan)
         });
     } catch (err) {
@@ -1885,9 +1898,22 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             mostrarCategorias,
             mostrarDescripcion,
             vistaPredeterminada,
-            monedaVisible
+            monedaVisible,
+            orderCartEnabled,
+            orderWhatsappEnabled,
+            addressRequirement,
+            commentRequirement
         } = req.body;
         const themeNormalizado = theme !== undefined ? normalizarThemeTenant(theme) : undefined;
+        const validRequirement = (value) => ['optional', 'required', 'disabled'].includes(value) ? value : undefined;
+        const nextOrderCartEnabled = orderCartEnabled !== undefined ? Boolean(orderCartEnabled) : undefined;
+        const nextOrderWhatsappEnabled = orderWhatsappEnabled !== undefined ? Boolean(orderWhatsappEnabled) : undefined;
+        const currentSettings = await settingsTenant(req.tenant);
+        const finalOrderCartEnabled = nextOrderCartEnabled !== undefined ? nextOrderCartEnabled : currentSettings.orderCartEnabled !== false;
+        const finalOrderWhatsappEnabled = nextOrderWhatsappEnabled !== undefined ? nextOrderWhatsappEnabled : currentSettings.orderWhatsappEnabled !== false;
+        if (!finalOrderCartEnabled && !finalOrderWhatsappEnabled) {
+            return res.status(400).json({ error: 'Debes mantener al menos una forma de recibir pedidos activa' });
+        }
 
         await Settings.updateOne(
             { tenantId: req.tenantId },
@@ -1904,7 +1930,11 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
                     ...(mostrarCategorias !== undefined ? { mostrarCategorias: Boolean(mostrarCategorias) } : {}),
                     ...(mostrarDescripcion !== undefined ? { mostrarDescripcion: Boolean(mostrarDescripcion) } : {}),
                     ...(vistaPredeterminada ? { vistaPredeterminada } : {}),
-                    ...(monedaVisible ? { monedaVisible } : {})
+                    ...(monedaVisible ? { monedaVisible } : {}),
+                    ...(nextOrderCartEnabled !== undefined ? { orderCartEnabled: nextOrderCartEnabled } : {}),
+                    ...(nextOrderWhatsappEnabled !== undefined ? { orderWhatsappEnabled: nextOrderWhatsappEnabled } : {}),
+                    ...(validRequirement(addressRequirement) ? { addressRequirement } : {}),
+                    ...(validRequirement(commentRequirement) ? { commentRequirement } : {})
                 },
                 $setOnInsert: { tenantId: req.tenantId }
             },
@@ -2270,6 +2300,46 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
         }
         console.error('Error en login global:', err);
         res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
+    try {
+        const identifier = String(req.body.identifier || '').toLowerCase().trim();
+        const genericResponse = { success: true, mensaje: 'Si la cuenta existe, enviaremos instrucciones de recuperación.' };
+        if (!identifier) return res.json(genericResponse);
+
+        const user = await User.findOne({
+            activo: true,
+            $or: [{ email: identifier }, { usuario: identifier }]
+        });
+
+        if (!user) return res.json(genericResponse);
+
+        const tenant = await Tenant.findById(user.tenantId);
+        if (!tenant || !tenant.activo || tenant.status === 'deleted') {
+            return res.json(genericResponse);
+        }
+
+        const token = crearTokenSeguro();
+        await PasswordResetToken.create({
+            tenantId: tenant._id,
+            userId: user._id,
+            tokenHash: sha256(token),
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+            ip: req.ip
+        });
+
+        const frontendUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host').replace(':3005', ':4321')}`;
+        const resetUrl = `${frontendUrl}/c/${tenant.slug}/reset-password?token=${token}`;
+        const emailStatus = await enviarEmailRecuperacion({ to: user.email, resetUrl });
+
+        res.json({
+            ...genericResponse,
+            devResetUrl: emailStatus.dev && process.env.NODE_ENV !== 'production' ? resetUrl : undefined
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al solicitar recuperación' });
     }
 });
 
@@ -2708,7 +2778,11 @@ app.patch('/api/:tenant/admin/products/:id/toggle', tenantMiddleware, requireAdm
             return res.status(404).json({ error: 'Producto no encontrado' });
         }
 
-        producto.activo = !producto.activo;
+        if (req.body && req.body.activo !== undefined) {
+            producto.activo = req.body.activo === true || req.body.activo === 'true';
+        } else {
+            producto.activo = !producto.activo;
+        }
         await producto.save();
         res.json({ mensaje: `Producto ${producto.activo ? 'activado' : 'desactivado'} correctamente`, activo: producto.activo });
     } catch (err) {
@@ -2726,7 +2800,9 @@ const orderRateLimit = rateLimit({
 const pedidoSchema = z.object({
     cliente: z.object({
         nombre: z.string().min(1).max(100),
-        telefono: z.string().min(1).max(20)
+        telefono: z.string().min(1).max(20),
+        direccion: z.string().trim().max(250).optional(),
+        comentario: z.string().trim().max(500).optional()
     }),
     productos: z.array(z.object({
         productId: z.string().optional(),
@@ -2736,12 +2812,27 @@ const pedidoSchema = z.object({
         precio: z.number().optional()
     })).min(1),
     total: z.number(),
+    channel: z.enum(['cart', 'whatsapp']).optional(),
     pdfUrl: z.string().optional()
 });
 
 app.post('/api/:tenant/orders', tenantMiddleware, requireTenantOperational, orderRateLimit, async (req, res) => {
     try {
         const data = pedidoSchema.parse(req.body);
+        const settings = await settingsTenant(req.tenant);
+        const channel = data.channel || 'cart';
+        if (channel === 'cart' && settings.orderCartEnabled === false) {
+            return res.status(400).json({ error: 'La opcion de carrito esta desactivada para este catalogo' });
+        }
+        if (channel === 'whatsapp' && settings.orderWhatsappEnabled === false) {
+            return res.status(400).json({ error: 'La opcion de WhatsApp esta desactivada para este catalogo' });
+        }
+        if ((settings.addressRequirement || 'optional') === 'required' && !data.cliente.direccion?.trim()) {
+            return res.status(400).json({ error: 'La direccion es obligatoria para este catalogo' });
+        }
+        if ((settings.commentRequirement || 'optional') === 'required' && !data.cliente.comentario?.trim()) {
+            return res.status(400).json({ error: 'El comentario es obligatorio para este catalogo' });
+        }
         let totalCalculado = 0;
         const productosProcesados = [];
 
@@ -2767,7 +2858,13 @@ app.post('/api/:tenant/orders', tenantMiddleware, requireTenantOperational, orde
 
         const nuevoPedido = new Pedido({
             tenantId: req.tenantId,
-            cliente: data.cliente,
+            cliente: {
+                nombre: data.cliente.nombre,
+                telefono: data.cliente.telefono,
+                ...(data.cliente.direccion ? { direccion: data.cliente.direccion } : {}),
+                ...(data.cliente.comentario ? { comentario: data.cliente.comentario } : {}),
+                channel
+            },
             telefono: data.cliente.telefono,
             productos: productosProcesados,
             total: totalCalculado,

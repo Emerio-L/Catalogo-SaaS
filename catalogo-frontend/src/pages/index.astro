@@ -117,23 +117,26 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .logoContainer {
-                  width: 220px;
-                  height: 72px;
+                  width: 330px;
+                  height: 86px;
                   display: flex;
                   align-items: center;
                   justify-content: flex-start;
                   flex-shrink: 0;
+                  overflow: visible;
                 }
 
                 .logoContainer img {
-                  max-width: 210px;
-                  max-height: 62px;
+                  max-width: 315px;
+                  max-height: 78px;
                   width: auto;
                   height: auto;
                   object-fit: contain;
                   display: block;
                   opacity: 1;
                   filter: none;
+                  transform: scale(2.15);
+                  transform-origin: left center;
                 }
 
                 .logoContainer img.hidden {
@@ -141,10 +144,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .logoContainer #landing-logo-fallback {
-                  max-width: 210px;
-                  max-height: 62px;
-                  width: 210px;
-                  height: 62px;
+                  max-width: 315px;
+                  max-height: 78px;
+                  width: 315px;
+                  height: 78px;
                   align-items: center;
                   justify-content: flex-start;
                 }
@@ -364,20 +367,21 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   }
 
                   .logoContainer {
-                    width: 170px;
-                    height: 58px;
+                    width: 220px;
+                    height: 64px;
                   }
 
                   .logoContainer img {
-                    max-width: 165px;
-                    max-height: 50px;
+                    max-width: 210px;
+                    max-height: 58px;
+                    transform: scale(1.75);
                   }
 
                   .logoContainer #landing-logo-fallback {
-                    max-width: 165px;
-                    max-height: 50px;
-                    width: 165px;
-                    height: 50px;
+                    max-width: 210px;
+                    max-height: 58px;
+                    width: 210px;
+                    height: 58px;
                   }
 
                   .heroVisual {
@@ -849,9 +853,44 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         </form>
                         
                         <div class="flex flex-col gap-3 pt-2 text-center border-t border-slate-100">
+                            <button type="button" onclick="mostrarLandingStep('recovery')" class="text-xs font-black uppercase text-slate-400 hover:text-purple-600 transition-colors">
+                                Olvidé mi contraseña
+                            </button>
                             <p class="text-xs text-slate-400 font-bold">¿No tienes una cuenta aún?</p>
                             <button type="button" onclick="mostrarLandingStep('register')" class="text-xs font-black uppercase text-purple-600 hover:text-purple-700 transition-colors">
                                 Registrarme ahora
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* RECOVERY STEP */}
+                    <div id="landing-recovery-step" class="w-full space-y-6 hidden">
+                        <div class="text-center md:text-left">
+                            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg md:mx-0">
+                                <i class="fa-solid fa-envelope-circle-check text-xl"></i>
+                            </div>
+                            <p class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Recuperar cuenta</p>
+                            <h2 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Recuperar acceso</h2>
+                            <p class="text-xs font-semibold text-slate-500 mt-1">Ingresa tu usuario o correo y te enviaremos el enlace de recuperación de tu catálogo.</p>
+                        </div>
+
+                        <form action="javascript:void(0)" onsubmit="event.preventDefault(); recuperarPasswordLanding(event); return false;" class="space-y-4 text-left">
+                            <div id="landing-recovery-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
+                            <div>
+                                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Usuario o correo</label>
+                                <input type="text" id="landing-recovery-identifier" placeholder="admin@correo.com" required
+                                class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                            </div>
+                            <button id="landing-recovery-submit" type="submit" class="w-full py-4 bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-500/10 active:scale-95 uppercase tracking-wider text-xs transition-all">
+                                Enviar enlace
+                            </button>
+                        </form>
+
+                        <p id="landing-dev-reset-link" class="hidden text-[10px] text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-3 break-all"></p>
+
+                        <div class="text-center pt-2 border-t border-slate-100">
+                            <button type="button" onclick="mostrarLandingStep('login')" class="text-xs font-black uppercase text-purple-600 hover:text-purple-700 transition-colors">
+                                Volver al inicio
                             </button>
                         </div>
                     </div>
@@ -1028,8 +1067,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         <div class="min-h-screen lg:flex">
             <aside class="fixed inset-y-0 left-0 z-50 hidden w-72 flex-col bg-[#071b33] text-white lg:flex">
                 <div class="flex h-full flex-col p-5">
-                    <div class="mb-8 flex h-24 w-24 mx-auto items-center justify-center overflow-hidden rounded-[1.5rem] bg-white shadow-xl ring-1 ring-black/5 relative">
-                        <img id="tenant-saas-logo-sidebar" src="" alt="Logo SaaS" class="hidden h-full w-full object-contain p-2">
+                    <div class="mb-8 flex h-32 w-64 max-w-full mx-auto items-center justify-center overflow-visible rounded-[1.5rem] bg-white shadow-xl ring-1 ring-black/5 relative">
+                        <img id="tenant-saas-logo-sidebar" src="" alt="Logo SaaS" class="hidden h-full w-full object-contain p-0 scale-[1.85]">
                         <div id="tenant-saas-placeholder-sidebar" class="flex flex-col items-center justify-center text-slate-400 text-center w-full">
                             <i class="fa-solid fa-bag-shopping text-2xl mb-0.5 text-slate-300"></i>
                             <p class="text-[9px] font-black uppercase tracking-wider text-slate-400">Admin</p>
@@ -1083,8 +1122,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             <main class="min-h-screen flex-1 p-4 lg:ml-72 lg:p-8">
                 <div class="mb-4 rounded-[1.75rem] bg-[#071b33] p-4 text-white shadow-premium ring-1 ring-slate-900/10 lg:hidden">
-                    <div class="mb-4 flex h-20 w-20 mx-auto items-center justify-center overflow-hidden rounded-[1.25rem] bg-white shadow-xl ring-1 ring-black/5 relative">
-                        <img id="tenant-saas-logo-mobile" src="" alt="Logo SaaS" class="hidden h-full w-full object-contain p-2">
+                    <div class="mb-4 flex h-24 w-56 max-w-full mx-auto items-center justify-center overflow-hidden rounded-[1.25rem] bg-white shadow-xl ring-1 ring-black/5 relative">
+                        <img id="tenant-saas-logo-mobile" src="" alt="Logo SaaS" class="hidden h-full w-full object-contain p-0 scale-[1.9]">
                         <div id="tenant-saas-placeholder-mobile" class="flex flex-col items-center justify-center text-slate-400 text-center w-full">
                             <i class="fa-solid fa-bag-shopping text-xl mb-0.5 text-slate-300"></i>
                             <p class="text-[8px] font-black uppercase tracking-wider text-slate-400">Admin</p>
@@ -1463,7 +1502,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                 <input id="custom-main-color" type="color" class="sr-only" oninput="seleccionarColorPersonalizado(this.value)">
                             </div>
 
-                            <div class="mt-6 flex flex-col gap-4 rounded-[1.5rem] border border-slate-100 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between">
+                            <div class="hidden">
                                 <div>
                                     <p class="text-xs font-black uppercase tracking-wider text-slate-700">El color seleccionado se aplicará en:</p>
                                     <div class="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-slate-500">
@@ -1482,6 +1521,44 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                 <label class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100"><span class="text-sm font-bold text-slate-700">Mostrar categorías</span><input id="setting-mostrar-categorias" type="checkbox" class="h-5 w-5 accent-emerald-500" onchange="actualizarPreviewCatalogo()"></label>
                                 <label class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100"><span class="text-sm font-bold text-slate-700">Mostrar descripcion del negocio</span><input id="setting-mostrar-descripcion" type="checkbox" class="h-5 w-5 accent-emerald-500" onchange="actualizarPreviewCatalogo()"></label>
                             </div>
+                        </div>
+
+                        <div class="rounded-[1.75rem] bg-white p-6 shadow-premium ring-1 ring-slate-100">
+                            <h3 class="text-sm font-black text-slate-900">Confirmacion de pedidos</h3>
+                            <p class="mt-1 text-sm font-semibold text-slate-500">Define como tus clientes finalizan sus pedidos.</p>
+                            <div class="mt-5 space-y-4">
+                                <label class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                                    <span>
+                                        <span class="block text-sm font-bold text-slate-700">Enviar por carrito</span>
+                                        <span class="block text-[11px] font-semibold text-slate-500">Guarda el pedido dentro del panel.</span>
+                                    </span>
+                                    <input id="setting-order-cart-enabled" type="checkbox" class="h-5 w-5 accent-emerald-500" onchange="confirmarCambioMetodoPedido('cart', this)">
+                                </label>
+                                <label class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                                    <span>
+                                        <span class="block text-sm font-bold text-slate-700">Enviar por WhatsApp</span>
+                                        <span class="block text-[11px] font-semibold text-slate-500">Abre WhatsApp con el resumen del pedido.</span>
+                                    </span>
+                                    <input id="setting-order-whatsapp-enabled" type="checkbox" class="h-5 w-5 accent-emerald-500" onchange="confirmarCambioMetodoPedido('whatsapp', this)">
+                                </label>
+                                <div>
+                                    <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-400">Direccion del cliente</label>
+                                    <select id="setting-address-requirement" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary-100">
+                                        <option value="optional">Opcional</option>
+                                        <option value="required">Obligatoria</option>
+                                        <option value="disabled">No pedir direccion</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-400">Comentario del cliente</label>
+                                    <select id="setting-comment-requirement" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary-100">
+                                        <option value="optional">Opcional</option>
+                                        <option value="required">Obligatorio</option>
+                                        <option value="disabled">No pedir comentario</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button onclick="guardarPreferenciasCatalogo()" class="mt-5 rounded-2xl bg-primary-100 px-4 py-3 text-xs font-black uppercase tracking-wider text-primary-800 transition hover:bg-primary-200">Guardar preferencias</button>
                         </div>
 
                         <div class="rounded-[1.75rem] bg-white p-6 shadow-premium ring-1 ring-slate-100">
@@ -1536,9 +1613,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg md:mx-0">
                         <i class="fa-solid fa-user-check text-xl"></i>
                     </div>
-                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-primary-600">Panel administrativo</p>
-                    <h2 class="text-2xl font-black tracking-tight text-slate-900 mt-1 uppercase">Accede a tu negocio</h2>
-                    <p class="mt-2 text-xs font-semibold text-slate-500">Ingresa con tu usuario o correo registrado para este catálogo.</p>
+                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Ingresar a tu cuenta</p>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 mt-1 uppercase">Acceder al panel</h2>
+                    <p class="mt-2 text-xs font-semibold text-slate-500">Ingresa tus credenciales registradas para acceder a tu panel de administración.</p>
                 </div>
 
                 <form id="auth2-login-form" action="javascript:void(0)" onsubmit="event.preventDefault(); verificarPassword(event); return false;" class="space-y-4">
@@ -1549,7 +1626,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <div class="relative">
                             <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                             <input type="text" id="auth2-identifier" placeholder="admin o admin@example.com" required autocomplete="username"
-                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                         </div>
                     </div>
 
@@ -1558,24 +1635,24 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <div class="relative">
                             <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                             <input type="password" id="auth2-password" placeholder="Ingresa tu contraseña" required autocomplete="current-password"
-                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-12 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
+                            class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-12 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                             <button type="button" onclick="togglePasswordVisibility('auth2-password', this)" class="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Mostrar contraseña">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
                         </div>
                     </div>
 
-                    <button id="auth2-login-submit" type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-4 text-xs font-black uppercase tracking-wider text-white shadow-xl shadow-slate-950/20 transition-all hover:-translate-y-0.5 hover:bg-slate-900 active:translate-y-0">
+                    <button id="auth2-login-submit" type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 active:scale-95 py-4 text-xs font-black uppercase tracking-wider text-white shadow-xl shadow-purple-500/10 transition-all">
                         <i class="fa-solid fa-arrow-right-to-bracket"></i>
                         Entrar al panel
                     </button>
                 </form>
 
                 <div class="flex flex-col gap-3 pt-2 text-center border-t border-slate-100">
-                    <button type="button" onclick="mostrarAuthStep('recovery')" class="text-xs font-black uppercase text-slate-400 hover:text-primary-600 transition-colors">
+                    <button type="button" onclick="mostrarAuthStep('recovery')" class="text-xs font-black uppercase text-slate-400 hover:text-purple-600 transition-colors">
                         Olvidé mi contraseña
                     </button>
-                    <button type="button" onclick="mostrarRegistroSaas()" class="flex items-center justify-center gap-2 rounded-2xl border border-primary-200 bg-primary-50 px-4 py-3.5 text-xs font-black uppercase tracking-wider text-primary-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-100 hover:shadow-md">
+                    <button type="button" onclick="mostrarRegistroSaas()" class="flex items-center justify-center gap-2 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3.5 text-xs font-black uppercase tracking-wider text-purple-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-purple-100 hover:shadow-md">
                         <i class="fa-solid fa-store"></i>
                         Crear cuenta nueva
                     </button>
@@ -1662,9 +1739,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             {/* RECOVERY STEP */}
             <div id="auth2-recovery-step" class="w-full space-y-6 hidden">
                 <div class="text-center md:text-left">
-                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 shadow-lg md:mx-0">
+                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg md:mx-0">
                         <i class="fa-solid fa-envelope-circle-check text-xl"></i>
                     </div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Recuperar cuenta</p>
                     <h2 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Recuperar Acceso</h2>
                     <p class="text-xs font-semibold text-slate-500 mt-1">Te enviaremos un enlace seguro para restablecer tu contraseña.</p>
                 </div>
@@ -1673,9 +1751,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <div>
                         <label class="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Usuario o correo</label>
                         <input type="text" id="auth2-recovery-identifier" placeholder="admin@example.com" required
-                        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
+                        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                     </div>
-                    <button type="submit" class="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all">
+                    <button type="submit" class="w-full py-4 bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-500/10 active:scale-95 uppercase tracking-wider text-xs transition-all">
                         Enviar Enlace
                     </button>
                 </form>
@@ -1683,7 +1761,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 <p id="auth2-dev-reset-link" class="hidden text-[10px] text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-3 break-all"></p>
 
                 <div class="text-center pt-2 border-t border-slate-100">
-                    <button type="button" onclick="mostrarAuthStep('login')" class="text-xs font-black uppercase text-slate-400 hover:text-slate-600 transition-colors">
+                    <button type="button" onclick="mostrarAuthStep('login')" class="text-xs font-black uppercase text-purple-600 hover:text-purple-700 transition-colors">
                         Volver al inicio
                     </button>
                 </div>
@@ -1692,19 +1770,20 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             {/* RESET STEP */}
             <div id="auth2-reset-step" class="w-full space-y-6 hidden">
                 <div class="text-center md:text-left">
-                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 shadow-lg md:mx-0">
+                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg md:mx-0">
                         <i class="fa-solid fa-key text-xl"></i>
                     </div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Recuperar cuenta</p>
                     <h2 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Nueva Contraseña</h2>
                     <p class="text-xs font-semibold text-slate-500 mt-1">Ingresa tu nueva contraseña (mínimo 8 caracteres).</p>
                 </div>
 
                 <form onsubmit="recuperarPorPregunta(event)" class="space-y-4 text-left">
                     <input type="password" id="auth2-reset-password" placeholder="Nueva contraseña" required
-                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
+                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                     <input type="password" id="auth2-reset-confirm" placeholder="Confirmar contraseña" required
-                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10">
-                    <button type="submit" class="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all">
+                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
+                    <button type="submit" class="w-full py-4 bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-500/10 active:scale-95 uppercase tracking-wider text-xs transition-all">
                         Guardar Contraseña
                     </button>
                 </form>
@@ -1713,8 +1792,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
     </div>
 
     <!-- MODAL CHECKOUT CLIENTE -->
-    <div id="modal-validacion" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6 transition-all duration-300 hidden">
-        <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl text-center transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
+    <div id="modal-validacion" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 transition-all duration-300 hidden">
+        <div class="bg-white rounded-[2.5rem] p-6 sm:p-8 w-full max-w-sm max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl text-center transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
             <button onclick="cerrarValidacion()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
             
             <div class="w-16 h-16 bg-primary-50 text-primary-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
@@ -1745,14 +1824,22 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <input type="tel" id="tel-cliente" placeholder="WhatsApp (Ej: 502XXXXXXXX)" 
                         class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-base font-black focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all tracking-wide">
                     </div>
+                    <div id="checkout-address-wrapper">
+                        <textarea id="direccion-cliente" rows="2" placeholder="Dirección de entrega"
+                        class="w-full resize-none p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"></textarea>
+                    </div>
+                    <div id="checkout-comment-wrapper">
+                        <textarea id="comentario-cliente" rows="2" placeholder="Comentario del pedido"
+                        class="w-full resize-none p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-center text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"></textarea>
+                    </div>
                 </div>
 
-                <button onclick="enviarOrden({ whatsapp: false })" 
+                <button id="checkout-cart-btn" onclick="enviarOrden({ whatsapp: false })" 
                     class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-lg active:scale-95 uppercase tracking-wider text-xs transition-all mb-3 flex items-center justify-center gap-2">
                     <i class="fa-solid fa-cart-shopping"></i> Enviar por Carrito
                 </button>
 
-                <button onclick="enviarOrden({ whatsapp: true })" 
+                <button id="checkout-whatsapp-btn" onclick="enviarOrden({ whatsapp: true })" 
                     class="w-full py-4 bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold rounded-2xl shadow-lg shadow-[#25D366]/20 active:scale-95 uppercase tracking-wider text-xs transition-all mb-4 flex items-center justify-center gap-2">
                     <i class="fa-brands fa-whatsapp text-lg"></i> Enviar por WhatsApp
                 </button>
@@ -2014,8 +2101,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
     </div>
 
 
-    <div id="modal-color-pendiente" class="fixed inset-0 z-[90] hidden items-center justify-center bg-slate-950/80 p-6 backdrop-blur-sm">
-        <div class="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+    <div id="modal-color-pendiente" class="fixed inset-x-0 top-4 z-[90] hidden justify-center px-4 pointer-events-none">
+        <div class="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200 pointer-events-auto">
             <div class="mb-5 flex items-start gap-4">
                 <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-600"><i class="fa-solid fa-palette"></i></span>
                 <div>
@@ -2132,6 +2219,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             mostrarDescripcion: true,
             vistaPredeterminada: 'grid',
             monedaVisible: 'GTQ',
+            orderCartEnabled: true,
+            orderWhatsappEnabled: true,
+            addressRequirement: 'optional',
+            commentRequirement: 'optional',
             account: null,
             theme: DEFAULT_TENANT_THEME
         };
@@ -3420,6 +3511,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             // Renderizar versión Escritorio (Tabla)
             tbody.innerHTML = listaPagina.map(prod => {
+                const productId = getProductId(prod);
                 const imgUrl = prod.imagen.startsWith('/') ? `${BACKEND_URL}${prod.imagen}` : prod.imagen;
                 const statusBadge = prod.activo 
                     ? `<span class="inline-flex items-center rounded-full bg-primary-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-primary-700 ring-1 ring-primary-200"><i class="fa-solid fa-circle text-[6px] mr-2"></i>Activo</span>`
@@ -3434,7 +3526,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     </td>
                     <td class="px-4 py-4">
                         <div class="font-extrabold text-slate-950">${prod.nombre}</div>
-                        <div class="text-[10px] text-slate-400 uppercase tracking-wide">ID: ${prod._id}</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wide">ID: ${productId}</div>
                     </td>
                     <td class="px-4 py-4">
                         <span class="text-xs uppercase font-extrabold px-3 py-1 rounded-full bg-slate-100 text-slate-700">${prod.categoria || 'Sin categoría'}</span>
@@ -3447,14 +3539,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <span class="bg-slate-100 text-slate-700 font-black px-3 py-1.5 rounded-xl text-xs">${prod.orden ?? prod.ordenVisualizacion ?? '-'}</span>
                     </td>
                     <td class="px-4 py-4 text-center">
-                        <button onclick="toggleActivo('${prod._id}')" class="transition-transform active:scale-95">
+                        <button onclick="toggleActivo('${productId}', ${!prod.activo})" class="transition-transform active:scale-95">
                             ${statusBadge}
                         </button>
                     </td>
                     <td class="px-6 py-4 text-right">
                         <div class="flex justify-end gap-2">
-                            <button onclick="editarProducto('${prod._id}')" class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200" title="Editar"><i class="fa-solid fa-pen mr-1.5 text-[10px]"></i>Editar</button>
-                            <button onclick="abrirConfirmDelete('${prod._id}')" class="rounded-xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 transition hover:bg-rose-100" title="Eliminar"><i class="fa-solid fa-trash-can mr-1.5 text-[10px]"></i>Eliminar</button>
+                            <button onclick="editarProducto('${productId}')" class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200" title="Editar"><i class="fa-solid fa-pen mr-1.5 text-[10px]"></i>Editar</button>
+                            <button onclick="abrirConfirmDelete('${productId}')" class="rounded-xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 transition hover:bg-rose-100" title="Eliminar"><i class="fa-solid fa-trash-can mr-1.5 text-[10px]"></i>Eliminar</button>
                         </div>
                     </td>
                 </tr>`;
@@ -3462,6 +3554,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             // Renderizar versión Móvil (Tarjetas)
             movilList.innerHTML = listaPagina.map(prod => {
+                const productId = getProductId(prod);
                 const imgUrl = prod.imagen.startsWith('/') ? `${BACKEND_URL}${prod.imagen}` : prod.imagen;
                 return `
                 <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 flex gap-3 relative">
@@ -3476,19 +3569,23 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <div class="text-[10px] text-primary-600 font-extrabold mt-0.5">Q${prod.precio.toFixed(2)} / ${prod.unidad}</div>
                         
                         <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-200/40">
-                            <button onclick="toggleActivo('${prod._id}')" class="text-[9px] font-black uppercase text-slate-500">
+                            <button onclick="toggleActivo('${productId}', ${!prod.activo})" class="text-[9px] font-black uppercase text-slate-500">
                                 ${prod.activo 
                                     ? `<span class="text-primary-600"><i class="fa-solid fa-eye mr-1"></i> Visible</span>`
                                     : `<span class="text-rose-500"><i class="fa-solid fa-eye-slash mr-1"></i> Oculto</span>`}
                             </button>
                             <div class="flex gap-2">
-                                <button onclick="editarProducto('${prod._id}')" class="text-xs bg-white text-slate-600 border border-slate-200 px-3 py-1 rounded-lg font-bold"><i class="fa-solid fa-pen mr-1"></i>Editar</button>
-                                <button onclick="abrirConfirmDelete('${prod._id}')" class="text-xs bg-rose-50 text-rose-600 border border-rose-100 px-3 py-1 rounded-lg font-bold"><i class="fa-solid fa-trash mr-1"></i>Borrar</button>
+                                <button onclick="editarProducto('${productId}')" class="text-xs bg-white text-slate-600 border border-slate-200 px-3 py-1 rounded-lg font-bold"><i class="fa-solid fa-pen mr-1"></i>Editar</button>
+                                <button onclick="abrirConfirmDelete('${productId}')" class="text-xs bg-rose-50 text-rose-600 border border-rose-100 px-3 py-1 rounded-lg font-bold"><i class="fa-solid fa-trash mr-1"></i>Borrar</button>
                             </div>
                         </div>
                     </div>
                 </div>`;
             }).join('');
+        }
+
+        function getProductId(prod) {
+            return String(prod?._id || prod?.id || '');
         }
 
         function cambiarAdminPageSize() {
@@ -3759,7 +3856,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         function mostrarRegistroSaas() {
-            mostrarAuthStep('register');
+            window.location.href = '/?auth=register';
         }
 
         function cerrarAuthModal() {
@@ -4356,6 +4453,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     configuracionNegocio.logo = data.logo || '';
                     configuracionNegocio.logoShape = data.logoShape || 'rectangle';
                     configuracionNegocio.account = data.account || null;
+                    configuracionNegocio.orderCartEnabled = data.orderCartEnabled !== false;
+                    configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled !== false;
+                    configuracionNegocio.addressRequirement = data.addressRequirement || 'optional';
+                    configuracionNegocio.commentRequirement = data.commentRequirement || 'optional';
                     actualizarInformacionCuenta(configuracionNegocio.account);
                     await cargarHistorialPagosPerfil();
                     actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape);
@@ -4760,13 +4861,40 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const categoriasToggle = document.getElementById('setting-mostrar-categorias');
             const descripcion = document.getElementById('setting-mostrar-descripcion');
             const moneda = document.getElementById('setting-moneda-visible');
+            const cartEnabled = document.getElementById('setting-order-cart-enabled');
+            const whatsappEnabled = document.getElementById('setting-order-whatsapp-enabled');
+            const addressRequirement = document.getElementById('setting-address-requirement');
+            const commentRequirement = document.getElementById('setting-comment-requirement');
             if (buscar) buscar.checked = configuracionNegocio.mostrarBuscador !== false;
             if (categoriasToggle) categoriasToggle.checked = configuracionNegocio.mostrarCategorias !== false;
             if (descripcion) descripcion.checked = configuracionNegocio.mostrarDescripcion !== false;
             if (moneda) moneda.value = configuracionNegocio.monedaVisible || 'GTQ';
+            if (cartEnabled) cartEnabled.checked = configuracionNegocio.orderCartEnabled !== false;
+            if (whatsappEnabled) whatsappEnabled.checked = configuracionNegocio.orderWhatsappEnabled !== false;
+            if (addressRequirement) addressRequirement.value = configuracionNegocio.addressRequirement || 'optional';
+            if (commentRequirement) commentRequirement.value = configuracionNegocio.commentRequirement || 'optional';
             renderPaletaColores();
             actualizarPreviewCatalogo();
         }
+
+        function confirmarCambioMetodoPedido(tipo, input) {
+            const cartInput = document.getElementById('setting-order-cart-enabled');
+            const whatsappInput = document.getElementById('setting-order-whatsapp-enabled');
+            if (!input) return;
+
+            if (!input.checked) {
+                const label = tipo === 'cart' ? 'enviar por carrito' : 'enviar por WhatsApp';
+                const otherActive = tipo === 'cart' ? whatsappInput?.checked : cartInput?.checked;
+                if (!otherActive) {
+                    input.checked = true;
+                    showToast('Debes mantener al menos una forma de recibir pedidos activa.', 'warning');
+                    return;
+                }
+                const ok = confirm(`Vas a desactivar ${label}. Tus clientes dejarán de ver esa opción al confirmar pedidos. ¿Deseas continuar?`);
+                if (!ok) input.checked = true;
+            }
+        }
+        window.confirmarCambioMetodoPedido = confirmarCambioMetodoPedido;
 
         function actualizarPreviewCatalogo() {
             const nombre = document.getElementById('preview-business-name');
@@ -4788,8 +4916,16 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 mostrarCategorias: document.getElementById('setting-mostrar-categorias')?.checked === true,
                 mostrarDescripcion: document.getElementById('setting-mostrar-descripcion')?.checked === true,
                 vistaPredeterminada: configuracionNegocio.vistaPredeterminada || 'grid',
-                monedaVisible: document.getElementById('setting-moneda-visible')?.value || 'GTQ'
+                monedaVisible: document.getElementById('setting-moneda-visible')?.value || 'GTQ',
+                orderCartEnabled: document.getElementById('setting-order-cart-enabled')?.checked !== false,
+                orderWhatsappEnabled: document.getElementById('setting-order-whatsapp-enabled')?.checked !== false,
+                addressRequirement: document.getElementById('setting-address-requirement')?.value || 'optional',
+                commentRequirement: document.getElementById('setting-comment-requirement')?.value || 'optional'
             };
+            if (!payload.orderCartEnabled && !payload.orderWhatsappEnabled) {
+                showToast('Activa al menos una forma de recibir pedidos.', 'warning');
+                return;
+            }
             try {
                 const res = await fetch(`${TENANT_API_URL}/admin/settings`, {
                     method: 'PUT',
@@ -4812,17 +4948,51 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         /* ===========================
         MODALES ACCIONES
         =========================== */
+        function actualizarCheckoutOpciones() {
+            const cartEnabled = configuracionNegocio.orderCartEnabled !== false;
+            const whatsappEnabled = configuracionNegocio.orderWhatsappEnabled !== false;
+            const addressRequirement = configuracionNegocio.addressRequirement || 'optional';
+            const commentRequirement = configuracionNegocio.commentRequirement || 'optional';
+            const cartBtn = document.getElementById('checkout-cart-btn');
+            const whatsappBtn = document.getElementById('checkout-whatsapp-btn');
+            const addressWrapper = document.getElementById('checkout-address-wrapper');
+            const commentWrapper = document.getElementById('checkout-comment-wrapper');
+            const addressInput = document.getElementById('direccion-cliente');
+            const commentInput = document.getElementById('comentario-cliente');
+
+            if (cartBtn) cartBtn.classList.toggle('hidden', !cartEnabled);
+            if (whatsappBtn) whatsappBtn.classList.toggle('hidden', !whatsappEnabled);
+            if (addressWrapper) addressWrapper.classList.toggle('hidden', addressRequirement === 'disabled');
+            if (commentWrapper) commentWrapper.classList.toggle('hidden', commentRequirement === 'disabled');
+            if (addressInput) {
+                addressInput.required = addressRequirement === 'required';
+                addressInput.placeholder = addressRequirement === 'required' ? 'Dirección de entrega (obligatoria)' : 'Dirección de entrega';
+            }
+            if (commentInput) {
+                commentInput.required = commentRequirement === 'required';
+                commentInput.placeholder = commentRequirement === 'required' ? 'Comentario del pedido (obligatorio)' : 'Comentario del pedido';
+            }
+        }
+
         function abrirValidacion() {
             if (!Object.values(pedido).some(v => v > 0)) {
                 showToast("Agrega al menos un producto al carrito.", "error");
+                return;
+            }
+            if (configuracionNegocio.orderCartEnabled === false && configuracionNegocio.orderWhatsappEnabled === false) {
+                showToast("Este catálogo no tiene métodos de pedido activos.", "error");
                 return;
             }
             
             // Limpiar datos de contacto para que aparezcan vacíos
             const inputNombre = document.getElementById("nombre-cliente");
             const inputTel = document.getElementById("tel-cliente");
+            const inputDireccion = document.getElementById("direccion-cliente");
+            const inputComentario = document.getElementById("comentario-cliente");
             if (inputNombre) inputNombre.value = "";
             if (inputTel) inputTel.value = "";
+            if (inputDireccion) inputDireccion.value = "";
+            if (inputComentario) inputComentario.value = "";
 
             // Generar el resumen de productos y total
             const resumenContenedor = document.getElementById("checkout-resumen-productos");
@@ -4849,6 +5019,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }
 
             // Mostrar el paso 1
+            actualizarCheckoutOpciones();
             document.getElementById("checkout-step-1").classList.remove("hidden");
 
             const modal = document.getElementById("modal-validacion");
@@ -4963,9 +5134,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             asignarArchivoImagen(file);
         }
 
-        async function toggleActivo(id) {
+        async function toggleActivo(id, nextActivo) {
             try {
-                const res = await fetch(`${TENANT_API_URL}/admin/products/${id}/toggle`, { method: 'PATCH', credentials: 'include' });
+                const options = { method: 'PATCH', credentials: 'include' };
+                if (typeof nextActivo === 'boolean') {
+                    options.headers = { 'Content-Type': 'application/json' };
+                    options.body = JSON.stringify({ activo: nextActivo });
+                }
+                const res = await fetch(`${TENANT_API_URL}/admin/products/${encodeURIComponent(id)}/toggle`, options);
                 if (res.ok) {
                     const data = await res.json();
                     showToast(data.mensaje, "success");
@@ -4979,11 +5155,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         async function editarProducto(id) {
-            const prod = adminProductos.find(p => p._id === id);
+            const prod = adminProductos.find(p => getProductId(p) === String(id));
             if (!prod) return;
 
             document.getElementById('admin-form-titulo').innerText = "Editar Producto";
-            document.getElementById('admin-id').value = prod._id;
+            document.getElementById('admin-id').value = getProductId(prod);
             document.getElementById('admin-nombre').value = prod.nombre;
             const categoriaId = typeof prod.categoriaId === 'object' ? prod.categoriaId?._id : prod.categoriaId;
             const categoriaSelect = document.getElementById('admin-categoria');
@@ -5215,11 +5391,29 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function enviarOrden(options = {}) {
             const useWhatsapp = options.whatsapp !== false;
+            if (useWhatsapp && configuracionNegocio.orderWhatsappEnabled === false) {
+                showToast("La opción de WhatsApp no está disponible en este catálogo.", "error");
+                return;
+            }
+            if (!useWhatsapp && configuracionNegocio.orderCartEnabled === false) {
+                showToast("La opción de carrito no está disponible en este catálogo.", "error");
+                return;
+            }
             const nombre = document.getElementById("nombre-cliente").value.trim();
             const tel = document.getElementById("tel-cliente").value.trim();
+            const direccion = document.getElementById("direccion-cliente")?.value.trim() || "";
+            const comentario = document.getElementById("comentario-cliente")?.value.trim() || "";
             
             if (!nombre || !tel) {
                 showToast("Por favor, completa tus datos.", "error");
+                return;
+            }
+            if ((configuracionNegocio.addressRequirement || 'optional') === 'required' && !direccion) {
+                showToast("Por favor, agrega la dirección de entrega.", "error");
+                return;
+            }
+            if ((configuracionNegocio.commentRequirement || 'optional') === 'required' && !comentario) {
+                showToast("Por favor, agrega el comentario del pedido.", "error");
                 return;
             }
 
@@ -5248,6 +5442,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             let msg = `*NUEVA ORDEN DE PEDIDO*%0A`;
             msg += `---------------------------%0A`;
             msg += `*Cliente:* ${nombre}%0A`;
+            if (direccion) msg += `*Dirección:* ${direccion}%0A`;
+            if (comentario) msg += `*Comentario:* ${comentario}%0A`;
             msg += `*Teléfono:* ${tel}%0A`;
             msg += `---------------------------%0A%0A`;
 
@@ -5279,9 +5475,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        cliente: { nombre, telefono: tel },
+                        cliente: { nombre, telefono: tel, direccion, comentario },
                         productos: items,
-                        total: total
+                        total: total,
+                        channel: useWhatsapp ? 'whatsapp' : 'cart'
                     })
                 });
 
@@ -5302,8 +5499,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 recalcular();
                 const inputNombre = document.getElementById("nombre-cliente");
                 const inputTel = document.getElementById("tel-cliente");
+                const inputDireccion = document.getElementById("direccion-cliente");
+                const inputComentario = document.getElementById("comentario-cliente");
                 if (inputNombre) inputNombre.value = "";
                 if (inputTel) inputTel.value = "";
+                if (inputDireccion) inputDireccion.value = "";
+                if (inputComentario) inputComentario.value = "";
 
                 // Mostrar pantalla de éxito
                 document.getElementById("checkout-step-1").classList.add("hidden");
@@ -5319,8 +5520,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     recalcular();
                     const inputNombre = document.getElementById("nombre-cliente");
                     const inputTel = document.getElementById("tel-cliente");
+                    const inputDireccion = document.getElementById("direccion-cliente");
+                    const inputComentario = document.getElementById("comentario-cliente");
                     if (inputNombre) inputNombre.value = "";
                     if (inputTel) inputTel.value = "";
+                    if (inputDireccion) inputDireccion.value = "";
+                    if (inputComentario) inputComentario.value = "";
                     document.getElementById("checkout-step-1").classList.add("hidden");
                     document.getElementById("checkout-step-success").classList.remove("hidden");
                 } else {
@@ -5497,6 +5702,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             dibujarPedidos();
         }
 
+        function detalleClientePedido(cliente = {}) {
+            const partes = [];
+            if (cliente.direccion) partes.push(`<div class="text-[9px] text-slate-500">Dir: ${cliente.direccion}</div>`);
+            if (cliente.comentario) partes.push(`<div class="text-[9px] text-slate-500">Nota: ${cliente.comentario}</div>`);
+            if (cliente.channel) partes.push(`<div class="mt-1 inline-flex rounded-full bg-white/80 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-slate-500 ring-1 ring-slate-200">${cliente.channel === 'whatsapp' ? 'WhatsApp' : 'Carrito'}</div>`);
+            return partes.join('');
+        }
+
         function dibujarPedidos() {
             const tbody = document.getElementById("pedidos-tabla-body");
             const movilList = document.getElementById("pedidos-movil-list");
@@ -5534,6 +5747,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 const seleccionado = pedidosSeleccionados.has(pedidoId);
                 const colorDia = colorPedidoPorDia(fecha);
                 const etiquetaDia = etiquetaPedidoPorDia(fecha);
+                const detalleCliente = detalleClientePedido(ped.cliente);
                 
                 // Detalle compacto de productos
                 const detalleProductos = ped.productos.map(p => `${p.cantidad} ${p.unidad} de ${p.nombre}`).join(', ');
@@ -5551,6 +5765,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <td class="p-4">
                         <div class="font-bold text-slate-800">${ped.cliente.nombre}</div>
                         <div class="text-[9px] text-slate-400">${ped.cliente.telefono}</div>
+                        ${detalleCliente}
                     </td>
                     <td class="p-4 text-xs text-slate-600 max-w-xs truncate" title="${detalleProductos}">${detalleProductos}</td>
                     <td class="p-4 text-center font-bold text-primary-600">Q${ped.total.toFixed(2)}</td>
@@ -5577,6 +5792,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 const seleccionado = pedidosSeleccionados.has(pedidoId);
                 const colorDia = colorPedidoPorDia(fecha);
                 const etiquetaDia = etiquetaPedidoPorDia(fecha);
+                const detalleCliente = detalleClientePedido(ped.cliente);
 
                 return `
                 <div class="${colorDia} p-4 rounded-2xl border border-slate-100 space-y-2">
@@ -5591,6 +5807,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <div class="border-t border-slate-200/40 pt-2">
                         <div class="font-extrabold text-xs text-slate-800">${ped.cliente.nombre}</div>
                         <div class="text-[9px] text-slate-400">${ped.cliente.telefono}</div>
+                        ${detalleCliente}
                         <p class="text-[11px] text-slate-600 mt-1 italic line-clamp-2">${detalleProductos}</p>
                     </div>
                     <div class="flex justify-between items-center pt-2 border-t border-slate-200/40">
@@ -5644,7 +5861,21 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             doc.setFont("helvetica", "normal");
             doc.setFontSize(10);
             doc.text(`Nombre: ${cliente.nombre}`, 15, 63);
+            let inicioTablaY = 78;
             doc.text(`Teléfono / WhatsApp: ${cliente.telefono}`, 15, 69);
+
+            if (cliente.direccion) {
+                doc.text(`Direccion: ${cliente.direccion}`, 15, 75);
+                inicioTablaY = 84;
+            }
+            if (cliente.comentario) {
+                const comentarioY = inicioTablaY === 78 ? 75 : 81;
+                doc.text(`Comentario: ${cliente.comentario}`, 15, comentarioY);
+                inicioTablaY = Math.max(inicioTablaY, comentarioY + 9);
+            }
+            if (cliente.channel) {
+                doc.text(`Canal: ${cliente.channel === 'whatsapp' ? 'WhatsApp' : 'Carrito'}`, 145, 69);
+            }
 
             // Filas de productos
             const tableRows = items.map(item => [
@@ -5656,7 +5887,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             // Dibujar tabla con jsPDF-AutoTable
             doc.autoTable({
-                startY: 78,
+                startY: inicioTablaY,
                 head: [['Producto', 'Cantidad', 'Precio Unitario', 'Subtotal']],
                 body: tableRows,
                 headStyles: {
@@ -5941,9 +6172,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     configuracionNegocio.logo = data.logo || '';
                     configuracionNegocio.logoShape = data.logoShape || 'rectangle';
                     configuracionNegocio.account = data.account || null;
+                    configuracionNegocio.orderCartEnabled = data.orderCartEnabled !== false;
+                    configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled !== false;
+                    configuracionNegocio.addressRequirement = data.addressRequirement || 'optional';
+                    configuracionNegocio.commentRequirement = data.commentRequirement || 'optional';
                     actualizarTituloCatalogoUI(data.catalogTitle);
                     actualizarInformacionCuenta(configuracionNegocio.account);
                     actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape);
+                    actualizarCheckoutOpciones();
                     const nombreEl = document.getElementById('catalog-business-name');
                     const descEl = document.getElementById('catalog-business-description');
                     const searchWrapper = document.getElementById('catalog-search-wrapper');
@@ -5988,6 +6224,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         function mostrarLandingStep(step) {
             const modal = document.getElementById('landing-auth-modal');
             const login = document.getElementById('landing-login-step');
+            const recovery = document.getElementById('landing-recovery-step');
             const register = document.getElementById('landing-register-step');
             
             if (step === 'close' || step === 'portal') {
@@ -6004,6 +6241,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }
 
             if (login) login.classList.toggle('hidden', step !== 'login');
+            if (recovery) recovery.classList.toggle('hidden', step !== 'recovery');
             if (register) register.classList.toggle('hidden', step !== 'register');
 
             if (step === 'register') {
@@ -6020,6 +6258,15 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             } else if (step === 'login') {
                 mostrarErrorLoginLanding('');
                 const identifierInput = document.getElementById('landing-login-identifier');
+                if (identifierInput) identifierInput.focus();
+            } else if (step === 'recovery') {
+                mostrarErrorRecoveryLanding('');
+                const devLinkEl = document.getElementById('landing-dev-reset-link');
+                if (devLinkEl) {
+                    devLinkEl.classList.add('hidden');
+                    devLinkEl.innerHTML = '';
+                }
+                const identifierInput = document.getElementById('landing-recovery-identifier');
                 if (identifierInput) identifierInput.focus();
             }
         }
@@ -6074,6 +6321,15 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     landingRegSlug.value = slugifyClient(landingRegSlug.value);
                 });
             }
+
+            const authAction = new URLSearchParams(window.location.search).get('auth');
+            if (authAction === 'register') {
+                mostrarLandingStep('register');
+            } else if (authAction === 'recovery') {
+                mostrarLandingStep('recovery');
+            } else if (authAction === 'login') {
+                mostrarLandingStep('login');
+            }
         });
 
         function mostrarErrorLoginLanding(mensaje = '') {
@@ -6099,6 +6355,66 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             errorEl.innerText = mensaje;
             errorEl.classList.remove('hidden');
         }
+
+        function mostrarErrorRecoveryLanding(mensaje = '') {
+            const errorEl = document.getElementById('landing-recovery-error');
+            if (!errorEl) return;
+            if (!mensaje) {
+                errorEl.classList.add('hidden');
+                errorEl.innerText = '';
+                return;
+            }
+            errorEl.innerText = mensaje;
+            errorEl.classList.remove('hidden');
+        }
+
+        async function recuperarPasswordLanding(e) {
+            if (e) e.preventDefault();
+            const identifier = document.getElementById('landing-recovery-identifier')?.value.trim();
+            const submitBtn = document.getElementById('landing-recovery-submit');
+            const devLinkEl = document.getElementById('landing-dev-reset-link');
+            mostrarErrorRecoveryLanding('');
+            if (devLinkEl) {
+                devLinkEl.classList.add('hidden');
+                devLinkEl.innerHTML = '';
+            }
+            if (!identifier) {
+                mostrarErrorRecoveryLanding('Ingresa tu usuario o correo.');
+                return;
+            }
+
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-70', 'cursor-wait');
+                    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando enlace';
+                }
+                const res = await fetch(`${API_URL}/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    mostrarErrorRecoveryLanding(data.error || 'No se pudo solicitar la recuperación.');
+                    return;
+                }
+                showToast(data.mensaje || 'Si la cuenta existe, enviaremos instrucciones de recuperación.', 'success');
+                if (data.devResetUrl && devLinkEl) {
+                    devLinkEl.innerHTML = `Modo desarrollo: <a class="text-purple-600 font-black underline" href="${data.devResetUrl}">${data.devResetUrl}</a>`;
+                    devLinkEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                mostrarErrorRecoveryLanding('Error de conexión al recuperar contraseña.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-70', 'cursor-wait');
+                    submitBtn.innerHTML = 'Enviar enlace';
+                }
+            }
+        }
+        window.recuperarPasswordLanding = recuperarPasswordLanding;
 
         async function verificarPasswordLanding(e) {
             if (e) e.preventDefault();

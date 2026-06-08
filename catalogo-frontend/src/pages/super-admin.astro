@@ -1353,7 +1353,13 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         async function approvePayment(id) {
-            await superFetch(`/payments/${id}/approve`, { method: 'PATCH' });
+            const res = await superFetch(`/payments/${id}/approve`, { method: 'PATCH' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showSuperToast(data.error || 'Error al aprobar pago', 'error');
+                return;
+            }
+            showSuperToast('Pago aprobado correctamente.', 'success');
             await refreshTenantViews();
         }
 

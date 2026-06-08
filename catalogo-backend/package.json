@@ -9,7 +9,8 @@
     "build": "npx prisma generate",
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
-    "prisma:deploy": "npx prisma migrate deploy"
+    "prisma:deploy": "npx prisma migrate deploy",
+    "ensure:superadmin": "node ensure-superadmin.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -18,6 +19,7 @@
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",

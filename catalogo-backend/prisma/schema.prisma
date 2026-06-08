@@ -110,6 +110,10 @@ model Settings {
   mostrarDescripcion     Boolean  @default(true)
   vistaPredeterminada    String   @default("grid")
   monedaVisible          String   @default("GTQ")
+  orderCartEnabled       Boolean  @default(true)
+  orderWhatsappEnabled   Boolean  @default(true)
+  addressRequirement     String   @default("optional") // optional, required, disabled
+  commentRequirement     String   @default("optional") // optional, required, disabled
 
   @@index([tenantId])
 }
