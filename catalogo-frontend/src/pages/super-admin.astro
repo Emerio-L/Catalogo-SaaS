@@ -761,6 +761,31 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             return new Intl.NumberFormat('es-GT', { style: 'currency', currency: 'GTQ' }).format(Number(value || 0));
         }
 
+        function showSuperToast(message, type = 'success') {
+            let container = document.getElementById('super-toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'super-toast-container';
+                container.className = 'fixed right-4 top-4 z-[100] flex w-[min(92vw,380px)] flex-col gap-3';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            const isError = type === 'error';
+            toast.className = `flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-black text-white shadow-2xl transition duration-300 ${
+                isError
+                    ? 'border-rose-400/30 bg-rose-600'
+                    : 'border-emerald-400/30 bg-emerald-600'
+            }`;
+            toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i><span class="flex-1"></span>`;
+            toast.querySelector('span').textContent = message;
+            container.appendChild(toast);
+            window.setTimeout(() => {
+                toast.classList.add('translate-x-6', 'opacity-0');
+                window.setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
         function assetUrl(url = '') {
             if (!url) return '';
             return String(url).startsWith('/') ? `${BACKEND_URL}${url}` : String(url);
@@ -1336,7 +1361,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             superPayments = await res.json();
             renderMetrics();
             document.getElementById('super-payments-list').innerHTML = superPayments.length ? superPayments.map(payment => `
-                <div class="flex flex-col gap-3 rounded-2xl border border-white/8 bg-white/5 p-4 md:flex-row md:items-center md:justify-between">
+                <div data-payment-id="${payment.id}" class="flex flex-col gap-3 rounded-2xl border border-white/8 bg-white/5 p-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         <p class="font-black text-white">${payment.tenant?.nombre || 'Cliente'} · ${fmtMoney(payment.amount)}</p>
                         <p class="text-sm font-semibold text-slate-400">${payment.paymentMonth} · ${payment.paymentMethod || 'Sin método'} · ${fmtDate(payment.paidAt || payment.createdAt)}</p>
@@ -1353,19 +1378,28 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         async function approvePayment(id) {
+            if (!confirm('Aprobar este pago y activar la cuenta del cliente?')) return;
             const res = await superFetch(`/payments/${id}/approve`, { method: 'PATCH' });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 showSuperToast(data.error || 'Error al aprobar pago', 'error');
                 return;
             }
+            const paymentCard = document.querySelector(`[data-payment-id="${CSS.escape(String(id))}"]`);
+            paymentCard?.remove();
             showSuperToast('Pago aprobado correctamente.', 'success');
             await refreshTenantViews();
         }
 
         async function rejectPayment(id) {
             const reason = prompt('Motivo de rechazo') || '';
-            await superFetch(`/payments/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) });
+            const res = await superFetch(`/payments/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showSuperToast(data.error || 'Error al rechazar pago', 'error');
+                return;
+            }
+            showSuperToast('Pago rechazado correctamente.', 'success');
             await refreshTenantViews();
         }
 
@@ -1374,6 +1408,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const res = await superFetch(`/payments/${id}`, { method: 'DELETE' });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) { showSuperToast(data.error || 'Error al eliminar pago', 'error'); return; }
+            document.querySelector(`[data-payment-id="${CSS.escape(String(id))}"]`)?.remove();
             showSuperToast('Registro de pago eliminado.', 'success');
             await refreshTenantViews();
         }
@@ -1383,6 +1418,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const res = await superFetch(`/payments/${id}`, { method: 'DELETE' });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) { showSuperToast(data.error || 'Error al eliminar pago', 'error'); return; }
+            document.querySelector(`[data-payment-id="${CSS.escape(String(id))}"]`)?.remove();
             showSuperToast('Registro de pago eliminado.', 'success');
             if (selectedTenantId) loadTenantDrawerDetail(selectedTenantId);
             await loadPayments();

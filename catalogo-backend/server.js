@@ -2827,7 +2827,11 @@ app.patch('/api/:tenant/admin/products/:id/toggle', tenantMiddleware, requireAdm
             producto.activo = !producto.activo;
         }
         await producto.save();
-        res.json({ mensaje: `Producto ${producto.activo ? 'activado' : 'desactivado'} correctamente`, activo: producto.activo });
+        res.json({
+            mensaje: `Producto ${producto.activo ? 'activado' : 'desactivado'} correctamente`,
+            id: String(producto._id),
+            activo: producto.activo
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error al cambiar estado del producto' });
