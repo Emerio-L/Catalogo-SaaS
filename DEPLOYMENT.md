@@ -82,7 +82,6 @@ migraciones que falten.
 ```env
 NODE_ENV=production
 DATABASE_URL=${{Postgres.DATABASE_URL}}
-FRONTEND_URL=https://${{frontend.RAILWAY_PUBLIC_DOMAIN}}
 
 SUPER_ADMIN_USER=elige-un-usuario
 SUPER_ADMIN_PASSWORD=elige-una-clave-larga-y-unica
@@ -130,8 +129,13 @@ prefijo `PUBLIC_`. `PUBLIC_BACKEND_URL` se usa para imagenes o archivos que el
 navegador carga directamente.
 
 5. En `Networking`, genera el dominio publico del frontend.
-6. Confirma que `FRONTEND_URL` del backend apunta a ese dominio y redeploya el
-   backend si Railway no actualizo la referencia automaticamente.
+6. Regresa a las variables del backend y agrega:
+
+```env
+FRONTEND_URL=https://${{frontend.RAILWAY_PUBLIC_DOMAIN}}
+```
+
+7. Redeploya el backend para aplicar el origen y las URLs de recuperacion.
 
 ## 6. Verificacion
 
