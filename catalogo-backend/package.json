@@ -10,6 +10,8 @@
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:deploy": "npx prisma migrate deploy",
+    "accounts:backfill": "node backfill-account-numbers.js",
+    "test:saas-upgrade": "node test-saas-upgrade.js",
     "ensure:superadmin": "node ensure-superadmin.js"
   },
   "dependencies": {

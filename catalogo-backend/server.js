@@ -22,6 +22,8 @@ const {
     User,
     Session,
     PasswordResetToken,
+    RecoveryCode,
+    SupportTicket,
     AuditLog,
     Plan,
     Payment,
@@ -38,7 +40,7 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:4321,http://127.0.0.1:4321')
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:4321')
     .split(',')
     .map(origin => origin.trim().replace(/\/$/, ''))
     .filter(Boolean);
@@ -69,6 +71,7 @@ const cloudinaryEnabled = Boolean(
 const ADMIN_IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 const ACCOUNT_STATUSES = ['trial', 'active', 'pending_payment', 'suspended', 'deleted'];
 const PAYMENT_STATUSES = ['pendiente', 'aprobado', 'rechazado'];
+const SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'closed'];
 const SUPER_ADMIN_COOKIE = 'catalogo_super_admin_session';
 const DELETED_ACCOUNT_RETENTION_DAYS = 30;
 const DEFAULT_TENANT_THEME = {
@@ -196,6 +199,94 @@ function sha256(valor) {
 
 function crearTokenSeguro(bytes = 32) {
     return crypto.randomBytes(bytes).toString('base64url');
+}
+
+function normalizeIdentifier(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function normalizeAccountNumber(value) {
+    return String(value || '').trim().toUpperCase();
+}
+
+async function nextAccountNumber() {
+    const latest = await prisma.tenant.findFirst({
+        where: { accountNumber: { startsWith: 'CT-' } },
+        orderBy: { accountNumber: 'desc' },
+        select: { accountNumber: true }
+    });
+    const current = Number(/^CT-(\d{6})$/.exec(latest?.accountNumber || '')?.[1] || 0);
+    return `CT-${String(current + 1).padStart(6, '0')}`;
+}
+
+async function createTenantWithAccountNumber(data) {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+            return await Tenant.create({
+                ...data,
+                accountNumber: await nextAccountNumber()
+            });
+        } catch (error) {
+            if (error?.code !== 'P2002' || !String(error?.meta?.target || '').includes('accountNumber')) {
+                throw error;
+            }
+        }
+    }
+    throw new Error('No se pudo generar un numero de cuenta unico');
+}
+
+async function findUserByIdentifier(identifier, options = {}) {
+    const normalized = normalizeIdentifier(identifier);
+    const accountNumber = normalizeAccountNumber(identifier);
+    const baseQuery = {
+        activo: true,
+        ...(options.tenantId ? { tenantId: options.tenantId } : {}),
+        ...(options.role ? { rol: options.role } : {})
+    };
+
+    let user = await User.findOne({
+        ...baseQuery,
+        $or: [{ email: normalized }, { usuario: normalized }]
+    });
+    if (user) return user;
+
+    const tenant = await Tenant.findOne({
+        accountNumber,
+        ...(options.tenantId ? { _id: options.tenantId } : {}),
+        status: { $ne: 'deleted' }
+    });
+    if (!tenant) return null;
+
+    return User.findOne({
+        ...baseQuery,
+        tenantId: tenant._id,
+        ...(options.role
+            ? { rol: options.role }
+            : { $or: [{ rol: 'owner' }, { rol: 'tenant_admin' }, { rol: 'admin' }] })
+    }).sort({ creadoEn: 1 });
+}
+
+async function invalidateActiveResetTokens(userId, tenantId) {
+    await PasswordResetToken.updateMany(
+        { userId, tenantId, usedAt: null },
+        { $set: { usedAt: new Date() } }
+    );
+}
+
+async function createPasswordResetForUser(req, user, tenant) {
+    await invalidateActiveResetTokens(user._id, tenant._id);
+    const token = crearTokenSeguro();
+    await PasswordResetToken.create({
+        tenantId: tenant._id,
+        userId: user._id,
+        tokenHash: sha256(token),
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        ip: req.ip
+    });
+    const frontendUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host').replace(':3005', ':4321')}`;
+    const resetUrl = `${frontendUrl}/c/${tenant.slug}/reset-password?token=${token}`;
+    const emailStatus = await enviarEmailRecuperacion({ to: user.email, resetUrl });
+    return { resetUrl, emailStatus };
 }
 
 function cookieName(tenantSlug) {
@@ -349,6 +440,7 @@ async function applyAccountTransitions(tenantsInput) {
 
 function tenantBillingPayload(tenant, plan = null) {
     return {
+        accountNumber: tenant.accountNumber,
         status: tenant.status,
         statusLabel: accountStatusLabel(tenant.status),
         plan: plan ? {
@@ -383,6 +475,7 @@ async function serializeTenantForSuperAdmin(tenant) {
     const lastPayment = await Payment.findOne({ tenantId: tenant._id, status: 'aprobado' }).sort({ approvedAt: -1, paidAt: -1 }).lean();
     return {
         id: tenant._id,
+        accountNumber: tenant.accountNumber,
         slug: tenant.slug,
         businessName: tenant.nombre,
         ownerName: tenant.ownerName || owner?.nombre || '',
@@ -394,6 +487,8 @@ async function serializeTenantForSuperAdmin(tenant) {
         adminUrl: `/c/${tenant.slug}/p/${tenant.adminAccessKey}`,
         publicUrl: `/c/${tenant.slug}`,
         lastPayment,
+        lastLoginAt: owner?.ultimoLogin || null,
+        internalNotes: tenant.internalNotes || '',
         ...tenantBillingPayload(tenant, plan)
     };
 }
@@ -531,7 +626,7 @@ function clearCookieOptions() {
 async function auditLog(req, tipo, metadata = {}) {
     try {
         await AuditLog.create({
-            tenantId: req.tenantId,
+            tenantId: metadata.tenantId || req.tenantId,
             userId: req.user?._id,
             tipo,
             ip: req.ip,
@@ -577,12 +672,58 @@ async function enviarEmailRecuperacion({ to, resetUrl }) {
     return { sent: true, dev: false };
 }
 
+async function enviarEmailBienvenida({ to, tenant, usuario }) {
+    if (!process.env.RESEND_API_KEY || !process.env.AUTH_EMAIL_FROM || !to || String(to).endsWith('.local')) {
+        return { sent: false, dev: true };
+    }
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4321';
+    const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            from: process.env.AUTH_EMAIL_FROM,
+            to,
+            subject: `Bienvenido a SEDELYNK - ${tenant.accountNumber}`,
+            html: `
+                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+                    <h2>Tu cuenta SEDELYNK esta lista</h2>
+                    <p><strong>Numero de cuenta:</strong> ${tenant.accountNumber}</p>
+                    <p><strong>Negocio:</strong> ${tenant.nombre}</p>
+                    <p><strong>Usuario:</strong> ${usuario}</p>
+                    <p><a href="${frontendUrl}/" style="background:#7C3AED;color:white;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:bold">Ingresar a SEDELYNK</a></p>
+                </div>
+            `
+        })
+    });
+    if (!response.ok) throw new Error('No se pudo enviar el correo de bienvenida');
+    return { sent: true, dev: false };
+}
+
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 20,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' }
+});
+
+const recoveryCodeLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiados intentos de recuperacion. Intenta mas tarde.' }
+});
+
+const supportLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiadas solicitudes de soporte. Intenta mas tarde.' }
 });
 
 function normalizarCategoria(nombre) {
@@ -632,7 +773,7 @@ async function asegurarTenantDefault() {
     const tema = 'emerald';
 
     if (!tenant) {
-        tenant = await Tenant.create({
+        tenant = await createTenantWithAccountNumber({
             slug: 'default',
             nombre: 'Catálogo de Productos',
             descripcion: 'Selecciona tus productos y confirma tu pedido.',
@@ -663,7 +804,7 @@ async function asegurarTenantDefault() {
                 colorPrimario: tenant.colorPrimario || '#10b981',
                 mostrarBuscador: true,
                 mostrarCategorias: true,
-                mostrarDescripcion: true,
+                mostrarDescripcion: false,
                 vistaPredeterminada: 'grid',
                 monedaVisible: 'GTQ',
                 orderCartEnabled: true,
@@ -788,7 +929,7 @@ async function settingsTenant(tenant) {
             tema: 'emerald',
             mostrarBuscador: true,
             mostrarCategorias: true,
-            mostrarDescripcion: true,
+            mostrarDescripcion: false,
             vistaPredeterminada: 'grid',
             monedaVisible: 'GTQ'
         });
@@ -1075,6 +1216,37 @@ app.put('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (r
     }
 });
 
+const supportTicketSchema = z.object({
+    name: z.string().trim().min(2).max(100),
+    email: z.string().trim().email().max(160),
+    whatsapp: z.string().trim().min(8).max(30),
+    message: z.string().trim().min(10).max(2000)
+});
+
+app.post('/api/support/tickets', supportLimiter, async (req, res) => {
+    try {
+        const data = supportTicketSchema.parse(req.body);
+        const ticket = await SupportTicket.create({
+            name: data.name,
+            email: data.email.toLowerCase(),
+            whatsapp: data.whatsapp,
+            message: data.message,
+            status: 'open'
+        });
+        res.status(201).json({
+            success: true,
+            message: 'Solicitud de soporte enviada correctamente.',
+            ticketId: ticket._id
+        });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Revisa los datos de la solicitud de soporte.' });
+        }
+        console.error('Error creando ticket de soporte:', error);
+        res.status(500).json({ error: 'No se pudo enviar la solicitud de soporte.' });
+    }
+});
+
 /* ==========================================================================
    RUTAS SUPER ADMIN - CONTROL DEL SAAS
    ========================================================================== */
@@ -1087,14 +1259,27 @@ const superAdminLoginSchema = z.object({
 app.post('/api/super-admin/auth/login', authLimiter, async (req, res) => {
     try {
         const { identifier, password } = superAdminLoginSchema.parse(req.body);
-        const normalized = identifier.toLowerCase().trim();
-        const user = await User.findOne({
-            rol: 'super_admin',
-            activo: true,
-            $or: [{ email: normalized }, { usuario: normalized }]
-        });
+        const normalized = normalizeIdentifier(identifier);
+        const user = await findUserByIdentifier(normalized, { role: 'super_admin' });
+
+        if (user?.lockedUntil && user.lockedUntil > new Date()) {
+            await auditLog(req, 'super_admin_login_blocked', { tenantId: user.tenantId, userId: user._id });
+            return res.status(423).json({ error: 'Cuenta bloqueada temporalmente. Intenta mas tarde.' });
+        }
 
         if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+            if (user) {
+                user.failedLoginAttempts += 1;
+                if (user.failedLoginAttempts >= 5) {
+                    user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+                }
+                await user.save();
+            }
+            await auditLog(req, 'super_admin_login_failed', {
+                tenantId: user?.tenantId,
+                identifier: normalized,
+                userId: user?._id
+            });
             return res.status(401).json({ error: 'Credenciales invalidas' });
         }
 
@@ -1102,6 +1287,9 @@ app.post('/api/super-admin/auth/login', authLimiter, async (req, res) => {
         user.lockedUntil = undefined;
         user.ultimoLogin = new Date();
         await user.save();
+        req.user = user;
+        req.tenantId = user.tenantId;
+        await auditLog(req, 'super_admin_login_success', { tenantId: user.tenantId, userId: user._id });
 
         const token = crearTokenSeguro();
         await Session.create({
@@ -1362,20 +1550,44 @@ app.get('/api/super-admin/dashboard', requireSuperAdminAuth, async (req, res) =>
     try {
         const tenants = await Tenant.find({});
         await applyAccountTransitions(tenants);
-        const counts = await Tenant.aggregate([
-            { $group: { _id: '$status', total: { $sum: 1 } } }
-        ]);
         const byStatus = Object.fromEntries(ACCOUNT_STATUSES.map(status => [status, 0]));
-        for (const item of counts) byStatus[item._id || 'trial'] = item.total;
+        for (const tenant of tenants) {
+            const status = tenant.status || 'trial';
+            byStatus[status] = (byStatus[status] || 0) + 1;
+        }
+        const now = new Date();
+        const nextWeek = addDays(now, 7);
+        const thirtyDaysAgo = addDays(now, -30);
+        const activeTenants = tenants.filter(tenant => tenant.status === 'active');
+        const mrr = activeTenants.reduce((sum, tenant) => sum + money(tenant.monthlyPrice), 0);
+        const upcomingExpirations = tenants.filter(tenant => {
+            if (!['trial', 'active', 'pending_payment'].includes(tenant.status)) return false;
+            const target = tenant.status === 'trial' ? tenant.trialEndDate : (tenant.paymentDueDate || tenant.currentPeriodEnd);
+            return target && new Date(target) >= now && new Date(target) <= nextWeek;
+        }).length;
+        const deletedLast30Days = tenants.filter(tenant => (
+            tenant.status === 'deleted' &&
+            tenant.deletedAt &&
+            new Date(tenant.deletedAt) >= thirtyDaysAgo
+        )).length;
+        const baseForChurn = Math.max(1, tenants.filter(tenant => (
+            !tenant.creadoEn || new Date(tenant.creadoEn) < thirtyDaysAgo
+        )).length);
+        const openSupportTickets = await SupportTicket.countDocuments({ status: { $ne: 'closed' } });
         res.json({
             clientesActivos: byStatus.active,
             clientesPruebaGratis: byStatus.trial,
             pagosPendientes: byStatus.pending_payment,
             cuentasSuspendidas: byStatus.suspended,
             cuentasEliminadas: byStatus.deleted,
+            proximasAVencer: upcomingExpirations,
+            mrr,
+            churn: Math.round((deletedLast30Days / baseForChurn) * 10000) / 100,
+            ticketsAbiertos: openSupportTickets,
             byStatus
         });
     } catch (err) {
+        console.error('Error cargando dashboard super admin:', err);
         res.status(500).json({ error: 'Error al cargar dashboard super admin' });
     }
 });
@@ -1391,6 +1603,79 @@ app.get('/api/super-admin/tenants', requireSuperAdminAuth, async (req, res) => {
         res.json(await Promise.all(tenants.map(serializeTenantForSuperAdmin)));
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener clientes' });
+    }
+});
+
+app.get('/api/super-admin/billing', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenants = await Tenant.find({ status: { $ne: 'deleted' } }).populate('planId').sort({ paymentDueDate: 1 });
+        await applyAccountTransitions(tenants);
+        const today = startOfDay();
+        const tomorrow = addDays(today, 1);
+        const weekEnd = addDays(today, 7);
+        const groups = { dueToday: [], dueTomorrow: [], dueThisWeek: [], overdue: [] };
+
+        for (const tenant of tenants) {
+            const dueDate = tenant.status === 'trial'
+                ? tenant.trialEndDate
+                : (tenant.paymentDueDate || tenant.currentPeriodEnd);
+            if (!dueDate) continue;
+            const due = startOfDay(dueDate);
+            const payload = await serializeTenantForSuperAdmin(tenant);
+            if (due < today) groups.overdue.push(payload);
+            else if (due.getTime() === today.getTime()) groups.dueToday.push(payload);
+            else if (due.getTime() === tomorrow.getTime()) groups.dueTomorrow.push(payload);
+            else if (due <= weekEnd) groups.dueThisWeek.push(payload);
+        }
+        res.json(groups);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al cargar centro de cobros' });
+    }
+});
+
+app.get('/api/super-admin/logs', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 250);
+        const logs = await prisma.auditLog.findMany({
+            orderBy: { fecha: 'desc' },
+            take: limit,
+            include: {
+                user: { select: { nombre: true, email: true, usuario: true } },
+                tenant: { select: { accountNumber: true, nombre: true, slug: true } }
+            }
+        });
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al cargar logs' });
+    }
+});
+
+app.get('/api/super-admin/support/tickets', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const status = String(req.query.status || '').trim();
+        const query = SUPPORT_TICKET_STATUSES.includes(status) ? { status } : {};
+        const tickets = await SupportTicket.find(query).sort({ createdAt: -1 });
+        const openCount = await SupportTicket.countDocuments({ status: { $ne: 'closed' } });
+        res.json({ tickets, openCount });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al cargar solicitudes de soporte' });
+    }
+});
+
+app.patch('/api/super-admin/support/tickets/:id', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const status = String(req.body.status || '').trim();
+        if (!SUPPORT_TICKET_STATUSES.includes(status)) {
+            return res.status(400).json({ error: 'Estado de ticket invalido' });
+        }
+        const ticket = await SupportTicket.findOne({ _id: req.params.id });
+        if (!ticket) return res.status(404).json({ error: 'Ticket no encontrado' });
+        ticket.status = status;
+        await ticket.save();
+        await auditLog(req, 'support_ticket_status_changed', { ticketId: ticket._id, status });
+        res.json(ticket);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al actualizar ticket' });
     }
 });
 
@@ -1429,19 +1714,47 @@ app.get('/api/super-admin/tenants/:id', requireSuperAdminAuth, async (req, res) 
         const tenant = await Tenant.findById(req.params.id).populate('planId');
         if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
         await applyAccountTransitions(tenant);
-        const [payments, logs] = await Promise.all([
+        const thirtyDaysAgo = addDays(new Date(), -30);
+        const [payments, logs, productCount, orderCount, sales30Days] = await Promise.all([
             Payment.find({ tenantId: tenant._id }).sort({ createdAt: -1 }).populate('approvedBy', 'nombre email usuario'),
-            AccountStatusLog.find({ tenantId: tenant._id }).sort({ createdAt: -1 }).populate('changedBy', 'nombre email usuario')
+            AccountStatusLog.find({ tenantId: tenant._id }).sort({ createdAt: -1 }).populate('changedBy', 'nombre email usuario'),
+            Producto.countDocuments({ tenantId: tenant._id }),
+            Pedido.countDocuments({ tenantId: tenant._id }),
+            prisma.order.aggregate({
+                where: { tenantId: tenant._id, fecha: { gte: thirtyDaysAgo } },
+                _sum: { total: true }
+            })
         ]);
         res.json({
             tenant: await serializeTenantForSuperAdmin(tenant),
             payments,
             statusLogs: logs,
             suspensionLogs: logs.filter(log => log.newStatus === 'suspended' || log.previousStatus === 'suspended'),
-            receipts: payments.filter(payment => payment.receiptUrl)
+            receipts: payments.filter(payment => payment.receiptUrl),
+            stats: {
+                products: productCount,
+                orders: orderCount,
+                sales30Days: money(sales30Days._sum.total || 0)
+            }
         });
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener detalle del cliente' });
+    }
+});
+
+app.patch('/api/super-admin/tenants/:id/notes', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenant = await Tenant.findById(req.params.id);
+        if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
+        tenant.internalNotes = String(req.body.notes || '').trim().slice(0, 5000);
+        await tenant.save();
+        await auditLog(req, 'tenant_internal_notes_updated', {
+            tenantId: tenant._id,
+            targetTenantId: tenant._id
+        });
+        res.json({ success: true, notes: tenant.internalNotes });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al guardar notas internas' });
     }
 });
 
@@ -1558,7 +1871,7 @@ const manualPaymentSchema = z.object({
 app.post('/api/super-admin/tenants/:id/payments/confirm', requireSuperAdminAuth, async (req, res) => {
     try {
         const data = manualPaymentSchema.parse(req.body);
-        const tenant = await Tenant.findById(req.params.id).populate('planId');
+        const tenant = await Tenant.findById(req.params.id);
         if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
 
         const now = new Date();
@@ -1573,17 +1886,16 @@ app.post('/api/super-admin/tenants/:id/payments/confirm', requireSuperAdminAuth,
             approvedById: req.user._id
         });
 
-        const previousStatus = tenant.status;
-        const plan = tenant.planId;
-        tenant.status = 'active';
-        tenant.activo = true;
-        tenant.suspendedAt = null;
+        const plan = tenant.planId ? await Plan.findById(tenant.planId) : null;
         tenant.lastPaymentAt = now;
         tenant.currentPeriodStart = now;
         tenant.currentPeriodEnd = nextBillingDate(now, tenant.billingDay || now.getDate());
         tenant.paymentDueDate = addDays(tenant.currentPeriodEnd, plan?.graceDays || 0);
         await tenant.save();
-        await logAccountStatus(tenant, previousStatus, 'active', 'Pago confirmado manualmente', req.user._id);
+        await auditLog(req, 'payment_confirmed_manually', {
+            tenantId: tenant._id,
+            paymentId: payment._id
+        });
 
         res.status(201).json({ success: true, payment, tenant: await serializeTenantForSuperAdmin(tenant) });
     } catch (err) {
@@ -1637,27 +1949,31 @@ app.patch('/api/super-admin/payments/:id/approve', requireSuperAdminAuth, async 
     try {
         const payment = await Payment.findById(req.params.id);
         if (!payment) return res.status(404).json({ error: 'Pago no encontrado' });
-        const tenant = await Tenant.findById(payment.tenantId).populate('planId');
+        if (payment.status === 'aprobado') {
+            return res.status(409).json({ error: 'Este pago ya fue aprobado' });
+        }
+        const tenant = await Tenant.findById(payment.tenantId);
         if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
-        const previousStatus = tenant.status;
         payment.status = 'aprobado';
+        payment.rejectionReason = '';
         payment.paidAt = payment.paidAt || new Date();
         payment.approvedAt = new Date();
         payment.approvedById = req.user._id;
         await payment.save();
 
-        const plan = tenant.planId;
-        tenant.status = 'active';
-        tenant.activo = true;
-        tenant.suspendedAt = null;
+        const plan = tenant.planId ? await Plan.findById(tenant.planId) : null;
         tenant.lastPaymentAt = payment.paidAt;
         tenant.currentPeriodStart = payment.paidAt;
         tenant.currentPeriodEnd = nextBillingDate(payment.paidAt, tenant.billingDay || payment.paidAt.getDate());
         tenant.paymentDueDate = addDays(tenant.currentPeriodEnd, plan?.graceDays || 0);
         await tenant.save();
-        await logAccountStatus(tenant, previousStatus, 'active', 'Pago aprobado', req.user._id);
+        await auditLog(req, 'payment_approved', {
+            tenantId: tenant._id,
+            paymentId: payment._id
+        });
         res.json({ success: true, payment, tenant: await serializeTenantForSuperAdmin(tenant) });
     } catch (err) {
+        console.error('Error al aprobar pago:', err);
         res.status(500).json({ error: 'Error al aprobar pago' });
     }
 });
@@ -1669,14 +1985,15 @@ app.patch('/api/super-admin/payments/:id/reject', requireSuperAdminAuth, async (
         const tenant = await Tenant.findById(payment.tenantId);
         payment.status = 'rechazado';
         payment.rejectionReason = String(req.body?.reason || '').trim();
+        payment.approvedAt = null;
+        payment.approvedById = null;
         await payment.save();
         if (tenant) {
-            const previousStatus = tenant.status;
-            tenant.status = 'suspended';
-            tenant.activo = false;
-            tenant.suspendedAt = new Date();
-            await tenant.save();
-            await logAccountStatus(tenant, previousStatus, 'suspended', payment.rejectionReason || 'Pago rechazado', req.user._id);
+            await auditLog(req, 'payment_rejected', {
+                tenantId: tenant._id,
+                paymentId: payment._id,
+                reason: payment.rejectionReason
+            });
         }
         res.json({ success: true, payment, tenant: tenant ? await serializeTenantForSuperAdmin(tenant) : null });
     } catch (err) {
@@ -1685,6 +2002,86 @@ app.patch('/api/super-admin/payments/:id/reject', requireSuperAdminAuth, async (
 });
 
 // ─── RESET CREDENTIALS (Super Admin) ─────────────────────────────────────────
+app.post('/api/super-admin/tenants/:id/recovery', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const method = String(req.body.method || '').trim();
+        if (!['email', 'whatsapp_code', 'temporary_password'].includes(method)) {
+            return res.status(400).json({ error: 'Metodo de recuperacion invalido' });
+        }
+
+        const tenant = await Tenant.findById(req.params.id);
+        if (!tenant || tenant.status === 'deleted') {
+            return res.status(404).json({ error: 'Cliente no encontrado' });
+        }
+        const user = await User.findOne({
+            tenantId: tenant._id,
+            activo: true,
+            $or: [{ rol: 'owner' }, { rol: 'tenant_admin' }, { rol: 'admin' }]
+        }).sort({ creadoEn: 1 });
+        if (!user) return res.status(404).json({ error: 'Usuario principal no encontrado' });
+
+        if (method === 'email') {
+            const { resetUrl, emailStatus } = await createPasswordResetForUser(req, user, tenant);
+            await auditLog(req, 'super_admin_recovery_email_created', {
+                tenantId: tenant._id,
+                targetUserId: user._id
+            });
+            return res.json({
+                success: true,
+                message: 'Enlace de recuperacion enviado por correo.',
+                devResetUrl: emailStatus.dev && process.env.NODE_ENV !== 'production' ? resetUrl : undefined
+            });
+        }
+
+        if (method === 'whatsapp_code') {
+            await RecoveryCode.updateMany(
+                { tenantId: tenant._id, userId: user._id, usedAt: null },
+                { $set: { usedAt: new Date() } }
+            );
+            const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+            await RecoveryCode.create({
+                tenantId: tenant._id,
+                userId: user._id,
+                codeHash: sha256(`${user._id}:${code}`),
+                expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+                createdBy: req.user._id,
+                ip: req.ip,
+                userAgent: req.get('user-agent') || ''
+            });
+            await auditLog(req, 'super_admin_recovery_code_created', {
+                tenantId: tenant._id,
+                targetUserId: user._id
+            });
+            return res.json({
+                success: true,
+                message: 'Codigo temporal generado. Se mostrara una sola vez.',
+                code,
+                expiresInMinutes: 10
+            });
+        }
+
+        const temporaryPassword = `Tmp-${crypto.randomBytes(8).toString('base64url')}A1`;
+        user.passwordHash = await bcrypt.hash(temporaryPassword, 12);
+        user.mustChangePassword = true;
+        user.failedLoginAttempts = 0;
+        user.lockedUntil = undefined;
+        await user.save();
+        await Session.deleteMany({ tenantId: tenant._id, userId: user._id });
+        await auditLog(req, 'super_admin_temporary_password_created', {
+            tenantId: tenant._id,
+            targetUserId: user._id
+        });
+        res.json({
+            success: true,
+            message: 'Contrasena temporal generada. Se mostrara una sola vez.',
+            temporaryPassword
+        });
+    } catch (error) {
+        console.error('Error creando recuperacion manual:', error);
+        res.status(500).json({ error: 'Error al preparar recuperacion de acceso' });
+    }
+});
+
 app.post('/api/super-admin/tenants/:id/reset-credentials', requireSuperAdminAuth, async (req, res) => {
     try {
         const tenant = await Tenant.findById(req.params.id);
@@ -1727,11 +2124,13 @@ app.post('/api/super-admin/tenants/:id/reset-credentials', requireSuperAdminAuth
             return res.status(400).json({ error: 'Indica al menos un campo a actualizar: newUsuario, newEmail o newPassword' });
         }
 
-        // Force client to change password on next login
-        user.mustChangePassword = true;
+        user.mustChangePassword = Boolean(newPassword);
         user.failedLoginAttempts = 0;
         user.lockedUntil = undefined;
         await user.save();
+        if (newPassword) {
+            await Session.deleteMany({ tenantId: tenant._id, userId: user._id });
+        }
 
         await auditLog(req, 'super_admin_reset_credentials', {
             tenantId: tenant._id,
@@ -1835,7 +2234,7 @@ app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
             descripcionNegocio: req.tenant.descripcion || '',
             mostrarBuscador: settings.mostrarBuscador,
             mostrarCategorias: settings.mostrarCategorias,
-            mostrarDescripcion: settings.mostrarDescripcion,
+            mostrarDescripcion: false,
             vistaPredeterminada: settings.vistaPredeterminada,
             monedaVisible: settings.monedaVisible,
             orderCartEnabled: settings.orderCartEnabled !== false,
@@ -1867,7 +2266,7 @@ app.get('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             descripcionNegocio: req.tenant.descripcion || '',
             mostrarBuscador: settings.mostrarBuscador,
             mostrarCategorias: settings.mostrarCategorias,
-            mostrarDescripcion: settings.mostrarDescripcion,
+            mostrarDescripcion: false,
             vistaPredeterminada: settings.vistaPredeterminada,
             monedaVisible: settings.monedaVisible,
             orderCartEnabled: settings.orderCartEnabled !== false,
@@ -1896,7 +2295,6 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             descripcionNegocio,
             mostrarBuscador,
             mostrarCategorias,
-            mostrarDescripcion,
             vistaPredeterminada,
             monedaVisible,
             orderCartEnabled,
@@ -1925,7 +2323,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             ...(themeNormalizado ? { theme: themeNormalizado } : {}),
             ...(mostrarBuscador !== undefined ? { mostrarBuscador: Boolean(mostrarBuscador) } : {}),
             ...(mostrarCategorias !== undefined ? { mostrarCategorias: Boolean(mostrarCategorias) } : {}),
-            ...(mostrarDescripcion !== undefined ? { mostrarDescripcion: Boolean(mostrarDescripcion) } : {}),
+            mostrarDescripcion: false,
             ...(vistaPredeterminada ? { vistaPredeterminada } : {}),
             ...(monedaVisible ? { monedaVisible } : {}),
             ...(nextOrderCartEnabled !== undefined ? { orderCartEnabled: nextOrderCartEnabled } : {}),
@@ -1948,7 +2346,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
                 theme: themeNormalizado || currentSettings.theme || DEFAULT_TENANT_THEME,
                 mostrarBuscador: mostrarBuscador !== undefined ? Boolean(mostrarBuscador) : currentSettings.mostrarBuscador !== false,
                 mostrarCategorias: mostrarCategorias !== undefined ? Boolean(mostrarCategorias) : currentSettings.mostrarCategorias !== false,
-                mostrarDescripcion: mostrarDescripcion !== undefined ? Boolean(mostrarDescripcion) : currentSettings.mostrarDescripcion !== false,
+                mostrarDescripcion: false,
                 vistaPredeterminada: vistaPredeterminada || currentSettings.vistaPredeterminada || 'grid',
                 monedaVisible: monedaVisible || currentSettings.monedaVisible || 'GTQ',
                 orderCartEnabled: finalOrderCartEnabled,
@@ -1973,7 +2371,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             settings: {
                 mostrarBuscador: updatedSettings.mostrarBuscador,
                 mostrarCategorias: updatedSettings.mostrarCategorias,
-                mostrarDescripcion: updatedSettings.mostrarDescripcion,
+                mostrarDescripcion: false,
                 vistaPredeterminada: updatedSettings.vistaPredeterminada,
                 monedaVisible: updatedSettings.monedaVisible,
                 orderCartEnabled: updatedSettings.orderCartEnabled,
@@ -2133,6 +2531,7 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
                     success: true,
                     existingAccount: true,
                     tenant: {
+                        accountNumber: tenantExistente.accountNumber,
                         slug: tenantExistente.slug,
                         nombre: tenantExistente.nombre,
                         tipoNegocio: tenantExistente.tipoNegocio
@@ -2145,7 +2544,7 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
             return res.status(409).json({ error: 'Ese enlace de catálogo ya está en uso' });
         }
 
-        tenantCreado = await Tenant.create({
+        tenantCreado = await createTenantWithAccountNumber({
             slug,
             nombre: data.nombre,
             descripcion: '',
@@ -2174,7 +2573,7 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
             tema: 'emerald',
             mostrarBuscador: true,
             mostrarCategorias: true,
-            mostrarDescripcion: true,
+            mostrarDescripcion: false,
             vistaPredeterminada: 'grid',
             monedaVisible: 'GTQ'
         });
@@ -2189,6 +2588,9 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
             activo: true
         });
 
+        enviarEmailBienvenida({ to: email, tenant: tenantCreado, usuario })
+            .catch(error => console.error('Error enviando bienvenida:', error.message));
+
         const categoriasIniciales = CATEGORIAS_POR_TIPO_NEGOCIO[data.tipoNegocio] || [];
         if (categoriasIniciales.length > 0) {
             await Category.insertMany(categoriasIniciales.map(cat => ({
@@ -2201,6 +2603,7 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
         res.status(201).json({
             success: true,
             tenant: {
+                accountNumber: tenantCreado.accountNumber,
                 slug: tenantCreado.slug,
                 nombre: tenantCreado.nombre,
                 tipoNegocio: tenantCreado.tipoNegocio
@@ -2272,11 +2675,8 @@ const loginSchema = z.object({
 app.post('/api/auth/login', authLimiter, async (req, res) => {
     try {
         const { identifier, password } = loginSchema.parse(req.body);
-        const normalized = identifier.toLowerCase().trim();
-        const user = await User.findOne({
-            activo: true,
-            $or: [{ email: normalized }, { usuario: normalized }]
-        });
+        const normalized = normalizeIdentifier(identifier);
+        const user = await findUserByIdentifier(normalized);
 
         const genericError = { error: 'Credenciales inválidas' };
         if (!user) {
@@ -2329,6 +2729,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
                 email: user.email,
                 usuario: user.usuario,
                 rol: user.rol,
+                accountNumber: tenant.accountNumber,
                 adminAccessKey: user.rol !== 'super_admin' ? tenant.adminAccessKey : undefined
             },
             adminAccessKey: user.rol !== 'super_admin' ? tenant.adminAccessKey : undefined
@@ -2348,14 +2749,11 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
 app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
     try {
-        const identifier = String(req.body.identifier || '').toLowerCase().trim();
+        const identifier = normalizeIdentifier(req.body.identifier);
         const genericResponse = { success: true, mensaje: 'Si la cuenta existe, enviaremos instrucciones de recuperación.' };
         if (!identifier) return res.json(genericResponse);
 
-        const user = await User.findOne({
-            activo: true,
-            $or: [{ email: identifier }, { usuario: identifier }]
-        });
+        const user = await findUserByIdentifier(identifier);
 
         if (!user) return res.json(genericResponse);
 
@@ -2364,18 +2762,10 @@ app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
             return res.json(genericResponse);
         }
 
-        const token = crearTokenSeguro();
-        await PasswordResetToken.create({
-            tenantId: tenant._id,
-            userId: user._id,
-            tokenHash: sha256(token),
-            expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-            ip: req.ip
-        });
-
-        const frontendUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host').replace(':3005', ':4321')}`;
-        const resetUrl = `${frontendUrl}/c/${tenant.slug}/reset-password?token=${token}`;
-        const emailStatus = await enviarEmailRecuperacion({ to: user.email, resetUrl });
+        req.tenantId = tenant._id;
+        req.user = user;
+        const { resetUrl, emailStatus } = await createPasswordResetForUser(req, user, tenant);
+        await auditLog(req, 'password_reset_requested', { tenantId: tenant._id, userId: user._id });
 
         res.json({
             ...genericResponse,
@@ -2386,15 +2776,76 @@ app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
     }
 });
 
+async function completeRecoveryCode(req, res) {
+    try {
+        const identifier = normalizeIdentifier(req.body.identifier);
+        const code = String(req.body.code || '').trim();
+        const password = String(req.body.password || '');
+        if (!identifier || !/^\d{6}$/.test(code) || password.length < 8) {
+            return res.status(400).json({ error: 'Datos de recuperacion invalidos' });
+        }
+
+        const user = await findUserByIdentifier(identifier, {
+            ...(req.tenantId ? { tenantId: req.tenantId } : {})
+        });
+        if (!user) {
+            return res.status(400).json({ error: 'Codigo invalido o expirado' });
+        }
+        const tenant = req.tenant || await Tenant.findById(user.tenantId);
+        if (!tenant || tenant.status === 'deleted') {
+            return res.status(400).json({ error: 'Codigo invalido o expirado' });
+        }
+
+        req.tenantId = tenant._id;
+        const recovery = await RecoveryCode.findOne({
+            tenantId: tenant._id,
+            userId: user._id,
+            usedAt: null,
+            expiresAt: { $gt: new Date() },
+            attempts: { $lt: 3 }
+        }).sort({ createdAt: -1 });
+
+        if (!recovery || recovery.codeHash !== sha256(`${user._id}:${code}`)) {
+            if (recovery) {
+                recovery.attempts += 1;
+                if (recovery.attempts >= 3) recovery.usedAt = new Date();
+                await recovery.save();
+            }
+            await auditLog(req, 'recovery_code_failed', {
+                tenantId: tenant._id,
+                targetUserId: user._id,
+                attempts: recovery?.attempts || 0
+            });
+            return res.status(400).json({ error: 'Codigo invalido o expirado' });
+        }
+
+        user.passwordHash = await bcrypt.hash(password, 12);
+        user.mustChangePassword = false;
+        user.failedLoginAttempts = 0;
+        user.lockedUntil = undefined;
+        await user.save();
+        recovery.usedAt = new Date();
+        await recovery.save();
+        await Session.deleteMany({ tenantId: tenant._id, userId: user._id });
+        await auditLog(req, 'recovery_code_completed', {
+            tenantId: tenant._id,
+            targetUserId: user._id
+        });
+        res.json({ success: true, mensaje: 'Contrasena actualizada correctamente' });
+    } catch (error) {
+        console.error('Error usando codigo de recuperacion:', error);
+        res.status(500).json({ error: 'Error al restablecer acceso' });
+    }
+}
+
+app.post('/api/auth/recovery-code', recoveryCodeLimiter, completeRecoveryCode);
+app.post('/api/:tenant/auth/recovery-code', tenantMiddleware, recoveryCodeLimiter, completeRecoveryCode);
+
 app.post('/api/:tenant/auth/login', tenantMiddleware, authLimiter, async (req, res) => {
     try {
         const { identifier, password } = loginSchema.parse(req.body);
-        const normalized = identifier.toLowerCase();
-        const user = await User.findOne({
-            tenantId: req.tenantId,
-            activo: true,
-            $or: [{ email: normalized }, { usuario: normalized }]
-        });
+        const normalized = normalizeIdentifier(identifier);
+        const user = await findUserByIdentifier(normalized, { tenantId: req.tenantId });
 
         const genericError = { error: 'Credenciales inv\u00e1lidas' };
         if (!user) {
@@ -2443,6 +2894,7 @@ app.post('/api/:tenant/auth/login', tenantMiddleware, authLimiter, async (req, r
                 email: user.email,
                 usuario: user.usuario,
                 rol: user.rol,
+                accountNumber: req.tenant.accountNumber,
                 mustChangePassword: user.mustChangePassword === true,
                 adminAccessKey: user.rol === 'tenant_admin' ? req.tenant.adminAccessKey : undefined
             },
@@ -2467,7 +2919,8 @@ app.get('/api/:tenant/auth/me', tenantMiddleware, requireAdminAuth, async (req, 
             nombre: req.user.nombre,
             email: req.user.email,
             usuario: req.user.usuario,
-            rol: req.user.rol
+            rol: req.user.rol,
+            accountNumber: req.tenant.accountNumber
         }
     });
 });
@@ -2530,33 +2983,18 @@ app.put('/api/:tenant/auth/password', tenantMiddleware, requireAdminAuth, authLi
 
 app.post('/api/:tenant/auth/forgot-password', tenantMiddleware, authLimiter, async (req, res) => {
     try {
-        const identifier = String(req.body.identifier || '').toLowerCase().trim();
+        const identifier = normalizeIdentifier(req.body.identifier);
         const genericResponse = { success: true, mensaje: 'Si la cuenta existe, enviaremos instrucciones de recuperación.' };
         if (!identifier) return res.json(genericResponse);
 
-        const user = await User.findOne({
-            tenantId: req.tenantId,
-            activo: true,
-            $or: [{ email: identifier }, { usuario: identifier }]
-        });
+        const user = await findUserByIdentifier(identifier, { tenantId: req.tenantId });
 
         if (!user) {
             await auditLog(req, 'password_reset_requested_unknown', { identifier });
             return res.json(genericResponse);
         }
 
-        const token = crearTokenSeguro();
-        await PasswordResetToken.create({
-            tenantId: req.tenantId,
-            userId: user._id,
-            tokenHash: sha256(token),
-            expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-            ip: req.ip
-        });
-
-        const frontendUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host').replace(':3005', ':4321')}`;
-        const resetUrl = `${frontendUrl}/c/${req.tenant.slug}/reset-password?token=${token}`;
-        const emailStatus = await enviarEmailRecuperacion({ to: user.email, resetUrl });
+        const { resetUrl, emailStatus } = await createPasswordResetForUser(req, user, req.tenant);
         await auditLog(req, 'password_reset_requested', { userId: user._id });
 
         res.json({
@@ -2573,6 +3011,7 @@ app.post('/api/:tenant/auth/reset-password', tenantMiddleware, authLimiter, asyn
         const token = String(req.body.token || '');
         const password = String(req.body.password || '');
         if (!token || password.length < 8) {
+            await auditLog(req, 'password_reset_failed', { reason: 'invalid_payload' });
             return res.status(400).json({ error: 'Token inválido o contraseña muy corta' });
         }
 
@@ -2584,11 +3023,13 @@ app.post('/api/:tenant/auth/reset-password', tenantMiddleware, authLimiter, asyn
         });
 
         if (!reset) {
+            await auditLog(req, 'password_reset_failed', { reason: 'invalid_expired_or_used_token' });
             return res.status(400).json({ error: 'El enlace no es válido o expiró' });
         }
 
         const user = await User.findOne({ _id: reset.userId, tenantId: req.tenantId, activo: true });
         if (!user) {
+            await auditLog(req, 'password_reset_failed', { reason: 'user_not_found' });
             return res.status(400).json({ error: 'El enlace no es válido o expiró' });
         }
 

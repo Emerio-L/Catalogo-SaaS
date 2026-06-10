@@ -1,0 +1,154 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+interface Props {
+    mode: 'forgot' | 'reset';
+    tenant?: string;
+}
+
+const { mode, tenant = '' } = Astro.props;
+const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
+---
+
+<Layout title={mode === 'forgot' ? 'Recuperar acceso | SEDELYNK' : 'Nueva contraseña | SEDELYNK'}>
+    <script define:vars={{ publicBackendUrl, tenant, mode }}>
+        window.__RECOVERY_CONFIG__ = { publicBackendUrl, tenant, mode };
+    </script>
+    <main class="min-h-screen bg-slate-950 px-5 py-12 text-slate-900">
+        <div class="mx-auto flex min-h-[calc(100vh-6rem)] max-w-5xl items-center justify-center">
+            <section class="grid w-full overflow-hidden rounded-[2rem] bg-white shadow-2xl lg:grid-cols-[0.9fr_1.1fr]">
+                <div class="hidden bg-gradient-to-br from-violet-700 via-violet-600 to-fuchsia-600 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+                    <div>
+                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-2xl">
+                            <i class="fa-solid fa-link"></i>
+                        </div>
+                        <p class="mt-8 text-xs font-black uppercase tracking-[0.3em] text-violet-100">SEDELYNK</p>
+                        <h1 class="mt-3 text-4xl font-black leading-tight">Recupera el control de tu cuenta.</h1>
+                        <p class="mt-4 max-w-sm text-sm font-semibold leading-6 text-violet-100">Enlaces de un solo uso, códigos temporales y cierre automático de sesiones activas.</p>
+                    </div>
+                    <p class="text-xs font-bold text-violet-100">Tu información permanece protegida y aislada por cuenta.</p>
+                </div>
+
+                <div class="p-6 sm:p-10">
+                    <button id="recovery-back-button" type="button" class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-red-600/25 transition hover:bg-red-700">
+                        <i class="fa-solid fa-arrow-left"></i> Regresar al panel
+                    </button>
+
+                    <div id="forgot-panel" class:list={['mt-10 space-y-6', { hidden: mode !== 'forgot' }]}>
+                        <div>
+                            <p class="text-xs font-black uppercase tracking-[0.24em] text-violet-600">Recuperar acceso</p>
+                            <h2 class="mt-2 text-3xl font-black tracking-tight">¿No puedes ingresar?</h2>
+                            <p class="mt-3 text-sm font-semibold leading-6 text-slate-500">Ingresa tu correo, usuario o número de cuenta.</p>
+                        </div>
+                        <form id="forgot-form" class="space-y-4">
+                            <input id="forgot-identifier" required autocomplete="username" placeholder="correo@negocio.com, usuario o CT-000001" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                            <button class="w-full rounded-2xl bg-violet-600 px-5 py-4 text-sm font-black text-white transition hover:bg-violet-700">Enviar instrucciones</button>
+                        </form>
+                        <button id="show-code-panel" class="text-sm font-black text-violet-600">Tengo un código de recuperación</button>
+                    </div>
+
+                    <div id="code-panel" class="mt-10 hidden space-y-6">
+                        <div>
+                            <p class="text-xs font-black uppercase tracking-[0.24em] text-violet-600">Código temporal</p>
+                            <h2 class="mt-2 text-3xl font-black tracking-tight">Crear nueva contraseña</h2>
+                            <p class="mt-3 text-sm font-semibold text-slate-500">Usa el código de 6 dígitos recibido por WhatsApp.</p>
+                        </div>
+                        <form id="code-form" class="space-y-4">
+                            <input id="code-identifier" required placeholder="Correo, usuario o CT-000001" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold outline-none focus:border-violet-500">
+                            <input id="code-value" required inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="Código de 6 dígitos" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-center text-xl font-black tracking-[0.35em] outline-none focus:border-violet-500">
+                            <input id="code-password" type="password" required minlength="8" autocomplete="new-password" placeholder="Nueva contraseña" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold outline-none focus:border-violet-500">
+                            <button class="w-full rounded-2xl bg-violet-600 px-5 py-4 text-sm font-black text-white transition hover:bg-violet-700">Restablecer acceso</button>
+                        </form>
+                    </div>
+
+                    <div id="reset-panel" class:list={['mt-10 space-y-6', { hidden: mode !== 'reset' }]}>
+                        <div>
+                            <p class="text-xs font-black uppercase tracking-[0.24em] text-violet-600">Enlace seguro</p>
+                            <h2 class="mt-2 text-3xl font-black tracking-tight">Nueva contraseña</h2>
+                            <p class="mt-3 text-sm font-semibold text-slate-500">El enlace expira en 15 minutos y solo puede utilizarse una vez.</p>
+                        </div>
+                        <form id="reset-form" class="space-y-4">
+                            <input id="reset-password" type="password" required minlength="8" autocomplete="new-password" placeholder="Nueva contraseña" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold outline-none focus:border-violet-500">
+                            <input id="reset-confirm" type="password" required minlength="8" autocomplete="new-password" placeholder="Confirmar contraseña" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold outline-none focus:border-violet-500">
+                            <button class="w-full rounded-2xl bg-violet-600 px-5 py-4 text-sm font-black text-white transition hover:bg-violet-700">Guardar contraseña</button>
+                        </form>
+                    </div>
+
+                    <div id="recovery-message" class="mt-5 hidden rounded-2xl px-4 py-3 text-sm font-bold"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script is:inline>
+        const cfg = window.__RECOVERY_CONFIG__;
+        const backend = cfg.publicBackendUrl || (window.location.hostname === 'localhost' ? 'http://localhost:3005' : window.location.origin);
+        const apiBase = cfg.tenant ? `${backend}/api/${encodeURIComponent(cfg.tenant)}/auth` : `${backend}/api/auth`;
+        const message = document.getElementById('recovery-message');
+
+        document.getElementById('recovery-back-button')?.addEventListener('click', () => {
+            if (window.history.length > 1) {
+                window.history.back();
+                return;
+            }
+            window.location.href = cfg.tenant ? `/c/${encodeURIComponent(cfg.tenant)}` : '/';
+        });
+
+        function showMessage(text, ok = false) {
+            message.textContent = text;
+            message.className = `mt-5 rounded-2xl px-4 py-3 text-sm font-bold ${ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`;
+        }
+
+        document.getElementById('show-code-panel')?.addEventListener('click', () => {
+            document.getElementById('forgot-panel')?.classList.add('hidden');
+            document.getElementById('code-panel')?.classList.remove('hidden');
+        });
+
+        document.getElementById('forgot-form')?.addEventListener('submit', async event => {
+            event.preventDefault();
+            const identifier = document.getElementById('forgot-identifier').value.trim();
+            try {
+                const response = await fetch(`${apiBase}/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier })
+                });
+                const data = await response.json();
+                showMessage(data.mensaje || 'Si la cuenta existe, enviaremos instrucciones de recuperación.', response.ok);
+            } catch {
+                showMessage('No se pudo conectar con el servicio de recuperación.');
+            }
+        });
+
+        document.getElementById('code-form')?.addEventListener('submit', async event => {
+            event.preventDefault();
+            const payload = {
+                identifier: document.getElementById('code-identifier').value.trim(),
+                code: document.getElementById('code-value').value.trim(),
+                password: document.getElementById('code-password').value
+            };
+            const response = await fetch(`${apiBase}/recovery-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json().catch(() => ({}));
+            showMessage(data.mensaje || data.error || 'No se pudo restablecer el acceso.', response.ok);
+        });
+
+        document.getElementById('reset-form')?.addEventListener('submit', async event => {
+            event.preventDefault();
+            const password = document.getElementById('reset-password').value;
+            const confirm = document.getElementById('reset-confirm').value;
+            if (password !== confirm) return showMessage('Las contraseñas no coinciden.');
+            const token = new URLSearchParams(window.location.search).get('token') || '';
+            const response = await fetch(`${apiBase}/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, password })
+            });
+            const data = await response.json().catch(() => ({}));
+            showMessage(data.mensaje || data.error || 'No se pudo actualizar la contraseña.', response.ok);
+        });
+    </script>
+</Layout>

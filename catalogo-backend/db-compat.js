@@ -220,6 +220,8 @@ function makeDocument(modelName, data, isNew = false) {
         delete dataToSave.passwordResetTokens;
         delete dataToSave.accountStatusLogs;
         delete dataToSave.auditLogs;
+        delete dataToSave.recoveryCodes;
+        delete dataToSave.createdRecoveryCodes;
         delete dataToSave.approvedPayments;
         delete dataToSave.changedStatusLogs;
 
@@ -525,6 +527,8 @@ module.exports = {
     User: makeModel('User', 'user'),
     Session: makeModel('Session', 'session'),
     PasswordResetToken: makeModel('PasswordResetToken', 'passwordResetToken'),
+    RecoveryCode: makeModel('RecoveryCode', 'recoveryCode'),
+    SupportTicket: makeModel('SupportTicket', 'supportTicket'),
     AuditLog: makeModel('AuditLog', 'auditLog'),
     Plan: makeModel('Plan', 'plan'),
     Payment: makeModel('Payment', 'payment'),

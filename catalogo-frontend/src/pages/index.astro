@@ -826,10 +826,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <div id="landing-login-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
                             
                             <div>
-                                <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Usuario o correo</label>
+                                <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Correo, usuario o número de cuenta</label>
                                 <div class="relative">
                                     <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                    <input type="text" id="landing-login-identifier" placeholder="admin o admin@correo.com" required autocomplete="username"
+                                    <input type="text" id="landing-login-identifier" placeholder="admin@correo.com, usuario o CT-000001" required autocomplete="username"
                                     class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                                 </div>
                             </div>
@@ -871,14 +871,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             </div>
                             <p class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Recuperar cuenta</p>
                             <h2 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Recuperar acceso</h2>
-                            <p class="text-xs font-semibold text-slate-500 mt-1">Ingresa tu usuario o correo y te enviaremos el enlace de recuperación de tu catálogo.</p>
+                            <p class="text-xs font-semibold text-slate-500 mt-1">Ingresa tu correo, usuario o número de cuenta.</p>
                         </div>
 
                         <form action="javascript:void(0)" onsubmit="event.preventDefault(); recuperarPasswordLanding(event); return false;" class="space-y-4 text-left">
                             <div id="landing-recovery-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
                             <div>
-                                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Usuario o correo</label>
-                                <input type="text" id="landing-recovery-identifier" placeholder="admin@correo.com" required
+                                <label class="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Correo, usuario o número de cuenta</label>
+                                <input type="text" id="landing-recovery-identifier" placeholder="admin@correo.com, usuario o CT-000001" required
                                 class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                             </div>
                             <button id="landing-recovery-submit" type="submit" class="w-full py-4 bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-500/10 active:scale-95 uppercase tracking-wider text-xs transition-all">
@@ -1000,7 +1000,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <h1 id="catalog-main-title" class="text-2xl font-black tracking-tight uppercase leading-none select-none sm:text-3xl md:text-5xl" style="color: var(--tenant-header-text, #FFFFFF);">Catalogo de productos</h1>
                         <div class="mt-2">
                             <p id="catalog-business-name" class="max-w-full break-words text-sm font-black uppercase leading-tight tracking-wider" style="color: var(--tenant-header-text, #FFFFFF);">Catálogo de Productos</p>
-                            <p id="catalog-business-description" class="text-xs font-semibold mt-0.5" style="color: var(--tenant-header-muted, rgba(255,255,255,.82));">Haz tu pedido por WhatsApp</p>
                         </div>
                     </div>
                     <button id="catalog-cart-entry" type="button" onclick="abrirValidacion()" class="group col-span-full row-start-2 flex min-h-[82px] w-full items-center gap-4 rounded-[1.35rem] border-2 border-white/25 bg-black/10 px-4 py-3 text-left text-white shadow-xl transition hover:border-white/40 hover:bg-black/20 active:scale-[0.99] md:col-span-1 md:col-start-3 md:row-start-1 md:w-[280px]" aria-label="Abrir mi pedido">
@@ -1330,6 +1329,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <div class="rounded-[1.75rem] bg-white p-6 shadow-premium ring-1 ring-slate-100">
                             <p class="text-sm font-black text-slate-900">Informacion de la cuenta</p>
                             <div class="mt-4 space-y-3 text-sm font-bold text-slate-600">
+                                <div class="flex justify-between gap-4"><span>Número de cuenta</span><strong id="account-number" class="text-right text-slate-950">Cargando...</strong></div>
                                 <div class="flex justify-between gap-4"><span>Plan actual</span><strong id="account-plan-name" class="text-right text-slate-950">Cargando...</strong></div>
                                 <div class="flex justify-between gap-4"><span>Corte del mes</span><strong id="account-period-end" class="text-right text-slate-950">Cargando...</strong></div>
                                 <div class="flex justify-between gap-4"><span>Fecha limite de pago</span><strong id="account-payment-due" class="text-right text-slate-950">Cargando...</strong></div>
@@ -1514,7 +1514,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <div class="mt-5 space-y-4">
                                 <label class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100"><span class="text-sm font-bold text-slate-700">Mostrar buscador</span><input id="setting-mostrar-buscador" type="checkbox" class="h-5 w-5 accent-emerald-500" onchange="actualizarPreviewCatalogo()"></label>
                                 <label class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100"><span class="text-sm font-bold text-slate-700">Mostrar categorías</span><input id="setting-mostrar-categorias" type="checkbox" class="h-5 w-5 accent-emerald-500" onchange="actualizarPreviewCatalogo()"></label>
-                                <label class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100"><span class="text-sm font-bold text-slate-700">Mostrar descripcion del negocio</span><input id="setting-mostrar-descripcion" type="checkbox" class="h-5 w-5 accent-emerald-500" onchange="actualizarPreviewCatalogo()"></label>
                             </div>
                         </div>
 
@@ -1617,7 +1616,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <div id="auth2-login-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
 
                     <div>
-                        <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Usuario o correo</label>
+                        <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Correo, usuario o número de cuenta</label>
                         <div class="relative">
                             <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                             <input type="text" id="auth2-identifier" placeholder="admin o admin@example.com" required autocomplete="username"
@@ -1744,7 +1743,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
                 <form onsubmit="recuperarPassword(event)" class="space-y-4 text-left">
                     <div>
-                        <label class="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Usuario o correo</label>
+                        <label class="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Correo, usuario o número de cuenta</label>
                         <input type="text" id="auth2-recovery-identifier" placeholder="admin@example.com" required
                         class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                     </div>
@@ -2212,6 +2211,48 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
     </style>
 
     <!-- SCRIPTS DE LA APLICACION -->
+    <button id="support-floating-button" type="button" onclick="openSupportModal()" class="fixed bottom-[18px] right-[18px] z-[90] hidden items-center gap-2 rounded-full bg-[#7C3AED] px-4 py-3 text-sm font-black text-white shadow-[0_18px_40px_rgba(124,58,237,0.35)] transition hover:bg-[#6D28D9] md:bottom-7 md:right-7 md:px-[22px] md:py-[14px]">
+        <i class="fa-solid fa-headset"></i>
+        <span>Soporte</span>
+    </button>
+
+    <div id="support-modal" class="fixed inset-0 z-[110] hidden items-end justify-center bg-slate-950/60 p-4 backdrop-blur-sm sm:items-center">
+        <form onsubmit="submitSupportTicket(event)" class="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-violet-600">SEDELYNK</p>
+                    <h2 class="mt-1 text-2xl font-black text-slate-950">¿Cómo podemos ayudarte?</h2>
+                    <p class="mt-2 text-sm font-semibold text-slate-500">Cuéntanos qué necesitas y nuestro equipo dará seguimiento.</p>
+                </div>
+                <button type="button" onclick="closeSupportModal()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200" aria-label="Cerrar soporte">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="support-form-message" class="mt-4 hidden rounded-2xl px-4 py-3 text-sm font-bold"></div>
+            <div class="mt-5 grid gap-3">
+                <input id="support-name" required maxlength="100" placeholder="Nombre" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                <input id="support-email" type="email" required maxlength="160" placeholder="Correo" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                <input id="support-whatsapp" required maxlength="30" placeholder="WhatsApp" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                <textarea id="support-message" required minlength="10" maxlength="2000" rows="4" placeholder="Mensaje" class="resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10"></textarea>
+                <button id="support-submit" class="rounded-2xl bg-[#7C3AED] px-5 py-4 text-sm font-black text-white transition hover:bg-[#6D28D9]">Enviar solicitud</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="checkout-required-warning" class="fixed inset-0 z-[130] hidden items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-sm rounded-[1.75rem] border border-red-100 bg-white p-6 text-center shadow-2xl">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl text-red-600">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="mt-4 text-xl font-black text-slate-950">Completa tus datos</h3>
+            <p class="mt-2 text-sm font-semibold leading-6 text-slate-500">Para enviar el pedido debes llenar los siguientes campos:</p>
+            <ul id="checkout-required-list" class="mt-4 space-y-2 text-left text-sm font-bold text-red-700"></ul>
+            <button type="button" onclick="focusFirstCheckoutError()" class="mt-5 w-full rounded-2xl bg-red-600 px-5 py-4 text-sm font-black text-white transition hover:bg-red-700">
+                Completar datos
+            </button>
+        </div>
+    </div>
+
     <script is:inline>
         /* ===========================
         CONFIGURACION Y VARIABLES
@@ -2304,7 +2345,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             logoShape: 'rectangle',
             mostrarBuscador: true,
             mostrarCategorias: true,
-            mostrarDescripcion: true,
+            mostrarDescripcion: false,
             vistaPredeterminada: 'grid',
             monedaVisible: 'GTQ',
             orderCartEnabled: true,
@@ -2342,6 +2383,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 if (el) el.innerText = value;
             };
 
+            setText('account-number', safeAccount.accountNumber || 'Sin asignar');
             setText('account-plan-name', planName);
             setText('account-period-end', formatAccountDate(safeAccount.currentPeriodEnd));
             setText('account-payment-due', formatAccountDate(safeAccount.paymentDueDate));
@@ -3615,6 +3657,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             // Renderizar versión Escritorio (Tabla)
             tbody.innerHTML = listaPagina.map(prod => {
                 const productId = getProductId(prod);
+                if (!productId) console.warn('Producto sin id estable en inventario', prod);
                 const imgUrl = prod.imagen.startsWith('/') ? `${BACKEND_URL}${prod.imagen}` : prod.imagen;
                 const statusBadge = prod.activo 
                     ? `<span class="inline-flex items-center rounded-full bg-primary-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-primary-700 ring-1 ring-primary-200"><i class="fa-solid fa-circle text-[6px] mr-2"></i>Activo</span>`
@@ -3642,7 +3685,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <span class="bg-slate-100 text-slate-700 font-black px-3 py-1.5 rounded-xl text-xs">${prod.orden ?? prod.ordenVisualizacion ?? '-'}</span>
                     </td>
                     <td class="px-4 py-4 text-center">
-                        <button onclick="toggleActivo('${productId}', ${!prod.activo})" class="transition-transform active:scale-95">
+                        <button onclick="toggleProductStatus('${productId}', ${!prod.activo})" class="transition-transform active:scale-95">
                             ${statusBadge}
                         </button>
                     </td>
@@ -3658,6 +3701,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             // Renderizar versión Móvil (Tarjetas)
             movilList.innerHTML = listaPagina.map(prod => {
                 const productId = getProductId(prod);
+                if (!productId) console.warn('Producto sin id estable en inventario', prod);
                 const imgUrl = prod.imagen.startsWith('/') ? `${BACKEND_URL}${prod.imagen}` : prod.imagen;
                 return `
                 <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 flex gap-3 relative">
@@ -3672,7 +3716,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <div class="text-[10px] text-primary-600 font-extrabold mt-0.5">Q${prod.precio.toFixed(2)} / ${prod.unidad}</div>
                         
                         <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-200/40">
-                            <button onclick="toggleActivo('${productId}', ${!prod.activo})" class="text-[9px] font-black uppercase text-slate-500">
+                            <button onclick="toggleProductStatus('${productId}', ${!prod.activo})" class="text-[9px] font-black uppercase text-slate-500">
                                 ${prod.activo 
                                     ? `<span class="text-primary-600"><i class="fa-solid fa-eye mr-1"></i> Visible</span>`
                                     : `<span class="text-rose-500"><i class="fa-solid fa-eye-slash mr-1"></i> Oculto</span>`}
@@ -3688,7 +3732,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         function getProductId(prod) {
-            return String(prod?._id || prod?.id || '');
+            return String(prod?.id || prod?._id || '').trim();
         }
 
         function cambiarAdminPageSize() {
@@ -4964,7 +5008,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         function cargarAjustesCatalogo() {
             const buscar = document.getElementById('setting-mostrar-buscador');
             const categoriasToggle = document.getElementById('setting-mostrar-categorias');
-            const descripcion = document.getElementById('setting-mostrar-descripcion');
             const moneda = document.getElementById('setting-moneda-visible');
             const cartEnabled = document.getElementById('setting-order-cart-enabled');
             const whatsappEnabled = document.getElementById('setting-order-whatsapp-enabled');
@@ -4972,7 +5015,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const commentRequirement = document.getElementById('setting-comment-requirement');
             if (buscar) buscar.checked = configuracionNegocio.mostrarBuscador !== false;
             if (categoriasToggle) categoriasToggle.checked = configuracionNegocio.mostrarCategorias !== false;
-            if (descripcion) descripcion.checked = configuracionNegocio.mostrarDescripcion !== false;
             if (moneda) moneda.value = configuracionNegocio.monedaVisible || 'GTQ';
             if (cartEnabled) cartEnabled.checked = configuracionNegocio.orderCartEnabled !== false;
             if (whatsappEnabled) whatsappEnabled.checked = configuracionNegocio.orderWhatsappEnabled !== false;
@@ -5009,7 +5051,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             if (nombre) nombre.innerText = configuracionNegocio.nombreNegocio || 'Catálogo de Productos';
             if (descripcion) {
                 descripcion.innerText = configuracionNegocio.descripcionNegocio || 'Selecciona tus productos y confirma tu pedido';
-                descripcion.classList.toggle('hidden', document.getElementById('setting-mostrar-descripcion')?.checked === false);
+                descripcion.classList.remove('hidden');
             }
             if (search) search.classList.toggle('hidden', document.getElementById('setting-mostrar-buscador')?.checked === false);
             if (cats) cats.classList.toggle('hidden', document.getElementById('setting-mostrar-categorias')?.checked === false);
@@ -5019,7 +5061,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const payload = {
                 mostrarBuscador: document.getElementById('setting-mostrar-buscador')?.checked === true,
                 mostrarCategorias: document.getElementById('setting-mostrar-categorias')?.checked === true,
-                mostrarDescripcion: document.getElementById('setting-mostrar-descripcion')?.checked === true,
                 vistaPredeterminada: configuracionNegocio.vistaPredeterminada || 'grid',
                 monedaVisible: document.getElementById('setting-moneda-visible')?.value || 'GTQ',
                 orderCartEnabled: document.getElementById('setting-order-cart-enabled')?.checked !== false,
@@ -5370,8 +5411,40 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             setCheckoutError('tel-cliente', 'tel-cliente-error', errores.tel);
             setCheckoutError('direccion-cliente', 'direccion-cliente-error', errores.direccion);
             setCheckoutError('comentario-cliente', 'comentario-cliente-error', errores.comentario);
-            return !Object.values(errores).some(Boolean);
+            const valid = !Object.values(errores).some(Boolean);
+            if (!valid) mostrarWarningCamposCheckout(errores);
+            return valid;
         }
+
+        let primerCampoCheckoutInvalido = '';
+
+        function mostrarWarningCamposCheckout(errores) {
+            const campos = [
+                { invalid: errores.nombre, id: 'nombre-cliente', label: 'Nombre y apellido' },
+                { invalid: errores.tel, id: 'tel-cliente', label: 'Número de WhatsApp válido' },
+                { invalid: errores.direccion, id: 'direccion-cliente', label: 'Dirección de entrega' },
+                { invalid: errores.comentario, id: 'comentario-cliente', label: 'Comentario del pedido' }
+            ].filter(campo => campo.invalid);
+            primerCampoCheckoutInvalido = campos[0]?.id || '';
+            const list = document.getElementById('checkout-required-list');
+            if (list) {
+                list.innerHTML = campos.map(campo => `<li class="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2"><i class="fa-solid fa-circle-exclamation"></i>${campo.label}</li>`).join('');
+            }
+            const warning = document.getElementById('checkout-required-warning');
+            warning?.classList.remove('hidden');
+            warning?.classList.add('flex');
+        }
+
+        function focusFirstCheckoutError() {
+            const warning = document.getElementById('checkout-required-warning');
+            warning?.classList.add('hidden');
+            warning?.classList.remove('flex');
+            const input = primerCampoCheckoutInvalido ? document.getElementById(primerCampoCheckoutInvalido) : null;
+            if (!input) return;
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => input.focus(), 350);
+        }
+        window.focusFirstCheckoutError = focusFirstCheckoutError;
 
         function moverElementoCheckout(event, element) {
             if (window.innerWidth < 768) return;
@@ -5414,6 +5487,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         function cerrarValidacion() {
             const modal = document.getElementById("modal-validacion");
+            const warning = document.getElementById('checkout-required-warning');
+            warning?.classList.add('hidden');
+            warning?.classList.remove('flex');
+            primerCampoCheckoutInvalido = '';
             document.getElementById('checkout-panel')?.classList.add('translate-y-4', 'scale-95', 'opacity-0');
             setTimeout(() => {
                 modal.classList.remove('checkout-open');
@@ -5520,30 +5597,34 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         const productosCambiandoEstado = new Set();
 
-        async function toggleActivo(id, nextActivo) {
+        async function toggleProductStatus(id, desiredStatus) {
             const productId = String(id || '').trim();
-            if (!productId || productosCambiandoEstado.has(productId)) return;
+            if (!productId) {
+                console.warn('No se puede cambiar estado: producto sin id');
+                return;
+            }
+            if (productosCambiandoEstado.has(productId)) return;
             productosCambiandoEstado.add(productId);
             try {
-                const options = { method: 'PATCH', credentials: 'include' };
-                if (typeof nextActivo === 'boolean') {
-                    options.headers = { 'Content-Type': 'application/json' };
-                    options.body = JSON.stringify({ activo: nextActivo });
-                }
-                const res = await fetch(`${TENANT_API_URL}/admin/products/${encodeURIComponent(productId)}/toggle`, options);
+                const res = await fetch(`${TENANT_API_URL}/admin/products/${encodeURIComponent(productId)}/toggle`, {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ activo: Boolean(desiredStatus) })
+                });
                 if (res.ok) {
                     const data = await res.json();
                     if (String(data.id || '') !== productId) {
                         throw new Error('El servidor actualizo un producto distinto');
                     }
                     adminProductos = adminProductos.map(producto => (
-                        getProductId(producto) === productId
+                        getProductId(producto) === String(data.id)
                             ? { ...producto, activo: data.activo }
                             : producto
                     ));
                     dibujarAdmin();
-                    showToast(data.mensaje, "success");
-                    await Promise.all([cargarAdminProductos(), cargarDesdeAPI()]);
+                    showToast(data.activo ? 'Producto activado' : 'Producto desactivado', 'success');
+                    await cargarDesdeAPI();
                 } else {
                     throw new Error('Error al cambiar el estado');
                 }
@@ -5554,6 +5635,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 productosCambiandoEstado.delete(productId);
             }
         }
+        window.toggleProductStatus = toggleProductStatus;
+        window.toggleActivo = toggleProductStatus;
 
         async function editarProducto(id) {
             const prod = adminProductos.find(p => getProductId(p) === String(id));
@@ -6581,14 +6664,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape);
                     actualizarCheckoutOpciones();
                     const nombreEl = document.getElementById('catalog-business-name');
-                    const descEl = document.getElementById('catalog-business-description');
                     const searchWrapper = document.getElementById('catalog-search-wrapper');
                     const categoryButtons = document.getElementById('category-buttons');
                     if (nombreEl) nombreEl.innerText = data.nombreNegocio || 'Catálogo de Productos';
-                    if (descEl) {
-                        descEl.innerText = 'Haz tu pedido por WhatsApp';
-                        descEl.classList.toggle('hidden', data.mostrarDescripcion === false);
-                    }
                     if (searchWrapper) searchWrapper.classList.toggle('hidden', data.mostrarBuscador === false);
                     if (categoryButtons) categoryButtons.classList.toggle('hidden', data.mostrarCategorias === false);
                     actualizarTituloPagina();
@@ -6671,6 +6749,56 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }
         }
         window.mostrarLandingStep = mostrarLandingStep;
+
+        function openSupportModal() {
+            const modal = document.getElementById('support-modal');
+            modal?.classList.remove('hidden');
+            modal?.classList.add('flex');
+            document.getElementById('support-name')?.focus();
+        }
+        window.openSupportModal = openSupportModal;
+
+        function closeSupportModal() {
+            const modal = document.getElementById('support-modal');
+            modal?.classList.add('hidden');
+            modal?.classList.remove('flex');
+        }
+        window.closeSupportModal = closeSupportModal;
+
+        async function submitSupportTicket(event) {
+            event.preventDefault();
+            const submit = document.getElementById('support-submit');
+            const feedback = document.getElementById('support-form-message');
+            const payload = {
+                name: document.getElementById('support-name')?.value.trim(),
+                email: document.getElementById('support-email')?.value.trim(),
+                whatsapp: document.getElementById('support-whatsapp')?.value.trim(),
+                message: document.getElementById('support-message')?.value.trim()
+            };
+            try {
+                submit.disabled = true;
+                submit.textContent = 'Enviando...';
+                const response = await fetch(`${API_URL}/support/tickets`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json().catch(() => ({}));
+                feedback.textContent = data.message || data.error || 'No se pudo enviar la solicitud.';
+                feedback.className = `mt-4 rounded-2xl px-4 py-3 text-sm font-bold ${response.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`;
+                if (response.ok) {
+                    event.currentTarget.reset();
+                    setTimeout(closeSupportModal, 1400);
+                }
+            } catch {
+                feedback.textContent = 'No se pudo conectar con soporte.';
+                feedback.className = 'mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700';
+            } finally {
+                submit.disabled = false;
+                submit.textContent = 'Enviar solicitud';
+            }
+        }
+        window.submitSupportTicket = submitSupportTicket;
 
         function toggleMobileMenu() {
             const mobileMenu = document.getElementById('mobile-menu');
@@ -6779,7 +6907,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 devLinkEl.innerHTML = '';
             }
             if (!identifier) {
-                mostrarErrorRecoveryLanding('Ingresa tu usuario o correo.');
+                mostrarErrorRecoveryLanding('Ingresa tu correo, usuario o número de cuenta.');
                 return;
             }
 
@@ -6824,7 +6952,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             mostrarErrorLoginLanding('');
             if (!identifier || !password) {
-                mostrarErrorLoginLanding("Ingresa tu usuario o correo y contraseña.");
+                mostrarErrorLoginLanding("Ingresa tu correo, usuario o número de cuenta y contraseña.");
                 return;
             }
             try {
@@ -7052,6 +7180,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function iniciarApp() {
             if (isLandingPage) {
+                const supportButton = document.getElementById('support-floating-button');
+                supportButton?.classList.remove('hidden');
+                supportButton?.classList.add('flex');
                 cargarSoporteSaas();
                 if (isResetRoute && resetToken) {
                     abrirAuthModal();
