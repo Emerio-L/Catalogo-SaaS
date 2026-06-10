@@ -3,8 +3,11 @@ const bcrypt = require('bcryptjs');
 
 async function run() {
     try {
-        const username = 'superadmin';
-        const newPassword = 'Super-Admin-2026!';
+        const username = (process.env.SUPER_ADMIN_USER || '').toLowerCase().trim();
+        const newPassword = process.env.SUPER_ADMIN_PASSWORD || '';
+        if (!username || !newPassword) {
+            throw new Error('Define SUPER_ADMIN_USER y SUPER_ADMIN_PASSWORD antes de ejecutar este script.');
+        }
         const salt = await bcrypt.genSalt(12);
         const hash = await bcrypt.hash(newPassword, salt);
 
@@ -13,7 +16,7 @@ async function run() {
             data: { passwordHash: hash }
         });
 
-        console.log(`Updated ${updated.count} super_admin user(s) with password "${newPassword}"`);
+        console.log(`Updated ${updated.count} super_admin user(s).`);
     } catch (err) {
         console.error('Error updating password:', err);
     } finally {

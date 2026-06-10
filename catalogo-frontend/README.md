@@ -1,43 +1,33 @@
-# Astro Starter Kit: Minimal
+# SEDELYNK Frontend
 
-```sh
-npm create astro@latest -- --template minimal
+Frontend Astro SSR para la landing, catalogos tenant, paneles administrativos y
+gateway same-origin `/api`.
+
+## Desarrollo
+
+```bash
+npm install
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Variables:
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```env
+BACKEND_URL=http://localhost:3005
+PUBLIC_BACKEND_URL=http://localhost:3005
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+- `BACKEND_URL`: destino server-side del gateway `/api`.
+- `PUBLIC_BACKEND_URL`: origen publico para imagenes y archivos.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## Produccion
 
-Any static assets, like images, can be placed in the `public/` directory.
+```bash
+npm run build
+npm start
+```
 
-## 🧞 Commands
+El adaptador `@astrojs/node` se ejecuta en modo standalone. En Railway define
+`HOST=0.0.0.0`; Railway inyecta `PORT`.
 
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Consulta [DEPLOYMENT.md](../DEPLOYMENT.md) para el despliegue completo.

@@ -1,4 +1,4 @@
-const { Tenant } = require('../db-compat');
+const { Tenant } = require('../data-access');
 
 async function tenantMiddleware(req, res, next) {
     try {

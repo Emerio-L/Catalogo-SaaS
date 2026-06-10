@@ -1,0 +1,2 @@
+ALTER TABLE "SupportTicket"
+ALTER COLUMN "email" DROP NOT NULL;

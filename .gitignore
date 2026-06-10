@@ -9,6 +9,8 @@ node_modules/
 Thumbs.db
 
 *.log
+*.dump
+*.backup
 backend-dev.log
 frontend-dev.log
 config_block.txt

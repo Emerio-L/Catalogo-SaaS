@@ -29,10 +29,9 @@ const {
     Payment,
     AccountStatusLog,
     SaasSettings,
-    isPrisma,
-    isValidId,
+    isValidUuid,
     prisma
-} = require('./db-compat');
+} = require('./data-access');
 const tenantMiddleware = require('./middleware/tenant.middleware');
 
 const app = express();
@@ -40,16 +39,17 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:4321')
+const configuredOrigins = (process.env.FRONTEND_URL || '')
     .split(',')
     .map(origin => origin.trim().replace(/\/$/, ''))
     .filter(Boolean);
+const allowedOrigins = new Set(configuredOrigins);
 
 app.use(cors({
     origin(origin, callback) {
         if (!origin) return callback(null, true);
         const normalizedOrigin = origin.replace(/\/$/, '');
-        if (allowedOrigins.includes(normalizedOrigin)) {
+        if (allowedOrigins.has(normalizedOrigin)) {
             return callback(null, true);
         }
         return callback(new Error('Origen no permitido por CORS'));
@@ -68,6 +68,9 @@ const cloudinaryEnabled = Boolean(
     process.env.CLOUDINARY_API_KEY &&
     process.env.CLOUDINARY_API_SECRET
 );
+if (process.env.NODE_ENV === 'production' && !cloudinaryEnabled) {
+    throw new Error('Cloudinary es obligatorio en produccion para conservar imagenes y archivos.');
+}
 const ADMIN_IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 const ACCOUNT_STATUSES = ['trial', 'active', 'pending_payment', 'suspended', 'deleted'];
 const PAYMENT_STATUSES = ['pendiente', 'aprobado', 'rechazado'];
@@ -109,12 +112,6 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
-// Conexión de Base de Datos
-console.log('Utilizando base de datos relacional PostgreSQL con Prisma');
-inicializarBase()
-    .then(() => console.log('Inicialización de base de datos Postgres completada'))
-    .catch(err => console.error('Error al inicializar base de datos Postgres:', err));
-
 // Configuración de almacenamiento en memoria para Multer
 const storage = multer.memoryStorage();
 const upload = multer({ 
@@ -131,13 +128,24 @@ const upload = multer({
 
 
 
-app.get('/health', (req, res) => {
-    res.json({
-        ok: true,
-        service: 'catalogo-backend',
-        postgres: 'connected',
-        cloudinary: cloudinaryEnabled
-    });
+app.get('/health', async (req, res) => {
+    try {
+        await prisma.$queryRaw`SELECT 1`;
+        res.json({
+            ok: true,
+            service: 'catalogo-backend',
+            postgres: 'connected',
+            cloudinary: cloudinaryEnabled
+        });
+    } catch (error) {
+        console.error('Healthcheck de PostgreSQL fallido:', error);
+        res.status(503).json({
+            ok: false,
+            service: 'catalogo-backend',
+            postgres: 'disconnected',
+            cloudinary: cloudinaryEnabled
+        });
+    }
 });
 
 const CATEGORIAS_DEFAULT = [
@@ -757,7 +765,7 @@ function productoResponse(producto, categoria) {
 }
 
 async function buscarCategoriaTenant(tenantId, categoriaInput) {
-    if (categoriaInput && isValidId(categoriaInput)) {
+    if (categoriaInput && isValidUuid(categoriaInput)) {
         const categoriaPorId = await Category.findOne({ _id: categoriaInput, tenantId });
         if (categoriaPorId) return categoriaPorId;
     }
@@ -846,12 +854,16 @@ async function asegurarTenantDefault() {
 
     const adminExistente = await User.findOne({ tenantId: tenant._id });
     if (!adminExistente) {
+        const adminPassword = process.env.DEFAULT_TENANT_ADMIN_PASSWORD || '';
+        if (!adminPassword) {
+            throw new Error('DEFAULT_TENANT_ADMIN_PASSWORD es obligatorio al crear el tenant inicial en produccion.');
+        }
         await User.create({
             tenantId: tenant._id,
-            nombre: 'Administrador',
-            email: 'admin@example.com',
-            usuario: 'admin',
-            passwordHash: await bcrypt.hash(config?.password || 'admin123', 12),
+            nombre: process.env.DEFAULT_TENANT_ADMIN_NAME || 'Administrador',
+            email: process.env.DEFAULT_TENANT_ADMIN_EMAIL || 'admin@example.com',
+            usuario: (process.env.DEFAULT_TENANT_ADMIN_USER || 'admin').toLowerCase().trim(),
+            passwordHash: await bcrypt.hash(adminPassword, 12),
             rol: 'tenant_admin',
             activo: true
         });
@@ -871,13 +883,12 @@ async function asegurarSuperAdminBootstrap() {
     const existing = await User.findOne({ rol: 'super_admin' });
     if (existing) return;
 
-    const isProd = process.env.NODE_ENV === 'production';
-    const usuario = (process.env.SUPER_ADMIN_USER || 'superadmin').toLowerCase().trim();
-    const email = (process.env.SUPER_ADMIN_EMAIL || 'superadmin@local.test').toLowerCase().trim();
-    const password = process.env.SUPER_ADMIN_PASSWORD || 'Super-Admin-2026!';
+    const usuario = (process.env.SUPER_ADMIN_USER || '').toLowerCase().trim();
+    const email = (process.env.SUPER_ADMIN_EMAIL || '').toLowerCase().trim();
+    const password = process.env.SUPER_ADMIN_PASSWORD || '';
 
-    if (isProd && (!process.env.SUPER_ADMIN_USER || !process.env.SUPER_ADMIN_PASSWORD)) {
-        console.warn('¡ADVERTENCIA CRITICA! Usando credenciales de superadmin por defecto en produccion.');
+    if (!usuario || !email || !password) {
+        throw new Error('SUPER_ADMIN_USER, SUPER_ADMIN_EMAIL y SUPER_ADMIN_PASSWORD son obligatorios.');
     }
 
     await User.create({
@@ -1218,7 +1229,10 @@ app.put('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (r
 
 const supportTicketSchema = z.object({
     name: z.string().trim().min(2).max(100),
-    email: z.string().trim().email().max(160),
+    email: z.preprocess(
+        value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+        z.string().trim().email().max(160).optional()
+    ),
     whatsapp: z.string().trim().min(8).max(30),
     message: z.string().trim().min(10).max(2000)
 });
@@ -1228,7 +1242,7 @@ app.post('/api/support/tickets', supportLimiter, async (req, res) => {
         const data = supportTicketSchema.parse(req.body);
         const ticket = await SupportTicket.create({
             name: data.name,
-            email: data.email.toLowerCase(),
+            email: data.email?.toLowerCase() || null,
             whatsapp: data.whatsapp,
             message: data.message,
             status: 'open'
@@ -3326,7 +3340,7 @@ app.post('/api/:tenant/orders', tenantMiddleware, requireTenantOperational, orde
 
         for (const p of data.productos) {
             let precioReal = 0;
-            if (p.productId && isValidId(p.productId)) {
+            if (p.productId && isValidUuid(p.productId)) {
                 const dbProd = await Producto.findOne({ _id: p.productId, tenantId: req.tenantId });
                 if (dbProd) {
                     precioReal = dbProd.precio;
@@ -3428,7 +3442,22 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-// Escuchar puerto
 const PORT = process.env.PORT || 3005;
-app.listen(PORT, () => console.log(`Servidor de API corriendo en http://localhost:${PORT}`));
+
+async function startServer() {
+    try {
+        console.log('Utilizando base de datos relacional PostgreSQL con Prisma');
+        await inicializarBase();
+        console.log('Inicializacion de base de datos PostgreSQL completada');
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Servidor de API corriendo en el puerto ${PORT}`);
+        });
+    } catch (error) {
+        console.error('No se pudo iniciar el backend:', error);
+        await prisma.$disconnect();
+        process.exit(1);
+    }
+}
+
+startServer();
 

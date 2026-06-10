@@ -25,13 +25,13 @@ El catálogo es una aplicación web responsive adaptada para teléfonos móviles
 El panel de administración permite gestionar todo el sistema de forma protegida.
 
 *   **Cómo ingresar:**
-    1.  Desplázate al pie de la página principal del catálogo.
-    2.  Haz clic en el enlace discreto de **Administración** o escribe la contraseña directamente al activar el acceso.
-    3.  Ingresa la contraseña establecida para el panel (Contraseña inicial por defecto: `admin123`).
+    1.  Abre la URL privada del panel entregada al crear la cuenta.
+    2.  Ingresa tu usuario, correo o número de cuenta.
+    3.  Ingresa la contraseña configurada para tu cuenta. No existe una contraseña universal incluida en el código.
 *   **Recuperación de Acceso:**
-    *   Si olvidas la contraseña, el panel cuenta con una opción de **"¿Olvidaste tu contraseña?"** donde podrás restablecerla usando:
-        1.  El **PIN de recuperación** de 6 dígitos (PIN inicial por defecto: `987654`).
-        2.  La **Pregunta de Seguridad** secreta establecida en la configuración.
+    *   Si olvidas la contraseña, usa **"¿Olvidaste tu contraseña?"**.
+    *   La recuperación puede realizarse mediante un enlace enviado al correo configurado o mediante un código temporal generado por el Super Admin.
+    *   Los códigos son de un solo uso, tienen vencimiento y bloquean intentos repetidos.
 
 ---
 
@@ -59,13 +59,13 @@ Registra automáticamente cada orden confirmada por los clientes:
 ### 3.3. Configuración
 Esta sección de ancho completo te permite configurar el comportamiento operativo del catálogo:
 *   **WhatsApp para Pedidos:** Introduce el número de celular al cual deseas recibir los mensajes de WhatsApp de tus clientes (ej: formato internacional sin signos como `502XXXXXXXX`). Al hacer clic en **Actualizar Credenciales o WhatsApp**, el cambio se aplica de inmediato a todos los visitantes.
-*   **Seguridad:** Actualiza tu contraseña de acceso, tu PIN de recuperación y define tu pregunta/respuesta secreta para casos de emergencia.
+*   **Seguridad:** Actualiza tu contraseña y mantén vigente el correo asociado a la cuenta para recuperación.
 *   **Temas Visuales (Personalización de Color):** Elige entre **15 colores de diseño premium** para cambiar instantáneamente la apariencia visual de la web del cliente y la administración (Verde, Azul, Rojo, Morado, Pizarra, etc.). El cambio se refleja al instante y se almacena de forma permanente.
 
 ---
 
 ## 4. Recomendaciones de Seguridad y Mantenimiento
 
-1.  **Cambiar credenciales iniciales:** En cuanto recibas el software, accede a la pestaña de **Configuración** y reemplaza la contraseña `admin123` y el PIN `987654` por unos de tu preferencia.
+1.  **Credenciales únicas:** Define contraseñas largas y diferentes para el Super Admin y el administrador del tenant. Guárdalas fuera del repositorio.
 2.  **Imágenes de los productos:** Para que tu catálogo luzca estético y profesional, te recomendamos subir imágenes cuadradas (relación de aspecto 1:1) y con fondo claro o transparente.
 3.  **Formato de Teléfono de WhatsApp:** Asegúrate de escribir el número de WhatsApp de destino con el código de tu país (ej. `502` para Guatemala) sin espacios ni símbolos adicionales (ej: `50239462142` en lugar de `+502 3946-2142`).

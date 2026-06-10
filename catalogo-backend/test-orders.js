@@ -1,4 +1,4 @@
-const { Pedido } = require('./db-compat');
+const { Pedido } = require('./data-access');
 const { prisma } = require('./db');
 
 async function run() {

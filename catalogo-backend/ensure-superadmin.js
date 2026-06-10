@@ -12,9 +12,12 @@ function createAdminAccessKey() {
 
 async function main() {
     const now = new Date();
-    const superUser = (process.env.SUPER_ADMIN_USER || 'superadmin').toLowerCase().trim();
-    const superEmail = (process.env.SUPER_ADMIN_EMAIL || 'superadmin@local.test').toLowerCase().trim();
-    const superPassword = process.env.SUPER_ADMIN_PASSWORD || 'Super-Admin-2026!';
+    const superUser = (process.env.SUPER_ADMIN_USER || '').toLowerCase().trim();
+    const superEmail = (process.env.SUPER_ADMIN_EMAIL || '').toLowerCase().trim();
+    const superPassword = process.env.SUPER_ADMIN_PASSWORD || '';
+    if (!superUser || !superEmail || !superPassword) {
+        throw new Error('SUPER_ADMIN_USER, SUPER_ADMIN_EMAIL y SUPER_ADMIN_PASSWORD son obligatorios.');
+    }
 
     let tenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
     if (!tenant) {

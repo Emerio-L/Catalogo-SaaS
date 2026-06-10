@@ -142,7 +142,7 @@ model Product {
   tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   categoriaId        String?
   category           Category? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
-  categoria          String?   // Guarda texto compatible con mongo
+  categoria          String?   // Nombre de categoria conservado para lectura rapida
   nombre             String
   precio             Decimal   @db.Decimal(10, 2)
   unidad             String?
@@ -250,7 +250,7 @@ model RecoveryCode {
 model SupportTicket {
   id        String   @id @default(uuid())
   name      String
-  email     String
+  email     String?
   whatsapp  String
   message   String
   status    String   @default("open") // open, in_progress, closed

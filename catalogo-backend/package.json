@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API para el Catálogo de Productos",
   "main": "server.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
@@ -12,7 +15,8 @@
     "prisma:deploy": "npx prisma migrate deploy",
     "accounts:backfill": "node backfill-account-numbers.js",
     "test:saas-upgrade": "node test-saas-upgrade.js",
-    "ensure:superadmin": "node ensure-superadmin.js"
+    "ensure:superadmin": "node ensure-superadmin.js",
+    "reset:superadmin": "node reset-superadmin.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

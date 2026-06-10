@@ -82,8 +82,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
     <script is:inline>
         const cfg = window.__RECOVERY_CONFIG__;
-        const backend = cfg.publicBackendUrl || (window.location.hostname === 'localhost' ? 'http://localhost:3005' : window.location.origin);
-        const apiBase = cfg.tenant ? `${backend}/api/${encodeURIComponent(cfg.tenant)}/auth` : `${backend}/api/auth`;
+        const apiBase = cfg.tenant ? `/api/${encodeURIComponent(cfg.tenant)}/auth` : '/api/auth';
         const message = document.getElementById('recovery-message');
 
         document.getElementById('recovery-back-button')?.addEventListener('click', () => {
