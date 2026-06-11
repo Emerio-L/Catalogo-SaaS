@@ -15,10 +15,13 @@ Variables:
 ```env
 BACKEND_URL=http://localhost:3005
 PUBLIC_BACKEND_URL=http://localhost:3005
+HOST=0.0.0.0
 ```
 
-- `BACKEND_URL`: destino server-side del gateway `/api`.
+- `BACKEND_URL`: destino server-side del gateway `/api`. En Railway usa la red
+  privada y el puerto interno del backend.
 - `PUBLIC_BACKEND_URL`: origen publico para imagenes y archivos.
+- `HOST`: permite aceptar conexiones externas dentro del contenedor.
 
 ## Produccion
 
@@ -28,6 +31,6 @@ npm start
 ```
 
 El adaptador `@astrojs/node` se ejecuta en modo standalone. En Railway define
-`HOST=0.0.0.0`; Railway inyecta `PORT`.
+`HOST=0.0.0.0`; Railway inyecta `PORT`. El healthcheck es `/health`.
 
 Consulta [DEPLOYMENT.md](../DEPLOYMENT.md) para el despliegue completo.

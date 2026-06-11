@@ -3,13 +3,18 @@
 Arquitectura de produccion:
 
 - `Postgres`: base de datos PostgreSQL administrada por Railway.
-- `backend`: API Express + Prisma desde `catalogo-backend`.
+- `Catalogo-SaaS`: API Express + Prisma desde `catalogo-backend`.
 - `frontend`: Astro SSR desde `catalogo-frontend`.
 - Cloudinary: almacenamiento persistente de imagenes y archivos.
 
 Los servicios `backend` y `frontend` incluyen `railway.json` con build, inicio,
 healthcheck y migraciones. No se usa almacenamiento local para archivos en
 produccion porque el filesystem de un despliegue no es persistente.
+
+El frontend y el backend se despliegan como servicios separados dentro del
+mismo proyecto Railway. Esta separacion conserva Astro SSR y el gateway
+same-origin `/api`, permite desplegar cada servicio de forma independiente y
+evita acoplar el ciclo de vida del frontend al backend estable.
 
 ## 1. Requisitos
 
@@ -73,7 +78,7 @@ migraciones que falten.
 ## 4. Crear el backend
 
 1. Agrega un servicio desde este repositorio de GitHub.
-2. Nombra el servicio `backend`.
+2. Conserva el nombre actual `Catalogo-SaaS` o renombralo a `backend`.
 3. En `Settings` configura:
    - Root Directory: `/catalogo-backend`
    - Config File Path: `/catalogo-backend/railway.json`
@@ -108,6 +113,13 @@ AUTH_EMAIL_FROM=soporte@tu-dominio.com
 5. En `Networking`, genera un dominio publico.
 6. El healthcheck configurado es `/health`.
 
+Define explicitamente el puerto interno para que el frontend pueda
+referenciarlo como variable de otro servicio:
+
+```env
+PORT=8080
+```
+
 ## 5. Crear el frontend
 
 1. Agrega un segundo servicio desde el mismo repositorio.
@@ -120,13 +132,14 @@ AUTH_EMAIL_FROM=soporte@tu-dominio.com
 ```env
 NODE_ENV=production
 HOST=0.0.0.0
-BACKEND_URL=http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:${{backend.PORT}}
-PUBLIC_BACKEND_URL=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}
+BACKEND_URL=http://${{Catalogo-SaaS.RAILWAY_PRIVATE_DOMAIN}}:${{Catalogo-SaaS.PORT}}
+PUBLIC_BACKEND_URL=https://${{Catalogo-SaaS.RAILWAY_PUBLIC_DOMAIN}}
 ```
 
 `BACKEND_URL` es server-side y usa la red privada de Railway. No debe llevar el
 prefijo `PUBLIC_`. `PUBLIC_BACKEND_URL` se usa para imagenes o archivos que el
-navegador carga directamente.
+navegador carga directamente. Si renombraste el servicio a `backend`, cambia
+`Catalogo-SaaS` por `backend` en ambas referencias.
 
 5. En `Networking`, genera el dominio publico del frontend.
 6. Regresa a las variables del backend y agrega:
@@ -137,12 +150,31 @@ FRONTEND_URL=https://${{frontend.RAILWAY_PUBLIC_DOMAIN}}
 
 7. Redeploya el backend para aplicar el origen y las URLs de recuperacion.
 
-## 6. Verificacion
+El navegador llama siempre a `/api` sobre el dominio del frontend. Astro
+reenvia esas solicitudes al backend mediante `BACKEND_URL`, por lo que las
+rutas de interfaz y las rutas API no entran en conflicto.
+
+## 6. Dominio personalizado
+
+Asigna el dominio principal al servicio `frontend`, por ejemplo
+`app.tudominio.com`. Luego cambia en el backend:
+
+```env
+FRONTEND_URL=https://app.tudominio.com
+```
+
+No es necesario cambiar el codigo ni `BACKEND_URL`. El backend puede conservar
+su dominio Railway para `/health` y recursos publicos. Si mas adelante asignas
+`api.tudominio.com` al backend, actualiza `PUBLIC_BACKEND_URL` en el frontend y
+vuelve a desplegarlo.
+
+## 7. Verificacion
 
 Comprueba:
 
 ```text
 https://DOMINIO-BACKEND/health
+https://DOMINIO-FRONTEND/health
 https://DOMINIO-FRONTEND/
 https://DOMINIO-FRONTEND/super-admin
 ```
@@ -158,7 +190,18 @@ Pruebas funcionales:
 5. Crear un pedido y verificarlo en PostgreSQL.
 6. Ejecutar un redeploy y confirmar que las imagenes sigan disponibles.
 
-## 7. Actualizaciones futuras
+## 8. Alternativa descartada: frontend servido por Express
+
+No se recomienda para esta version. El frontend usa Astro SSR y contiene un
+gateway dinamico en `src/pages/api/[...path].ts`; no es solamente un directorio
+de archivos estaticos. Servirlo desde Express requeriria convertirlo a salida
+estatica o integrar dos servidores Node en un solo proceso, aumentando el
+riesgo y haciendo que cualquier despliegue visual reinicie tambien la API.
+
+Esta alternativa seria razonable solamente si el frontend se convierte en un
+sitio completamente estatico sin rutas server-side.
+
+## 9. Actualizaciones futuras
 
 Cada push a `main` dispara los servicios conectados. El backend ejecuta
 `prisma migrate deploy` antes de iniciar. Nunca uses `prisma migrate dev` en
