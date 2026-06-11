@@ -16,12 +16,14 @@ Variables:
 BACKEND_URL=http://localhost:3005
 PUBLIC_BACKEND_URL=http://localhost:3005
 HOST=0.0.0.0
+PORT=4321
 ```
 
 - `BACKEND_URL`: destino server-side del gateway `/api`. En Railway usa la red
   privada y el puerto interno del backend.
 - `PUBLIC_BACKEND_URL`: origen publico para imagenes y archivos.
 - `HOST`: permite aceptar conexiones externas dentro del contenedor.
+- `PORT`: puerto de escucha; Railway puede usar `8080`.
 
 ## Produccion
 

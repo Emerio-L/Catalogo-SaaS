@@ -132,6 +132,7 @@ PORT=8080
 ```env
 NODE_ENV=production
 HOST=0.0.0.0
+PORT=8080
 BACKEND_URL=http://${{Catalogo-SaaS.RAILWAY_PRIVATE_DOMAIN}}:${{Catalogo-SaaS.PORT}}
 PUBLIC_BACKEND_URL=https://${{Catalogo-SaaS.RAILWAY_PUBLIC_DOMAIN}}
 ```
@@ -141,7 +142,8 @@ prefijo `PUBLIC_`. `PUBLIC_BACKEND_URL` se usa para imagenes o archivos que el
 navegador carga directamente. Si renombraste el servicio a `backend`, cambia
 `Catalogo-SaaS` por `backend` en ambas referencias.
 
-5. En `Networking`, genera el dominio publico del frontend.
+5. En `Networking`, genera el dominio publico del frontend apuntando al puerto
+   `8080`.
 6. Regresa a las variables del backend y agrega:
 
 ```env
