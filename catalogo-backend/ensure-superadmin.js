@@ -3,6 +3,7 @@ require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { createTenantWithAccountNumber } = require('./account-numbers');
 
 const prisma = new PrismaClient();
 
@@ -21,19 +22,17 @@ async function main() {
 
     let tenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
     if (!tenant) {
-        tenant = await prisma.tenant.create({
-            data: {
-                slug: 'default',
-                nombre: 'Catalogo de Productos',
-                descripcion: 'Selecciona tus productos y confirma tu pedido.',
-                whatsapp: '50235387468',
-                adminAccessKey: createAdminAccessKey(),
-                activo: true,
-                status: 'trial',
-                trialStartDate: now,
-                trialEndDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-                billingDay: now.getDate()
-            }
+        tenant = await createTenantWithAccountNumber(prisma, {
+            slug: 'default',
+            nombre: 'Catalogo de Productos',
+            descripcion: 'Selecciona tus productos y confirma tu pedido.',
+            whatsapp: '50235387468',
+            adminAccessKey: createAdminAccessKey(),
+            activo: true,
+            status: 'trial',
+            trialStartDate: now,
+            trialEndDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+            billingDay: now.getDate()
         });
     }
 

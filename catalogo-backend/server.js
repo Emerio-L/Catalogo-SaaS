@@ -33,6 +33,7 @@ const {
     prisma
 } = require('./data-access');
 const tenantMiddleware = require('./middleware/tenant.middleware');
+const { nextAccountNumber } = require('./account-numbers');
 
 const app = express();
 if (process.env.NODE_ENV === 'production') {
@@ -217,22 +218,12 @@ function normalizeAccountNumber(value) {
     return String(value || '').trim().toUpperCase();
 }
 
-async function nextAccountNumber() {
-    const latest = await prisma.tenant.findFirst({
-        where: { accountNumber: { startsWith: 'CT-' } },
-        orderBy: { accountNumber: 'desc' },
-        select: { accountNumber: true }
-    });
-    const current = Number(/^CT-(\d{6})$/.exec(latest?.accountNumber || '')?.[1] || 0);
-    return `CT-${String(current + 1).padStart(6, '0')}`;
-}
-
 async function createTenantWithAccountNumber(data) {
     for (let attempt = 0; attempt < 5; attempt += 1) {
         try {
             return await Tenant.create({
                 ...data,
-                accountNumber: await nextAccountNumber()
+                accountNumber: await nextAccountNumber(prisma)
             });
         } catch (error) {
             if (error?.code !== 'P2002' || !String(error?.meta?.target || '').includes('accountNumber')) {

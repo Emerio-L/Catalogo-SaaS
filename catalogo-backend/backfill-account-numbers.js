@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { prisma } = require('./db');
+const { formatAccountNumber } = require('./account-numbers');
 
 async function main() {
     const tenants = await prisma.tenant.findMany({
@@ -21,7 +22,7 @@ async function main() {
         if (tenant.accountNumber) continue;
         let accountNumber;
         do {
-            accountNumber = `CT-${String(nextSequence++).padStart(6, '0')}`;
+            accountNumber = formatAccountNumber(nextSequence++);
         } while (usedNumbers.has(accountNumber));
 
         await prisma.tenant.update({
