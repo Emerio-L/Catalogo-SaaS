@@ -36,9 +36,8 @@ const tenantMiddleware = require('./middleware/tenant.middleware');
 const { nextAccountNumber } = require('./account-numbers');
 
 const app = express();
-if (process.env.NODE_ENV === 'production') {
-    app.set('trust proxy', 1);
-}
+const trustProxyHops = Number.parseInt(process.env.TRUST_PROXY_HOPS || '1', 10);
+app.set('trust proxy', Number.isFinite(trustProxyHops) ? trustProxyHops : 1);
 
 const configuredOrigins = (process.env.FRONTEND_URL || '')
     .split(',')
@@ -115,17 +114,28 @@ app.use('/uploads', express.static(uploadsDir));
 
 // Configuración de almacenamiento en memoria para Multer
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const IMAGE_MIME_TYPES = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/avif'
+]);
+const createUpload = ({ allowPdf = false } = {}) => multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // límite de 5MB
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/') || file.mimetype.includes('pdf')) {
+        if (IMAGE_MIME_TYPES.has(file.mimetype) || (allowPdf && file.mimetype === 'application/pdf')) {
             cb(null, true);
         } else {
-            cb(new Error('Formato no soportado: ' + file.mimetype));
+            cb(new Error(allowPdf
+                ? 'Formato no soportado. Usa JPG, PNG, WEBP, GIF, AVIF o PDF.'
+                : 'Formato no soportado. Usa JPG, PNG, WEBP, GIF o AVIF.'));
         }
     }
 });
+const imageUpload = createUpload();
+const receiptUpload = createUpload({ allowPdf: true });
 
 
 
@@ -1148,6 +1158,7 @@ async function eliminarImagen(rutaImagen, publicId = '') {
         return;
     }
     fs.unlink(rutaAbsoluta, (err) => {
+        if (err?.code === 'ENOENT') return;
         if (err) console.error(`No se pudo eliminar la imagen antigua: ${rutaAbsoluta}`, err);
         else console.log(`Imagen antigua eliminada: ${rutaAbsoluta}`);
     });
@@ -1533,7 +1544,7 @@ app.patch('/api/super-admin/settings', requireSuperAdminAuth, async (req, res) =
     }
 });
 
-app.post('/api/super-admin/settings/logo', requireSuperAdminAuth, upload.single('logo'), async (req, res) => {
+app.post('/api/super-admin/settings/logo', requireSuperAdminAuth, imageUpload.single('logo'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Selecciona un logo' });
         const settings = await saasSettings();
@@ -2391,7 +2402,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
     }
 });
 
-app.post('/api/:tenant/admin/payments/receipt', tenantMiddleware, requireAdminAuth, upload.single('receipt'), async (req, res) => {
+app.post('/api/:tenant/admin/payments/receipt', tenantMiddleware, requireAdminAuth, receiptUpload.single('receipt'), async (req, res) => {
     try {
         const amount = money(req.body.amount || req.tenant.monthlyPrice || 0);
         const now = new Date();
@@ -2439,7 +2450,7 @@ app.get('/api/:tenant/admin/payments', tenantMiddleware, requireAdminAuth, async
     }
 });
 
-app.post('/api/:tenant/admin/settings/logo', tenantMiddleware, requireAdminAuth, upload.single('logo'), async (req, res) => {
+app.post('/api/:tenant/admin/settings/logo', tenantMiddleware, requireAdminAuth, imageUpload.single('logo'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Selecciona una imagen para el logo' });
@@ -3153,7 +3164,7 @@ const productSchema = z.object({
     message: "Debe proporcionar una categoria"
 });
 
-app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requireTenantOperational, upload.single('foto'), async (req, res) => {
+app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requireTenantOperational, imageUpload.single('foto'), async (req, res) => {
     try {
         const data = productSchema.parse(req.body);
         
@@ -3200,7 +3211,7 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requ
     }
 });
 
-app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, requireTenantOperational, upload.single('foto'), async (req, res) => {
+app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, requireTenantOperational, imageUpload.single('foto'), async (req, res) => {
     try {
         const productoExistente = await Producto.findOne({ _id: req.params.id, tenantId: req.tenantId });
         if (!productoExistente) {
@@ -3418,6 +3429,9 @@ app.all('*', (req, res) => {
 // Global Error Handler (BUG-028)
 app.use((err, req, res, next) => {
     console.error('Error no manejado:', err);
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'El archivo no puede superar 5 MB' });
+    }
     if (err.name === 'ValidationError') {
         return res.status(400).json({ error: 'Error de validación', detalles: err.message });
     }

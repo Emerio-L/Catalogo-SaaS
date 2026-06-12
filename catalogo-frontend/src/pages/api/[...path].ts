@@ -42,14 +42,14 @@ export const ALL: APIRoute = async ({ clientAddress, params, request, url }) => 
         headers.set('x-forwarded-proto', url.protocol.replace(':', ''));
 
         const method = request.method.toUpperCase();
+        const requestBody = method === 'GET' || method === 'HEAD' ? undefined : request.body;
         const response = await fetch(targetUrl, {
             method,
             headers,
-            body: method === 'GET' || method === 'HEAD'
-                ? undefined
-                : await request.arrayBuffer(),
+            body: requestBody,
+            duplex: requestBody ? 'half' : undefined,
             redirect: 'manual'
-        });
+        } as RequestInit & { duplex?: 'half' });
 
         const responseHeaders = new Headers();
         response.headers.forEach((value, key) => {

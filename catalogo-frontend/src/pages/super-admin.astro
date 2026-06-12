@@ -4,7 +4,7 @@ import Layout from '../layouts/Layout.astro';
 const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 ---
 
-<Layout title="Super Admin SaaS">
+<Layout title="Super Admin SaaS" noindex={true}>
     <script define:vars={{ publicBackendUrl }}>
         window.__PUBLIC_BACKEND_URL__ = publicBackendUrl;
     </script>
@@ -1153,7 +1153,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         function exportTenantsCSV() {
             if (filteredTenantsList.length === 0) {
-                alert('No hay clientes para exportar.');
+                showSuperToast('No hay clientes para exportar.', 'error');
                 return;
             }
             const headers = ['Negocio', 'Propietario', 'Slug', 'Email', 'WhatsApp', 'Plan', 'Estado', 'Precio Mensual', 'Fecha Creacion', 'Fecha Corte'];
@@ -1952,7 +1952,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 return true;
             } else {
                 const data = await res.json().catch(() => ({}));
-                alert(data.error || 'Error al guardar configuración');
+                showSuperToast(data.error || 'Error al guardar configuración', 'error');
                 return false;
             }
         }
@@ -1970,7 +1970,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 supportMessage: document.getElementById('config-support-message').value.trim()
             };
             if (await patchSettings(payload)) {
-                alert('Configuración general guardada');
+                showSuperToast('Configuración general guardada');
             }
         }
 
@@ -1996,24 +1996,38 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                alert(data.error || 'Error al guardar la configuración de landing');
+                showSuperToast(data.error || 'Error al guardar la configuración de landing', 'error');
                 return;
             }
             superSettings = await res.json();
 
             const logoFile = document.getElementById('config-saas-logo-input')?.files?.[0];
             if (logoFile) {
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+                if (!allowedTypes.includes(logoFile.type)) {
+                    showSuperToast('Usa un logo JPG, PNG, WEBP, GIF o AVIF', 'error');
+                    return;
+                }
+                if (logoFile.size > 5 * 1024 * 1024) {
+                    showSuperToast('El logo no puede superar 5 MB', 'error');
+                    return;
+                }
                 const formData = new FormData();
                 formData.append('logo', logoFile);
                 const logoRes = await superFetch('/settings/logo', { method: 'POST', body: formData });
-                if (logoRes.ok) superSettings = await logoRes.json();
+                const logoData = await logoRes.json().catch(() => ({}));
+                if (!logoRes.ok) {
+                    showSuperToast(logoData.error || 'No se pudo guardar el logo', 'error');
+                    return;
+                }
+                superSettings = logoData;
             }
 
             const logoInput = document.getElementById('config-saas-logo-input');
             if (logoInput) logoInput.value = '';
 
             await loadSaasSettings();
-            alert('Configuración de Landing Page guardada con éxito');
+            showSuperToast('Configuración de Landing Page guardada con éxito');
         }
 
         async function saveSaasNotificationsSettings(event) {
@@ -2025,7 +2039,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 notificationWelcomeMessages: document.getElementById('notify-welcome').checked
             };
             if (await patchSettings(payload)) {
-                alert('Configuración de notificaciones guardada');
+                showSuperToast('Configuración de notificaciones guardada');
             }
         }
 
@@ -2094,7 +2108,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 await loadSuperAdminUsers();
             } else {
                 const data = await res.json().catch(() => ({}));
-                alert(data.error || 'Error al eliminar usuario');
+                showSuperToast(data.error || 'Error al eliminar usuario', 'error');
             }
         }
 

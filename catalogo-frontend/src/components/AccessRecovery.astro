@@ -10,7 +10,7 @@ const { mode, tenant = '' } = Astro.props;
 const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 ---
 
-<Layout title={mode === 'forgot' ? 'Recuperar acceso | SEDELYNK' : 'Nueva contraseña | SEDELYNK'}>
+<Layout title={mode === 'forgot' ? 'Recuperar acceso | SEDELYNK' : 'Nueva contraseña | SEDELYNK'} noindex={true}>
     <script define:vars={{ publicBackendUrl, tenant, mode }}>
         window.__RECOVERY_CONFIG__ = { publicBackendUrl, tenant, mode };
     </script>

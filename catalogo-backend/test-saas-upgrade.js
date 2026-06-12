@@ -1,6 +1,8 @@
 require('dotenv').config();
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 const { prisma } = require('./db');
 
 const API = process.env.TEST_API_URL || 'http://localhost:3005';
@@ -13,10 +15,15 @@ const tenantEmail = `tenant-${runId}@example.test`;
 const superEmail = `super-${runId}@example.test`;
 const tenantUsername = `tenant${runId}`;
 const superUsername = `super${runId}`;
+const testPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nWQAAAAASUVORK5CYII=',
+    'base64'
+);
 
 let tenant;
 let testSuper;
 const supportTicketIds = [];
+const uploadedLocalFiles = [];
 
 function sha256(value) {
     return crypto.createHash('sha256').update(value).digest('hex');
@@ -39,6 +46,12 @@ async function request(path, options = {}) {
     return { response, data };
 }
 
+async function frontendRequest(pathname, options = {}) {
+    const response = await fetch(`${FRONTEND}${pathname}`, options);
+    const data = await response.json().catch(() => ({}));
+    return { response, data };
+}
+
 async function login(path, identifier, password) {
     return request(path, {
         method: 'POST',
@@ -55,6 +68,9 @@ async function cleanup() {
     }
     if (supportTicketIds.length) {
         await prisma.supportTicket.deleteMany({ where: { id: { in: supportTicketIds } } }).catch(() => {});
+    }
+    for (const filePath of uploadedLocalFiles) {
+        await fs.promises.unlink(filePath).catch(() => {});
     }
 }
 
@@ -96,6 +112,26 @@ async function main() {
     assert(superEmailLogin.response.ok, 'Login Super Admin con email');
     const superToken = superEmailLogin.data.devSessionToken;
     const superHeaders = { Authorization: `Bearer ${superToken}` };
+
+    const originalSaasSettings = await prisma.saasSettings.findUnique({ where: { key: 'global' } });
+    const superLogoForm = new FormData();
+    superLogoForm.append('logo', new Blob([testPng], { type: 'image/png' }), 'saas-logo-test.png');
+    const superLogoUpload = await frontendRequest('/api/super-admin/settings/logo', {
+        method: 'POST',
+        headers: { ...superHeaders, Origin: FRONTEND },
+        body: superLogoForm
+    });
+    assert(superLogoUpload.response.ok && superLogoUpload.data.logoUrl, 'Super User permite subir logo dinamico');
+    if (String(superLogoUpload.data.logoUrl).startsWith('/uploads/')) {
+        uploadedLocalFiles.push(path.join(__dirname, superLogoUpload.data.logoUrl.replace(/^\//, '')));
+    }
+    await prisma.saasSettings.update({
+        where: { key: 'global' },
+        data: {
+            logoUrl: originalSaasSettings?.logoUrl || '',
+            logoCloudinaryPublicId: originalSaasSettings?.logoCloudinaryPublicId || ''
+        }
+    });
 
     await prisma.tenant.update({
         where: { id: tenant.id },
@@ -210,21 +246,42 @@ async function main() {
     });
     assert(reuseCode.response.status === 400, 'Codigo WhatsApp solo se usa una vez');
 
+    const relogin = await login(`/api/${tenantSlug}/auth/login`, tenantEmail, recoveredPassword);
+    const currentTenantHeaders = { Authorization: `Bearer ${relogin.data.devSessionToken}` };
     const category = await prisma.category.create({
         data: { tenantId: tenant.id, nombre: 'Pruebas', orden: 1 }
     });
-    const productA = await prisma.product.create({
-        data: {
-            tenantId: tenant.id,
-            categoriaId: category.id,
-            categoria: category.nombre,
-            nombre: 'Producto A',
-            precio: 10,
-            unidad: 'unidad',
-            unidadMedida: 'unidad',
-            activo: true
-        }
+    const logoForm = new FormData();
+    logoForm.append('logo', new Blob([testPng], { type: 'image/png' }), 'logo-test.png');
+    const logoUpload = await frontendRequest(`/api/${tenantSlug}/admin/settings/logo`, {
+        method: 'POST',
+        headers: { ...currentTenantHeaders, Origin: FRONTEND },
+        body: logoForm
     });
+    assert(logoUpload.response.ok && logoUpload.data.logo, 'Gateway permite subir logo del catalogo');
+    if (String(logoUpload.data.logo).startsWith('/uploads/')) {
+        uploadedLocalFiles.push(path.join(__dirname, logoUpload.data.logo.replace(/^\//, '')));
+    }
+
+    const productForm = new FormData();
+    productForm.append('nombre', 'Producto A');
+    productForm.append('categoria', category.id);
+    productForm.append('unidad', 'unidad');
+    productForm.append('precio', '10');
+    productForm.append('orden', '1');
+    productForm.append('activo', 'true');
+    productForm.append('foto', new Blob([testPng], { type: 'image/png' }), 'producto-test.png');
+    const productUpload = await frontendRequest(`/api/${tenantSlug}/admin/products`, {
+        method: 'POST',
+        headers: { ...currentTenantHeaders, Origin: FRONTEND },
+        body: productForm
+    });
+    const uploadedProductId = productUpload.data.producto?.id || productUpload.data.producto?._id;
+    assert(productUpload.response.status === 201 && uploadedProductId, 'Gateway permite crear producto con foto');
+    const productA = await prisma.product.findUnique({ where: { id: uploadedProductId } });
+    if (String(productA.imagenUrl || '').startsWith('/uploads/')) {
+        uploadedLocalFiles.push(path.join(__dirname, productA.imagenUrl.replace(/^\//, '')));
+    }
     const productB = await prisma.product.create({
         data: {
             tenantId: tenant.id,
@@ -237,8 +294,6 @@ async function main() {
             activo: true
         }
     });
-    const relogin = await login(`/api/${tenantSlug}/auth/login`, tenantEmail, recoveredPassword);
-    const currentTenantHeaders = { Authorization: `Bearer ${relogin.data.devSessionToken}` };
     const toggleA = await request(`/api/${tenantSlug}/admin/products/${productA.id}/toggle`, {
         method: 'PATCH',
         headers: currentTenantHeaders,
@@ -268,8 +323,9 @@ async function main() {
     });
     assert(order.response.status === 201, 'Carrito y pedidos siguen funcionando');
 
-    const support = await request('/api/support/tickets', {
+    const support = await frontendRequest('/api/support/tickets', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             name: 'Cliente Soporte Test',
             email: `support-${runId}@example.test`,

@@ -9,7 +9,13 @@ const isAdminInitialRoute = initialPathParts[0] === 'c' && initialPathParts[2] =
 const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 ---
 
-<Layout title={isLandingPage ? "sedelynk | Crea tu Catálogo de WhatsApp" : "Catálogo de Productos"}>
+<Layout
+    title={isLandingPage ? "Sedelynk Guatemala | Catálogos digitales y pedidos por WhatsApp" : "Catálogo de Productos"}
+    description={isLandingPage
+        ? "Crea tu catálogo digital, recibe pedidos por carrito y WhatsApp y vende en toda Guatemala con Sedelynk."
+        : "Consulta productos y realiza tu pedido en línea."}
+    noindex={isAdminInitialRoute}
+>
     <script define:vars={{ publicBackendUrl }}>
         window.__PUBLIC_BACKEND_URL__ = publicBackendUrl;
     </script>
@@ -496,7 +502,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 {/* Columna Izquierda */}
                 <div class="text-left space-y-4">
                     <h1 id="landing-hero-title" class="text-3xl md:text-4xl lg:text-[2.85rem] font-black tracking-tight text-[#070B24] leading-[1.15] max-w-xl">
-                        Vende cualquier producto en línea por <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#D946EF]">carrito y</span> <span class="text-[#FF6B1A]">WhatsApp</span>
+                        Vende cualquier producto en línea <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#D946EF]">En toda</span> <span class="text-[#FF6B1A]">Guatemala</span>
                     </h1>
                     
                     <p id="landing-hero-text" class="text-slate-500 text-xs md:text-sm font-semibold leading-relaxed max-w-xl">
@@ -2550,30 +2556,16 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     }
                 }
 
-                // Apply dynamic hero title
+                // El mensaje principal de la landing es parte fija de la identidad SEO.
                 const heroTitleEl = document.getElementById('landing-hero-title');
                 if (heroTitleEl) {
-                    const title = saasSupportSettings.landingTitle || 'Vende cualquier producto en línea por';
-                    const subtitle = saasSupportSettings.landingSubtitle || 'carrito y WhatsApp';
-                    const parts = subtitle.split(' y ');
-                    heroTitleEl.innerHTML = `${title} <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#D946EF]">${parts[0] || ''}</span> ${parts[1] ? `<span class="text-[#FF6B1A]">y ${parts[1]}</span>` : ''}`;
+                    heroTitleEl.innerHTML = 'Vende cualquier producto en línea <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#D946EF]">En toda</span> <span class="text-[#FF6B1A]">Guatemala</span>';
                 }
 
                 // Apply dynamic hero text
                 const heroTextEl = document.getElementById('landing-hero-text');
                 if (heroTextEl) {
                     heroTextEl.innerText = saasSupportSettings.landingHeroText || 'Crea tu tienda en línea, recibe pedidos y haz crecer tu negocio. Sin comisiones, sin complicaciones.';
-                }
-
-                // Apply dynamic favicon
-                if (saasSupportSettings.faviconUrl) {
-                    let link = document.querySelector("link[rel~='icon']");
-                    if (!link) {
-                        link = document.createElement('link');
-                        link.rel = 'icon';
-                        document.getElementsByTagName('head')[0].appendChild(link);
-                    }
-                    link.href = normalizarAssetUrl(saasSupportSettings.faviconUrl);
                 }
 
                 // Apply dynamic platform fallback name
@@ -2994,14 +2986,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             toast.className = `flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border backdrop-blur-md transform translate-y-3 opacity-0 transition-all duration-300 max-w-sm w-full pointer-events-auto`;
             
             if (tipo === 'success') {
-                toast.className += ' bg-primary-50/95 border-primary-200 text-primary-900';
-                toast.innerHTML = `<div class="w-7 h-7 bg-primary-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-sm"><i class="fa-solid fa-check"></i></div>`;
+                toast.className += ' bg-emerald-700 border-emerald-400/40 text-white';
+                toast.innerHTML = `<div class="w-7 h-7 bg-emerald-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-sm"><i class="fa-solid fa-check"></i></div>`;
             } else if (tipo === 'error') {
-                toast.className += ' bg-rose-50/95 border-rose-200 text-rose-900';
+                toast.className += ' bg-rose-700 border-rose-400/40 text-white';
                 toast.innerHTML = `<div class="w-7 h-7 bg-rose-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-sm"><i class="fa-solid fa-exclamation"></i></div>`;
             } else {
-                toast.className += ' bg-slate-50/95 border-slate-200 text-slate-900';
-                toast.innerHTML = `<div class="w-7 h-7 bg-slate-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-sm"><i class="fa-solid fa-info"></i></div>`;
+                toast.className += ' bg-slate-800 border-slate-500/40 text-white';
+                toast.innerHTML = `<div class="w-7 h-7 bg-slate-600 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-sm"><i class="fa-solid fa-info"></i></div>`;
             }
 
             toast.innerHTML += `<span class="text-[11px] font-black uppercase tracking-wider flex-grow">${mensaje}</span>`;
@@ -4690,6 +4682,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             try {
                 if (file) {
+                    const fileError = validarImagenParaSubir(file);
+                    if (fileError) {
+                        showToast(fileError, 'error');
+                        return;
+                    }
                     const formData = new FormData();
                     formData.append('logo', file);
                     const res = await fetch(`${TENANT_API_URL}/admin/settings/logo`, {
@@ -4714,14 +4711,16 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 showToast(file ? "Imagen del catálogo actualizada" : "Forma de la imagen actualizada", "success");
                 await cargarConfiguracionPublica();
             } catch (err) {
-                showToast("Error de conexión al guardar cambios", "error");
+                console.error('Error subiendo imagen del catálogo:', err);
+                showToast('No se pudo conectar con el servidor para subir la imagen', 'error');
             }
         }
 
         function asignarImagenPerfil(file) {
             if (!file) return false;
-            if (!file.type || !file.type.startsWith('image/')) {
-                showToast("Selecciona un archivo de imagen válido", "error");
+            const fileError = validarImagenParaSubir(file);
+            if (fileError) {
+                showToast(fileError, "error");
                 return false;
             }
             const input = document.getElementById('perfil-logo-input');
@@ -5575,6 +5574,18 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         window.toggleProductStatus = toggleProductStatus;
         window.toggleActivo = toggleProductStatus;
 
+        function validarImagenParaSubir(file) {
+            if (!file) return '';
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+            if (!allowedTypes.includes(file.type)) {
+                return 'Usa una imagen JPG, PNG, WEBP, GIF o AVIF';
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                return 'La imagen no puede superar 5 MB';
+            }
+            return '';
+        }
+
         async function editarProducto(id) {
             const prod = adminProductos.find(p => getProductId(p) === String(id));
             if (!prod) return;
@@ -5631,8 +5642,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 return;
             }
             if (fileInput.files[0]) {
-                if (!fileInput.files[0].type.startsWith('image/')) {
-                    showToast("Selecciona un archivo de imagen válido", "error");
+                const fileError = validarImagenParaSubir(fileInput.files[0]);
+                if (fileError) {
+                    showToast(fileError, "error");
                     return;
                 }
                 formData.append('foto', fileInput.files[0]);
@@ -5653,7 +5665,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     cerrarAdminForm();
                     cargarAdminProductos();
                 } else {
-                    const errData = await res.json();
+                    const errData = await res.json().catch(() => ({}));
                     showToast(errData.error || "Error al procesar el producto", "error");
                 }
             } catch (err) {
@@ -6715,21 +6727,44 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             try {
                 submit.disabled = true;
                 submit.textContent = 'Enviando...';
-                const response = await fetch(`${API_URL}/support/tickets`, {
+                const requestOptions = {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
-                });
+                };
+                let response = await fetch(`${API_URL}/support/tickets`, requestOptions);
+                if (response.status === 502 && CONFIGURED_BACKEND_URL) {
+                    response = await fetch(`${CONFIGURED_BACKEND_URL}/api/support/tickets`, requestOptions);
+                }
                 const data = await response.json().catch(() => ({}));
                 feedback.textContent = data.message || data.error || 'No se pudo enviar la solicitud.';
-                feedback.className = `mt-4 rounded-2xl px-4 py-3 text-sm font-bold ${response.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`;
+                feedback.className = `mt-4 rounded-2xl px-4 py-3 text-sm font-bold text-white ${response.ok ? 'bg-emerald-700' : 'bg-rose-700'}`;
                 if (response.ok) {
                     event.currentTarget.reset();
                     setTimeout(closeSupportModal, 1400);
                 }
-            } catch {
+            } catch (error) {
+                if (CONFIGURED_BACKEND_URL) {
+                    try {
+                        const response = await fetch(`${CONFIGURED_BACKEND_URL}/api/support/tickets`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        feedback.textContent = data.message || data.error || 'No se pudo enviar la solicitud.';
+                        feedback.className = `mt-4 rounded-2xl px-4 py-3 text-sm font-bold ${response.ok ? 'bg-emerald-700 text-white' : 'bg-rose-700 text-white'}`;
+                        if (response.ok) {
+                            event.currentTarget.reset();
+                            setTimeout(closeSupportModal, 1400);
+                        }
+                        return;
+                    } catch (fallbackError) {
+                        console.error('Error conectando con soporte:', fallbackError);
+                    }
+                }
                 feedback.textContent = 'No se pudo conectar con soporte.';
-                feedback.className = 'mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700';
+                feedback.className = 'mt-4 rounded-2xl bg-rose-700 px-4 py-3 text-sm font-bold text-white';
             } finally {
                 submit.disabled = false;
                 submit.textContent = 'Enviar solicitud';

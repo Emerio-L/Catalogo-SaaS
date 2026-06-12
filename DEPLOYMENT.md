@@ -87,6 +87,7 @@ migraciones que falten.
 ```env
 NODE_ENV=production
 DATABASE_URL=${{Postgres.DATABASE_URL}}
+TRUST_PROXY_HOPS=1
 
 SUPER_ADMIN_USER=elige-un-usuario
 SUPER_ADMIN_PASSWORD=elige-una-clave-larga-y-unica
@@ -135,12 +136,17 @@ HOST=0.0.0.0
 PORT=8080
 BACKEND_URL=http://${{Catalogo-SaaS.RAILWAY_PRIVATE_DOMAIN}}:${{Catalogo-SaaS.PORT}}
 PUBLIC_BACKEND_URL=https://${{Catalogo-SaaS.RAILWAY_PUBLIC_DOMAIN}}
+PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
 `BACKEND_URL` es server-side y usa la red privada de Railway. No debe llevar el
 prefijo `PUBLIC_`. `PUBLIC_BACKEND_URL` se usa para imagenes o archivos que el
 navegador carga directamente. Si renombraste el servicio a `backend`, cambia
 `Catalogo-SaaS` por `backend` en ambas referencias.
+
+`PUBLIC_GA_MEASUREMENT_ID` es opcional. Se obtiene al crear un flujo web en
+Google Analytics 4. Permite consultar usuarios, sesiones y ubicacion aproximada
+por pais o ciudad. Si no se configura, el sitio funciona sin cargar Analytics.
 
 5. En `Networking`, genera el dominio publico del frontend apuntando al puerto
    `8080`.
@@ -179,6 +185,8 @@ https://DOMINIO-BACKEND/health
 https://DOMINIO-FRONTEND/health
 https://DOMINIO-FRONTEND/
 https://DOMINIO-FRONTEND/super-admin
+https://DOMINIO-FRONTEND/robots.txt
+https://DOMINIO-FRONTEND/sitemap.xml
 ```
 
 El healthcheck debe responder con `ok: true` y `postgres: connected`.

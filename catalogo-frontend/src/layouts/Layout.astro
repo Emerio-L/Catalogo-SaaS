@@ -1,17 +1,77 @@
 ---
 interface Props {
 	title: string;
+	description?: string;
+	noindex?: boolean;
+	locale?: string;
 }
 
-const { title } = Astro.props;
+const {
+	title,
+	description = 'Crea tu catálogo digital, recibe pedidos por carrito y WhatsApp y vende en toda Guatemala con Sedelynk.',
+	noindex = false,
+	locale = 'es_GT'
+} = Astro.props;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.url.origin).toString();
+const gaMeasurementId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || '';
+const structuredData = Astro.url.pathname === '/' ? {
+	'@context': 'https://schema.org',
+	'@type': 'SoftwareApplication',
+	name: 'Sedelynk',
+	applicationCategory: 'BusinessApplication',
+	operatingSystem: 'Web',
+	url: canonicalUrl,
+	description,
+	areaServed: {
+		'@type': 'Country',
+		name: 'Guatemala'
+	},
+	offers: {
+		'@type': 'Offer',
+		priceCurrency: 'GTQ'
+	}
+} : null;
 ---
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-GT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
+    <meta name="description" content={description}>
+    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'}>
+    <meta name="googlebot" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'}>
+    <meta name="geo.region" content="GT">
+    <meta name="geo.placename" content="Guatemala">
+    <link rel="canonical" href={canonicalUrl}>
+    <link rel="alternate" hreflang="es-GT" href={canonicalUrl}>
+    <link rel="alternate" hreflang="x-default" href={canonicalUrl}>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content={locale}>
+    <meta property="og:site_name" content="Sedelynk">
+    <meta property="og:title" content={title}>
+    <meta property="og:description" content={description}>
+    <meta property="og:url" content={canonicalUrl}>
+    <meta property="og:image" content={`${Astro.url.origin}/favicon.png`}>
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content={title}>
+    <meta name="twitter:description" content={description}>
+    <meta name="twitter:image" content={`${Astro.url.origin}/favicon.png`}>
+    {structuredData && <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />}
+    {gaMeasurementId && (
+        <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}></script>
+            <script is:inline define:vars={{ gaMeasurementId }}>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', gaMeasurementId, { anonymize_ip: true });
+            </script>
+        </>
+    )}
     
     <!-- Tailwind CSS -->
     <script is:inline src="https://cdn.tailwindcss.com"></script>
