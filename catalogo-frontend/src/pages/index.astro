@@ -6749,7 +6749,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 feedback.className = `mt-4 rounded-2xl px-4 py-3 text-sm font-bold text-white ${response.ok ? 'bg-emerald-700' : 'bg-rose-700'}`;
                 if (response.ok) {
                     form.reset();
-                    setTimeout(closeSupportModal, 1400);
+                    setTimeout(closeSupportModal, 30000);
                 }
             } catch (error) {
                 if (CONFIGURED_BACKEND_URL) {
@@ -6764,7 +6764,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         feedback.className = `mt-4 rounded-2xl px-4 py-3 text-sm font-bold ${response.ok ? 'bg-emerald-700 text-white' : 'bg-rose-700 text-white'}`;
                         if (response.ok) {
                             form.reset();
-                            setTimeout(closeSupportModal, 1400);
+                            setTimeout(closeSupportModal, 30000);
                         }
                         return;
                     } catch (fallbackError) {

@@ -24,8 +24,32 @@ function getBackendUrl() {
     return String(backendUrl).replace(/\/$/, '');
 }
 
+function isAllowedOrigin(request: Request, url: URL) {
+    const origin = request.headers.get('origin');
+    if (!origin) return true;
+
+    const configuredSiteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://sedelynk.com';
+    const allowedOrigins = new Set([
+        new URL(configuredSiteUrl).origin,
+        url.origin
+    ]);
+    if (import.meta.env.DEV) {
+        allowedOrigins.add('http://localhost:4321');
+        allowedOrigins.add('http://127.0.0.1:4321');
+    }
+    return allowedOrigins.has(origin);
+}
+
 export const ALL: APIRoute = async ({ clientAddress, params, request, url }) => {
     try {
+        const method = request.method.toUpperCase();
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !isAllowedOrigin(request, url)) {
+            return new Response(JSON.stringify({ error: 'Origen no permitido' }), {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
         const targetUrl = `${getBackendUrl()}/api/${params.path || ''}${url.search}`;
         const headers = new Headers();
 
@@ -41,7 +65,6 @@ export const ALL: APIRoute = async ({ clientAddress, params, request, url }) => 
         headers.set('x-forwarded-host', url.host);
         headers.set('x-forwarded-proto', url.protocol.replace(':', ''));
 
-        const method = request.method.toUpperCase();
         const requestBody = method === 'GET' || method === 'HEAD' ? undefined : request.body;
         const response = await fetch(targetUrl, {
             method,

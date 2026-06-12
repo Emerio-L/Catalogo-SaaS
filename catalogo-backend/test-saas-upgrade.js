@@ -253,6 +253,14 @@ async function main() {
     });
     const logoForm = new FormData();
     logoForm.append('logo', new Blob([testPng], { type: 'image/png' }), 'logo-test.png');
+    const blockedLogoForm = new FormData();
+    blockedLogoForm.append('logo', new Blob([testPng], { type: 'image/png' }), 'logo-blocked.png');
+    const blockedOriginUpload = await frontendRequest(`/api/${tenantSlug}/admin/settings/logo`, {
+        method: 'POST',
+        headers: { ...currentTenantHeaders, Origin: 'https://example.invalid' },
+        body: blockedLogoForm
+    });
+    assert(blockedOriginUpload.response.status === 403, 'Gateway rechaza multipart desde origen no permitido');
     const logoUpload = await frontendRequest(`/api/${tenantSlug}/admin/settings/logo`, {
         method: 'POST',
         headers: { ...currentTenantHeaders, Origin: FRONTEND },
@@ -352,7 +360,9 @@ async function main() {
     assert(landing.ok, 'Landing responde');
     assert(superAdmin.ok, 'Super Admin responde');
     const adminHtml = await adminPanel.text();
+    const landingHtml = await landing.text();
     assert(!adminHtml.includes('Mostrar descripcion del negocio'), 'Configuracion ya no muestra el control de descripcion');
+    assert(landingHtml.includes('setTimeout(closeSupportModal, 30000)'), 'Exito de soporte permanece visible 30 segundos');
 
     const dashboard = await request('/api/super-admin/dashboard', { headers: superHeaders });
     const logs = await request('/api/super-admin/logs', { headers: superHeaders });

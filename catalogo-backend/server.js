@@ -3172,7 +3172,7 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requ
             const plan = await Plan.findById(req.tenant.planId);
             if (plan) {
                 const count = await Producto.countDocuments({ tenantId: req.tenantId });
-                if (count >= plan.productLimit) {
+                if (plan.productLimit !== null && plan.productLimit !== undefined && count >= plan.productLimit) {
                     return res.status(403).json({ error: `Límite de productos alcanzado para tu plan (${plan.productLimit}).` });
                 }
             }
@@ -3206,7 +3206,10 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requ
         res.status(201).json({ mensaje: 'Producto creado exitosamente', producto: productoResponse(nuevoProducto, categoria) });
     } catch (err) {
         if (err instanceof z.ZodError) return res.status(400).json({ error: 'Datos de producto invalidos', detalles: err.issues });
-        console.error(err);
+        console.error('Error creando producto:', err);
+        if (err?.name === 'Error' && /cloudinary|upload|api_key|cloud_name|signature/i.test(String(err.message || ''))) {
+            return res.status(502).json({ error: 'No se pudo guardar la imagen en Cloudinary. Revisa la configuración del servicio.' });
+        }
         res.status(500).json({ error: 'Error al crear producto' });
     }
 });
