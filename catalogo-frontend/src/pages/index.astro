@@ -133,16 +133,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .logoContainer img {
-                  max-width: 315px;
-                  max-height: 78px;
+                  max-height: 52px;
                   width: auto;
-                  height: auto;
                   object-fit: contain;
                   display: block;
                   opacity: 1;
                   filter: none;
-                  transform: scale(2.15);
-                  transform-origin: left center;
                 }
 
                 .logoContainer img.hidden {
@@ -150,10 +146,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .logoContainer #landing-logo-fallback {
-                  max-width: 315px;
-                  max-height: 78px;
-                  width: 315px;
-                  height: 78px;
+                  height: 52px;
+                  width: auto;
                   align-items: center;
                   justify-content: flex-start;
                 }
@@ -1021,7 +1015,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <i class="fa-solid fa-chevron-right text-xl transition-transform group-hover:translate-x-1"></i>
                     </button>
                     <div id="catalog-brand-mark" class="col-start-1 row-start-1 flex h-[72px] w-[72px] flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-white text-primary-200 shadow-xl ring-1 ring-black/5 md:h-32 md:w-32 md:rounded-[1.5rem]">
-                        <img id="catalog-logo" src="" alt="Logo del negocio" class="hidden h-full w-full object-contain p-2">
+                        <img id="catalog-logo" src="" alt="Logo del negocio" class="hidden h-full w-full object-cover">
                         <div id="catalog-logo-fallback" class="flex h-full w-full items-center justify-center">
                             <i class="fa-solid fa-truck-fast text-3xl md:text-5xl"></i>
                         </div>
@@ -1297,7 +1291,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <div class="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
                                 <div class="flex items-center gap-4">
                                     <span class="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white text-primary-600 shadow-sm ring-1 ring-slate-100">
-                                        <img id="perfil-logo-preview" src="" alt="Logo o imagen del negocio" class="hidden h-full w-full object-contain p-1">
+                                        <img id="perfil-logo-preview" src="" alt="Logo o imagen del negocio" class="hidden h-full w-full object-cover">
                                         <i id="perfil-logo-placeholder" class="fa-solid fa-image text-xl"></i>
                                     </span>
                                     <div class="min-w-0 flex-1">
@@ -2063,10 +2057,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             </div>
             <input id="perfil-logo-input" type="file" accept="image/*" onchange="previewLogoPerfil(event)" class="hidden">
             <button type="button" onclick="document.getElementById('perfil-logo-input')?.click()" ondragover="handleLogoPerfilDrag(event)" ondragleave="handleLogoPerfilDragLeave(event)" ondrop="handleLogoPerfilDrop(event)" class="flex w-full items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-left transition hover:border-primary-200 hover:bg-primary-50/40">
-                <span class="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white text-primary-600 shadow-sm ring-1 ring-slate-100">
-                    <img id="perfil-logo-modal-preview" src="" alt="Vista previa" class="hidden h-full w-full object-cover">
-                    <i id="perfil-logo-modal-placeholder" class="fa-solid fa-image text-2xl"></i>
-                </span>
+                <div class="h-24 w-24 overflow-hidden rounded-full border-4 border-slate-100 bg-white shadow-inner flex items-center justify-center text-slate-300">
+                    <img id="perfil-logo-modal-preview" src="" alt="Preview" class="hidden h-full w-full object-cover">
+                    <i id="perfil-logo-modal-placeholder" class="fa-solid fa-image text-3xl"></i>
+                </div>
                 <span class="min-w-0 flex-1">
                     <span id="perfil-logo-modal-label" class="block truncate text-xs font-black uppercase tracking-wider text-slate-700">Seleccionar o arrastrar imagen</span>
                     <span class="mt-1 block text-[11px] font-semibold text-slate-400">PNG, JPG, JPEG o WebP. Se optimiza automáticamente.</span>
@@ -3104,21 +3098,29 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         const PREDEFINED_COLOR_OPTIONS = [
+            ['Negro', '#000000'],
+            ['Azul medianoche', '#0F172A'],
+            ['Azul índigo', '#4F46E5'],
             ['Azul', '#2563EB'],
+            ['Azul cielo', '#0EA5E9'],
             ['Cyan', '#06B6D4'],
-            ['Azul oscuro', '#0F172A'],
-            ['Gris azulado', '#1E293B'],
-            ['Azul intenso', '#1D4ED8'],
+            ['Teal', '#14B8A6'],
+            ['Verde esmeralda', '#10B981'],
             ['Verde', '#22C55E'],
             ['Verde lima', '#84CC16'],
             ['Amarillo', '#FACC15'],
+            ['Ámbar', '#F59E0B'],
             ['Naranja', '#F97316'],
-            ['Rojo', '#EF4444'],
-            ['Rosa', '#EC4899'],
-            ['Morado', '#7C3AED'],
+            ['Óxido', '#C2410C'],
             ['Café', '#B45309'],
+            ['Rosa', '#EC4899'],
+            ['Fucsia', '#D946EF'],
+            ['Morado', '#7C3AED'],
+            ['Violeta', '#8B5CF6'],
+            ['Gris azulado', '#1E293B'],
             ['Gris', '#64748B'],
-            ['Blanco/gris claro', '#F8FAFC']
+            ['Zinc', '#52525B'],
+            ['Piedra', '#57534E']
         ];
 
         const BUSINESS_PALETTES = [
@@ -3275,12 +3277,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const selected = theme.selectedColor || theme.colors.primary;
             return `<h4 class="text-lg font-black text-slate-950">Elige tu color principal</h4>
                 <p class="mt-1 max-w-2xl text-sm font-semibold text-slate-500">Selecciona un color y se aplicará automáticamente en todo tu catálogo y panel.</p>
-                <div class="mt-6 flex flex-wrap gap-4">
+                <div class="mt-6 flex flex-wrap gap-3">
                     ${PREDEFINED_COLOR_OPTIONS.map(([label, color]) => {
                         const active = selected.toUpperCase() === color.toUpperCase();
                         const textColor = colorTextoSobre(color);
-                        return `<button type="button" onclick="seleccionarColorPredefinido('${color}', '${label.replace(/'/g, "\\'")}')" title="${label}" class="flex h-14 w-14 items-center justify-center rounded-full border-4 transition hover:scale-105 ${active ? 'border-slate-950 shadow-lg' : 'border-white shadow-sm ring-1 ring-slate-200'}" style="background:${color}; color:${textColor}">
-                            ${active ? '<i class="fa-solid fa-check text-base"></i>' : ''}
+                        return `<button type="button" onclick="seleccionarColorPredefinido('${color}', '${label.replace(/'/g, "\\'")}')" title="${label}" class="flex h-10 w-10 items-center justify-center rounded-full border-[3px] transition hover:scale-105 ${active ? 'border-slate-950 shadow-lg' : 'border-white shadow-sm ring-1 ring-slate-200'}" style="background:${color}; color:${textColor}">
+                            ${active ? '<i class="fa-solid fa-check text-xs"></i>' : ''}
                         </button>`;
                     }).join('')}
                 </div>`;

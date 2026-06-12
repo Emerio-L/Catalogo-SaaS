@@ -3157,13 +3157,22 @@ app.get('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, asy
 
 app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, requireTenantOperational, async (req, res) => {
     try {
+        const nombre = req.body.nombre;
+        const existing = await Category.findOne({ tenantId: req.tenantId, nombre: nombre });
+        if (existing) {
+            return res.status(400).json({ error: 'Categoría ya existe, crea nueva categoría.' });
+        }
+
         const categoria = await Category.create({
             tenantId: req.tenantId,
-            nombre: req.body.nombre,
+            nombre: nombre,
             orden: parseInt(req.body.orden) || 999
         });
         res.status(201).json(categoria);
     } catch (err) {
+        if (err.code === 'P2002') {
+            return res.status(400).json({ error: 'Categoría ya existe, crea nueva categoría.' });
+        }
         res.status(500).json({ error: 'Error al crear categoría' });
     }
 });
