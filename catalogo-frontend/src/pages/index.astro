@@ -2936,6 +2936,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         function actualizarTituloPagina() {
+            if (isLandingPage) {
+                document.title = "sedelynk";
+                return;
+            }
             const nombre = (configuracionNegocio.nombreNegocio || tenantSlug || 'Catálogo').trim();
             document.title = isAdminRoute ? `Panel administrativo - ${nombre}` : `${nombre} - Catálogo`;
         }
