@@ -10,7 +10,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 ---
 
 <Layout
-    title={isLandingPage ? "sedelynk" : "Catálogo de Productos"}
+    title={isLandingPage ? "Sedelynk" : "Catálogo de Productos"}
     description={isLandingPage
         ? "Crea tu catálogo digital, recibe pedidos por carrito y WhatsApp y vende en toda Guatemala con Sedelynk."
         : "Consulta productos y realiza tu pedido en línea."}
@@ -2937,7 +2937,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         function actualizarTituloPagina() {
             if (isLandingPage) {
-                document.title = "sedelynk";
+                document.title = "Sedelynk";
                 return;
             }
             const nombre = (configuracionNegocio.nombreNegocio || tenantSlug || 'Catálogo').trim();
