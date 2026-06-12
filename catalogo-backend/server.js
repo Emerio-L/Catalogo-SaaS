@@ -544,6 +544,7 @@ function saasSettingsPayload(settings) {
         notificationPaymentReminders: settings.notificationPaymentReminders !== false,
         notificationUpcomingExpirations: settings.notificationUpcomingExpirations !== false,
         notificationWelcomeMessages: settings.notificationWelcomeMessages !== false,
+        emailRecoveryConfigured: Boolean(process.env.RESEND_API_KEY && process.env.AUTH_EMAIL_FROM),
 
         updatedAt: settings.updatedAt
     };
@@ -648,37 +649,56 @@ async function auditLog(req, tipo, metadata = {}) {
 }
 
 async function enviarEmailRecuperacion({ to, resetUrl }) {
+    const recipient = String(to || '').trim().toLowerCase();
+    if (!recipient || recipient.endsWith('.local')) {
+        console.warn('No se envió recuperación: el usuario no tiene un correo real configurado.');
+        return { sent: false, dev: false, reason: 'missing_recipient' };
+    }
+
     if (!process.env.RESEND_API_KEY || !process.env.AUTH_EMAIL_FROM) {
-        console.log(`Link de recuperación para ${to}: ${resetUrl}`);
-        return { sent: false, dev: true };
+        const isDevelopment = process.env.NODE_ENV !== 'production';
+        if (isDevelopment) {
+            console.log(`Link de recuperación para ${recipient}: ${resetUrl}`);
+        } else {
+            console.warn('No se envió recuperación: faltan RESEND_API_KEY o AUTH_EMAIL_FROM.');
+        }
+        return { sent: false, dev: isDevelopment, reason: 'not_configured' };
     }
 
-    const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            from: process.env.AUTH_EMAIL_FROM,
-            to,
-            subject: 'Recupera tu acceso al catálogo',
-            html: `
-                <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
-                    <h2>Recupera tu acceso</h2>
-                    <p>Usa este enlace para crear una nueva contraseña. Expira en 15 minutos.</p>
-                    <p><a href="${resetUrl}" style="background:#0f172a;color:white;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:bold">Cambiar contraseña</a></p>
-                    <p>Si no solicitaste este cambio, ignora este correo.</p>
-                </div>
-            `
-        })
-    });
+    try {
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from: process.env.AUTH_EMAIL_FROM,
+                to: recipient,
+                subject: 'Recupera tu acceso a SEDELYNK',
+                html: `
+                    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
+                        <h2>Recupera tu acceso</h2>
+                        <p>Usa este enlace para crear una nueva contraseña. Expira en 15 minutos.</p>
+                        <p><a href="${resetUrl}" style="background:#0f172a;color:white;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:bold">Cambiar contraseña</a></p>
+                        <p>Si no solicitaste este cambio, ignora este correo.</p>
+                    </div>
+                `
+            })
+        });
 
-    if (!response.ok) {
-        throw new Error('No se pudo enviar el correo de recuperación');
+        if (!response.ok) {
+            const providerResponse = await response.text().catch(() => '');
+            console.error(`Resend rechazó el correo de recuperación (${response.status}):`, providerResponse);
+            return { sent: false, dev: false, reason: 'provider_error', providerStatus: response.status };
+        }
+
+        const providerData = await response.json().catch(() => ({}));
+        return { sent: true, dev: false, providerId: providerData.id || null };
+    } catch (error) {
+        console.error('Error de conexión al enviar correo de recuperación:', error.message);
+        return { sent: false, dev: false, reason: 'network_error' };
     }
-
-    return { sent: true, dev: false };
 }
 
 async function enviarEmailBienvenida({ to, tenant, usuario }) {
@@ -1666,6 +1686,26 @@ app.get('/api/super-admin/logs', requireSuperAdminAuth, async (req, res) => {
     }
 });
 
+app.delete('/api/super-admin/logs/:id', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const log = await prisma.auditLog.findUnique({ where: { id: req.params.id } });
+        if (!log) return res.status(404).json({ error: 'Log no encontrado' });
+        await prisma.auditLog.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al eliminar log' });
+    }
+});
+
+app.delete('/api/super-admin/logs', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const result = await prisma.auditLog.deleteMany({});
+        res.json({ success: true, deletedCount: result.count });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al eliminar logs' });
+    }
+});
+
 app.get('/api/super-admin/support/tickets', requireSuperAdminAuth, async (req, res) => {
     try {
         const status = String(req.query.status || '').trim();
@@ -1692,6 +1732,28 @@ app.patch('/api/super-admin/support/tickets/:id', requireSuperAdminAuth, async (
         res.json(ticket);
     } catch (error) {
         res.status(500).json({ error: 'Error al actualizar ticket' });
+    }
+});
+
+app.delete('/api/super-admin/support/tickets/:id', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const ticket = await SupportTicket.findOne({ _id: req.params.id });
+        if (!ticket) return res.status(404).json({ error: 'Ticket no encontrado' });
+        await SupportTicket.deleteOne({ _id: ticket._id });
+        await auditLog(req, 'support_ticket_deleted', { ticketId: ticket._id });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al eliminar ticket' });
+    }
+});
+
+app.delete('/api/super-admin/support/tickets', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const result = await SupportTicket.deleteMany({});
+        await auditLog(req, 'support_tickets_deleted', { deletedCount: result.deletedCount || 0 });
+        res.json({ success: true, deletedCount: result.deletedCount || 0 });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al eliminar tickets' });
     }
 });
 
@@ -2040,8 +2102,17 @@ app.post('/api/super-admin/tenants/:id/recovery', requireSuperAdminAuth, async (
             const { resetUrl, emailStatus } = await createPasswordResetForUser(req, user, tenant);
             await auditLog(req, 'super_admin_recovery_email_created', {
                 tenantId: tenant._id,
-                targetUserId: user._id
+                targetUserId: user._id,
+                emailSent: emailStatus.sent,
+                emailReason: emailStatus.reason || null
             });
+            if (!emailStatus.sent) {
+                return res.status(503).json({
+                    error: emailStatus.reason === 'missing_recipient'
+                        ? 'La cuenta no tiene un correo electrónico válido.'
+                        : 'El correo de recuperación no está configurado o el proveedor rechazó el envío.'
+                });
+            }
             return res.json({
                 success: true,
                 message: 'Enlace de recuperacion enviado por correo.',
@@ -2781,7 +2852,19 @@ app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
         req.tenantId = tenant._id;
         req.user = user;
         const { resetUrl, emailStatus } = await createPasswordResetForUser(req, user, tenant);
-        await auditLog(req, 'password_reset_requested', { tenantId: tenant._id, userId: user._id });
+        await auditLog(req, 'password_reset_requested', {
+            tenantId: tenant._id,
+            userId: user._id,
+            emailSent: emailStatus.sent,
+            emailReason: emailStatus.reason || null
+        });
+        if (!emailStatus.sent) {
+            await auditLog(req, 'password_reset_failed', {
+                tenantId: tenant._id,
+                userId: user._id,
+                reason: `email_${emailStatus.reason || 'unknown'}`
+            });
+        }
 
         res.json({
             ...genericResponse,
@@ -3011,7 +3094,17 @@ app.post('/api/:tenant/auth/forgot-password', tenantMiddleware, authLimiter, asy
         }
 
         const { resetUrl, emailStatus } = await createPasswordResetForUser(req, user, req.tenant);
-        await auditLog(req, 'password_reset_requested', { userId: user._id });
+        await auditLog(req, 'password_reset_requested', {
+            userId: user._id,
+            emailSent: emailStatus.sent,
+            emailReason: emailStatus.reason || null
+        });
+        if (!emailStatus.sent) {
+            await auditLog(req, 'password_reset_failed', {
+                userId: user._id,
+                reason: `email_${emailStatus.reason || 'unknown'}`
+            });
+        }
 
         res.json({
             ...genericResponse,

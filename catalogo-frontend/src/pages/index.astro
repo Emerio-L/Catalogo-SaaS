@@ -10,7 +10,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 ---
 
 <Layout
-    title={isLandingPage ? "Sedelynk Guatemala | Catálogos digitales y pedidos por WhatsApp" : "Catálogo de Productos"}
+    title={isLandingPage ? "sedelynk" : "Catálogo de Productos"}
     description={isLandingPage
         ? "Crea tu catálogo digital, recibe pedidos por carrito y WhatsApp y vende en toda Guatemala con Sedelynk."
         : "Consulta productos y realiza tu pedido en línea."}
@@ -1891,7 +1891,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <div>
                         <div class="mb-1 flex items-center justify-between gap-2">
                             <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider">Categoría</label>
-                            <button type="button" onclick="crearCategoriaDesdeFormulario()" class="text-[10px] font-black uppercase text-primary-600 hover:text-primary-500">Nueva</button>
+                            <button type="button" onclick="crearCategoriaDesdeFormulario()" class="text-[10px] font-black uppercase text-primary-600 hover:text-primary-500">Agregar categoría</button>
                         </div>
                         <select id="admin-categoria" class="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all text-slate-600">
                         </select>

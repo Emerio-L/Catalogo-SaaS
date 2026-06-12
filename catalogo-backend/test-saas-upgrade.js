@@ -345,6 +345,11 @@ async function main() {
     supportTicketIds.push(support.data.ticketId);
     const supportList = await request('/api/super-admin/support/tickets', { headers: superHeaders });
     assert(supportList.response.ok && supportList.data.tickets.some(ticket => ticket.id === support.data.ticketId), 'Ticket aparece en Super Admin');
+    const deleteSupport = await request(`/api/super-admin/support/tickets/${support.data.ticketId}`, {
+        method: 'DELETE',
+        headers: superHeaders
+    });
+    assert(deleteSupport.response.ok, 'Super User puede eliminar mensajes de soporte');
 
     const settings = await request(`/api/${tenantSlug}/admin/settings`, { headers: currentTenantHeaders });
     assert(settings.response.ok && settings.data.mostrarDescripcion === false, 'Configuracion mantiene descripcion desactivada');
@@ -368,6 +373,19 @@ async function main() {
     const logs = await request('/api/super-admin/logs', { headers: superHeaders });
     assert(dashboard.response.ok && typeof dashboard.data.mrr === 'number', 'Dashboard Super User expone MRR y metricas');
     assert(logs.response.ok && Array.isArray(logs.data), 'Logs Super User disponibles');
+    const logToDelete = logs.data.find(log => log.id);
+    assert(Boolean(logToDelete), 'Existe un log para probar eliminacion');
+    const deleteLog = await request(`/api/super-admin/logs/${logToDelete.id}`, {
+        method: 'DELETE',
+        headers: superHeaders
+    });
+    assert(deleteLog.response.ok, 'Super User puede eliminar logs');
+
+    const saasSettings = await request('/api/super-admin/settings', { headers: superHeaders });
+    assert(
+        saasSettings.response.ok && typeof saasSettings.data.emailRecoveryConfigured === 'boolean',
+        'Super User muestra estado de configuracion del correo'
+    );
 }
 
 main()
