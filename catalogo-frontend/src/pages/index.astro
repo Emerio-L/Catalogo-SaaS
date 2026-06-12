@@ -2223,7 +2223,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
     </button>
 
     <div id="support-modal" class="fixed inset-0 z-[110] hidden items-end justify-center bg-slate-950/60 p-4 backdrop-blur-sm sm:items-center">
-        <form onsubmit="submitSupportTicket(event)" class="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+        <form id="support-form" onsubmit="submitSupportTicket(event)" class="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <p class="text-[10px] font-black uppercase tracking-[0.24em] text-violet-600">SEDELYNK</p>
@@ -6701,6 +6701,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         function openSupportModal() {
             const modal = document.getElementById('support-modal');
+            const feedback = document.getElementById('support-form-message');
+            if (feedback) {
+                feedback.textContent = '';
+                feedback.className = 'mt-4 hidden rounded-2xl px-4 py-3 text-sm font-bold';
+            }
             modal?.classList.remove('hidden');
             modal?.classList.add('flex');
             document.getElementById('support-name')?.focus();
@@ -6716,8 +6721,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function submitSupportTicket(event) {
             event.preventDefault();
+            const form = event.currentTarget;
             const submit = document.getElementById('support-submit');
             const feedback = document.getElementById('support-form-message');
+            if (!form || form.dataset.submitting === 'true') return;
+            form.dataset.submitting = 'true';
             const payload = {
                 name: document.getElementById('support-name')?.value.trim(),
                 email: document.getElementById('support-email')?.value.trim(),
@@ -6740,7 +6748,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 feedback.textContent = data.message || data.error || 'No se pudo enviar la solicitud.';
                 feedback.className = `mt-4 rounded-2xl px-4 py-3 text-sm font-bold text-white ${response.ok ? 'bg-emerald-700' : 'bg-rose-700'}`;
                 if (response.ok) {
-                    event.currentTarget.reset();
+                    form.reset();
                     setTimeout(closeSupportModal, 1400);
                 }
             } catch (error) {
@@ -6755,7 +6763,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         feedback.textContent = data.message || data.error || 'No se pudo enviar la solicitud.';
                         feedback.className = `mt-4 rounded-2xl px-4 py-3 text-sm font-bold ${response.ok ? 'bg-emerald-700 text-white' : 'bg-rose-700 text-white'}`;
                         if (response.ok) {
-                            event.currentTarget.reset();
+                            form.reset();
                             setTimeout(closeSupportModal, 1400);
                         }
                         return;
@@ -6766,6 +6774,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 feedback.textContent = 'No se pudo conectar con soporte.';
                 feedback.className = 'mt-4 rounded-2xl bg-rose-700 px-4 py-3 text-sm font-bold text-white';
             } finally {
+                form.dataset.submitting = 'false';
                 submit.disabled = false;
                 submit.textContent = 'Enviar solicitud';
             }
