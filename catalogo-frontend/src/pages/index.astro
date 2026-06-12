@@ -123,18 +123,20 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .logoContainer {
-                  width: 330px;
-                  height: 86px;
+                  width: auto;
+                  max-width: 100%;
+                  height: auto;
+                  min-height: 48px;
                   display: flex;
                   align-items: center;
                   justify-content: flex-start;
-                  flex-shrink: 0;
-                  overflow: visible;
+                  flex-shrink: 1;
                 }
 
                 .logoContainer img {
-                  max-height: 52px;
-                  width: auto;
+                  height: auto;
+                  max-height: 56px;
+                  max-width: 100%;
                   object-fit: contain;
                   display: block;
                   opacity: 1;
@@ -146,7 +148,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .logoContainer #landing-logo-fallback {
-                  height: 52px;
+                  height: 56px;
+                  max-width: 100%;
                   width: auto;
                   align-items: center;
                   justify-content: flex-start;
@@ -416,7 +419,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             </script>
 
             {/* NAVBAR */}
-            <header class="landingHeader relative z-50 mx-auto px-8 py-2.5 flex justify-between items-center bg-white shadow-xl shadow-purple-950/[0.03] border border-slate-100/80 rounded-3xl sticky top-3 mt-3">
+            <header class="landingHeader relative z-50 mx-auto px-5 md:px-8 py-3.5 md:py-4 flex justify-between items-center bg-white shadow-xl shadow-purple-950/[0.03] border border-slate-100/80 rounded-3xl sticky top-3 mt-3 w-[calc(100%-24px)] md:w-auto">
                 <div class="flex items-center">
                     <a href="/" class="flex items-center gap-3">
                         <div class="logoContainer">
