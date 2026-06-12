@@ -747,13 +747,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <span class="block text-sm font-black text-white"><i class="fa-regular fa-envelope mr-2 text-blue-300"></i>Enviar enlace por correo</span>
                     <span class="mt-1 block text-xs font-semibold text-slate-400">Genera un enlace de un solo uso por 15 minutos.</span>
                 </button>
-                <button onclick="runRecoveryAction('whatsapp_code')" class="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10">
-                    <span class="block text-sm font-black text-white"><i class="fa-brands fa-whatsapp mr-2 text-emerald-300"></i>Generar código para WhatsApp</span>
-                    <span class="mt-1 block text-xs font-semibold text-slate-400">Código de 6 dígitos, válido 10 minutos y un solo uso.</span>
-                </button>
                 <button onclick="runRecoveryAction('temporary_password')" class="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10">
                     <span class="block text-sm font-black text-white"><i class="fa-solid fa-key mr-2 text-amber-300"></i>Generar contraseña temporal</span>
-                    <span class="mt-1 block text-xs font-semibold text-slate-400">Cierra sesiones y obliga a cambiarla en el siguiente ingreso.</span>
+                    <span class="mt-1 block text-xs font-semibold text-slate-400">Expira en 24 horas y obliga a cambiarla en el siguiente ingreso.</span>
                 </button>
             </div>
             <div id="recovery-result" class="mt-5 hidden rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4 text-sm font-bold text-violet-100"></div>

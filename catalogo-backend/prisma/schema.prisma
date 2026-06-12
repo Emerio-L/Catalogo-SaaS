@@ -81,6 +81,7 @@ model User {
   rol                 String              @default("owner") // super_admin, owner, admin, tenant_admin
   activo              Boolean             @default(true)
   mustChangePassword  Boolean             @default(false)
+  temporaryPasswordExpiresAt DateTime?
   failedLoginAttempts Int                 @default(0)
   lockedUntil         DateTime?
   ultimoLogin         DateTime?

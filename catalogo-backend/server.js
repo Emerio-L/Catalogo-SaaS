@@ -837,7 +837,7 @@ async function asegurarTenantDefault() {
                 vistaPredeterminada: 'grid',
                 monedaVisible: 'GTQ',
                 orderCartEnabled: true,
-                orderWhatsappEnabled: true,
+                orderWhatsappEnabled: false,
                 addressRequirement: 'optional',
                 commentRequirement: 'optional'
             }
@@ -2120,36 +2120,10 @@ app.post('/api/super-admin/tenants/:id/recovery', requireSuperAdminAuth, async (
             });
         }
 
-        if (method === 'whatsapp_code') {
-            await RecoveryCode.updateMany(
-                { tenantId: tenant._id, userId: user._id, usedAt: null },
-                { $set: { usedAt: new Date() } }
-            );
-            const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
-            await RecoveryCode.create({
-                tenantId: tenant._id,
-                userId: user._id,
-                codeHash: sha256(`${user._id}:${code}`),
-                expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-                createdBy: req.user._id,
-                ip: req.ip,
-                userAgent: req.get('user-agent') || ''
-            });
-            await auditLog(req, 'super_admin_recovery_code_created', {
-                tenantId: tenant._id,
-                targetUserId: user._id
-            });
-            return res.json({
-                success: true,
-                message: 'Codigo temporal generado. Se mostrara una sola vez.',
-                code,
-                expiresInMinutes: 10
-            });
-        }
-
         const temporaryPassword = `Tmp-${crypto.randomBytes(8).toString('base64url')}A1`;
         user.passwordHash = await bcrypt.hash(temporaryPassword, 12);
         user.mustChangePassword = true;
+        user.temporaryPasswordExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
         user.failedLoginAttempts = 0;
         user.lockedUntil = undefined;
         await user.save();
@@ -2160,7 +2134,7 @@ app.post('/api/super-admin/tenants/:id/recovery', requireSuperAdminAuth, async (
         });
         res.json({
             success: true,
-            message: 'Contrasena temporal generada. Se mostrara una sola vez.',
+            message: 'Contraseña temporal generada. Se mostrará una sola vez y expirará en 24 horas.',
             temporaryPassword
         });
     } catch (error) {
@@ -2789,9 +2763,14 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
             return res.status(401).json(genericError);
         }
 
+        if (user.temporaryPasswordExpiresAt && user.temporaryPasswordExpiresAt < new Date()) {
+            return res.status(401).json({ error: 'La contraseña temporal ha expirado. Por favor, contacta a soporte.' });
+        }
+
         user.failedLoginAttempts = 0;
         user.lockedUntil = undefined;
         user.ultimoLogin = new Date();
+        user.temporaryPasswordExpiresAt = null;
         await user.save();
 
         const token = crearTokenSeguro();

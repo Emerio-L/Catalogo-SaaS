@@ -1953,7 +1953,31 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             </form>
         </div>
     </div>
-
+    <!-- MODAL CATEGORIA ADMIN -->
+    <div id="modal-admin-categoria" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 transition-all duration-300 hidden">
+        <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
+            <button type="button" onclick="cerrarModalCategoria()" class="absolute right-6 top-6 text-slate-400 hover:text-slate-600 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                <i class="fa-solid fa-folder-plus"></i>
+            </div>
+            
+            <h2 id="admin-categoria-modal-titulo" class="text-xl font-black text-slate-800 mb-2 uppercase tracking-tight">Nueva Categoría</h2>
+            <p class="text-slate-500 text-xs mb-6 font-medium">Ingresa el nombre para organizar tus productos.</p>
+            
+            <form action="javascript:void(0)" onsubmit="guardarCategoriaDesdeModal(event)" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Nombre de la categoría</label>
+                    <input type="text" id="admin-categoria-nombre-input" required placeholder="Ej: Bebidas, Postres..." class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="cerrarModalCategoria()" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-2xl transition-colors uppercase tracking-wider text-xs">Cancelar</button>
+                    <button type="submit" id="admin-categoria-submit" class="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-lg transition-all active:scale-95 uppercase tracking-wider text-xs">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- MODAL CONFIRMACION ELIMINAR -->
     <div id="modal-confirm-delete" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6 transition-all duration-300 hidden">
@@ -2351,7 +2375,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             vistaPredeterminada: 'grid',
             monedaVisible: 'GTQ',
             orderCartEnabled: true,
-            orderWhatsappEnabled: true,
+            orderWhatsappEnabled: false,
             addressRequirement: 'optional',
             commentRequirement: 'optional',
             account: null,
@@ -3372,59 +3396,92 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }
         }
 
-        async function crearCategoriaDesdeFormulario() {
-            const nombre = prompt("Nombre de la nueva categoría");
-            const nombreLimpio = nombre?.trim();
-            if (!nombreLimpio) return;
+        let categoriaAccionActual = { tipo: 'crear', id: null };
 
-            try {
-                const res = await fetch(`${TENANT_API_URL}/admin/categories`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre: nombreLimpio, orden: categorias.length + 1 })
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    showToast(data.error || "Error al crear categoría", "error");
-                    return;
-                }
-                showToast("Categoría creada", "success");
-                await cargarCategorias();
-                const adminCategoria = document.getElementById("admin-categoria");
-                if (adminCategoria && data?._id) adminCategoria.value = data._id;
-            } catch (err) {
-                showToast("Error de conexión al crear categoría", "error");
-            }
+        function abrirModalCategoria(tipo, id = null, nombreActual = '') {
+            categoriaAccionActual = { tipo, id };
+            const modal = document.getElementById('modal-admin-categoria');
+            const input = document.getElementById('admin-categoria-nombre-input');
+            const titulo = document.getElementById('admin-categoria-modal-titulo');
+            
+            titulo.innerText = tipo === 'crear' ? 'Nueva Categoría' : 'Editar Categoría';
+            input.value = nombreActual;
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.firstElementChild.classList.remove('scale-95', 'opacity-0');
+                modal.firstElementChild.classList.add('scale-100', 'opacity-100');
+                input.focus();
+            }, 10);
         }
 
-        async function editarCategoriaAdmin(id, nombreActual) {
-            const nombre = prompt("Nuevo nombre de la categoría", nombreActual);
-            if (nombre === null) return;
-            const nombreLimpio = nombre.trim();
+        function cerrarModalCategoria() {
+            const modal = document.getElementById('modal-admin-categoria');
+            modal.firstElementChild.classList.remove('scale-100', 'opacity-100');
+            modal.firstElementChild.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        async function guardarCategoriaDesdeModal(event) {
+            event.preventDefault();
+            const input = document.getElementById('admin-categoria-nombre-input');
+            const nombreLimpio = input.value.trim();
             if (!nombreLimpio) {
                 showToast("El nombre no puede estar vacío", "error");
                 return;
             }
+
+            const btnSubmit = document.getElementById('admin-categoria-submit');
+            const btnText = btnSubmit.innerText;
+            btnSubmit.innerText = 'Guardando...';
+            btnSubmit.disabled = true;
+
             try {
-                const categoria = categorias.find(cat => cat._id === id);
-                const res = await fetch(`${TENANT_API_URL}/admin/categories/${id}`, {
-                    method: 'PUT',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre: nombreLimpio, orden: categoria?.orden || 999 })
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    showToast(data.error || "Error al editar categoría", "error");
-                    return;
+                if (categoriaAccionActual.tipo === 'crear') {
+                    const res = await fetch(`${TENANT_API_URL}/admin/categories`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nombre: nombreLimpio, orden: categorias.length + 1 })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Error al crear categoría");
+                    
+                    showToast("Categoría creada", "success");
+                    await cargarCategorias();
+                    const adminCategoria = document.getElementById("admin-categoria");
+                    if (adminCategoria && data?._id) adminCategoria.value = data._id;
+                } else {
+                    const id = categoriaAccionActual.id;
+                    const categoria = categorias.find(cat => cat._id === id);
+                    const res = await fetch(`${TENANT_API_URL}/admin/categories/${id}`, {
+                        method: 'PUT',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nombre: nombreLimpio, orden: categoria?.orden || 999 })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Error al editar categoría");
+
+                    showToast("Categoría actualizada", "success");
+                    await cargarCategorias();
+                    await cargarAdminProductos();
                 }
-                showToast("Categoría actualizada", "success");
-                await cargarCategorias();
-                await cargarAdminProductos();
+                cerrarModalCategoria();
             } catch (err) {
-                showToast("Error de conexión al editar categoría", "error");
+                showToast(err.message || "Error de conexión", "error");
+            } finally {
+                btnSubmit.innerText = btnText;
+                btnSubmit.disabled = false;
             }
+        }
+
+        function crearCategoriaDesdeFormulario() {
+            abrirModalCategoria('crear');
+        }
+
+        function editarCategoriaAdmin(id, nombreActual) {
+            abrirModalCategoria('editar', id, nombreActual);
         }
 
         async function eliminarCategoriaAdmin(id) {
