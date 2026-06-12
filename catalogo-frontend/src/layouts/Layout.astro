@@ -12,7 +12,9 @@ const {
 	noindex = false,
 	locale = 'es_GT'
 } = Astro.props;
-const canonicalUrl = new URL(Astro.url.pathname, Astro.url.origin).toString();
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.site?.origin || 'https://sedelynk.com';
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
+const socialImageUrl = new URL('/favicon.png', siteUrl).toString();
 const gaMeasurementId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || '';
 const structuredData = Astro.url.pathname === '/' ? {
 	'@context': 'https://schema.org',
@@ -55,11 +57,11 @@ const structuredData = Astro.url.pathname === '/' ? {
     <meta property="og:title" content={title}>
     <meta property="og:description" content={description}>
     <meta property="og:url" content={canonicalUrl}>
-    <meta property="og:image" content={`${Astro.url.origin}/favicon.png`}>
+    <meta property="og:image" content={socialImageUrl}>
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content={title}>
     <meta name="twitter:description" content={description}>
-    <meta name="twitter:image" content={`${Astro.url.origin}/favicon.png`}>
+    <meta name="twitter:image" content={socialImageUrl}>
     {structuredData && <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />}
     {gaMeasurementId && (
         <>
