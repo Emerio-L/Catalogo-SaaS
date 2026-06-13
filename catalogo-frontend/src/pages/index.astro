@@ -874,7 +874,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <p class="text-xs font-semibold text-slate-500 mt-1">Ingresa tu correo, usuario o número de cuenta.</p>
                         </div>
 
-                        <form action="javascript:void(0)" onsubmit="event.preventDefault(); recuperarPasswordLanding(event); return false;" class="space-y-4 text-left">
+                        <form id="landing-recovery-form" action="javascript:void(0)" onsubmit="event.preventDefault(); recuperarPasswordLanding(event); return false;" class="space-y-4 text-left">
                             <div id="landing-recovery-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
                             <div id="landing-recovery-status" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold leading-relaxed text-emerald-800 border-l-4 border-l-emerald-500"></div>
                             <div>
@@ -883,9 +883,32 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                 class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                             </div>
                             <button id="landing-recovery-submit" type="submit" class="w-full py-4 bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-500/10 active:scale-95 uppercase tracking-wider text-xs transition-all">
-                                Enviar enlace
+                                Enviar enlace a tu correo
                             </button>
                         </form>
+
+                        <div id="landing-recovery-success" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-left">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                                    <i class="fa-solid fa-envelope-circle-check"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-black text-emerald-950">Revisa tu correo</h3>
+                                    <p class="mt-1 text-xs font-semibold leading-relaxed text-emerald-800">
+                                        Si los datos corresponden a una cuenta activa, recibirás un correo con el enlace para recuperar el acceso.
+                                    </p>
+                                </div>
+                            </div>
+                            <ol class="mt-4 space-y-2 text-xs font-bold leading-relaxed text-emerald-900">
+                                <li>1. Revisa tu bandeja de entrada y la carpeta de spam.</li>
+                                <li>2. Abre el enlace recibido antes de que expire.</li>
+                                <li>3. Crea una nueva contraseña de al menos 8 caracteres.</li>
+                                <li>4. Regresa al acceso administrativo e inicia sesión.</li>
+                            </ol>
+                            <button type="button" onclick="mostrarLandingStep('login')" class="mt-5 w-full rounded-2xl bg-emerald-700 px-5 py-3.5 text-xs font-black uppercase tracking-wider text-white transition hover:bg-emerald-800">
+                                Entendido, volver al acceso
+                            </button>
+                        </div>
 
                         <p id="landing-dev-reset-link" class="hidden text-[10px] text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-3 break-all"></p>
 
@@ -6799,6 +6822,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 if (identifierInput) identifierInput.focus();
             } else if (step === 'recovery') {
                 mostrarErrorRecoveryLanding('');
+                mostrarEstadoRecoveryLanding('');
+                const recoveryForm = document.getElementById('landing-recovery-form');
+                const recoverySuccess = document.getElementById('landing-recovery-success');
+                if (recoveryForm) recoveryForm.classList.remove('hidden');
+                if (recoverySuccess) recoverySuccess.classList.add('hidden');
                 const devLinkEl = document.getElementById('landing-dev-reset-link');
                 if (devLinkEl) {
                     devLinkEl.classList.add('hidden');
@@ -7035,6 +7063,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 mostrarEstadoRecoveryLanding(
                     `${data.mensaje || 'Solicitud recibida.'} Revisa también la carpeta de spam. Si no llega, contacta a soporte para verificar el correo asociado a la cuenta.`
                 );
+                document.getElementById('landing-recovery-form')?.classList.add('hidden');
+                document.getElementById('landing-recovery-success')?.classList.remove('hidden');
                 if (data.devResetUrl && devLinkEl) {
                     devLinkEl.innerHTML = `Modo desarrollo: <a class="text-purple-600 font-black underline" href="${data.devResetUrl}">${data.devResetUrl}</a>`;
                     devLinkEl.classList.remove('hidden');
@@ -7045,7 +7075,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.classList.remove('opacity-70', 'cursor-wait');
-                    submitBtn.innerHTML = 'Enviar enlace';
+                    submitBtn.innerHTML = 'Enviar enlace a tu correo';
                 }
             }
         }
