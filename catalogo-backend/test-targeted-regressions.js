@@ -108,6 +108,17 @@ async function main() {
     assert(superLogin.response.ok && superLogin.data.devSessionToken, 'Sesion super admin creada');
     const superAuth = { Authorization: `Bearer ${superLogin.data.devSessionToken}` };
 
+    const forgotPassword = await gatewayRequest('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: tenantUsername })
+    });
+    assert(forgotPassword.response.ok, 'Solicitud de recuperacion aceptada por el gateway');
+    assert(
+        String(forgotPassword.data.devResetUrl || '').startsWith(`${FRONTEND}/c/${tenantSlug}/reset-password?token=`),
+        'Enlace de recuperacion usa un origen frontend valido'
+    );
+
     await prisma.category.create({
         data: { tenantId: tenant.id, nombre: 'Verduras', orden: 1 }
     });
@@ -140,8 +151,8 @@ async function main() {
         }
     });
     supportTicketId = supportTicket.id;
-    const deleteSupport = await gatewayRequest(`/api/super-admin/support/tickets/${supportTicket.id}`, {
-        method: 'DELETE',
+    const deleteSupport = await gatewayRequest(`/api/super-admin/support/tickets/${supportTicket.id}/delete`, {
+        method: 'POST',
         headers: superAuth
     });
     assert(deleteSupport.response.ok, 'Mensaje de soporte eliminado por el gateway');
@@ -151,8 +162,8 @@ async function main() {
         data: { tipo: 'targeted_regression_test', metadata: { runId } }
     });
     auditLogId = auditLog.id;
-    const deleteLog = await gatewayRequest(`/api/super-admin/logs/${auditLog.id}`, {
-        method: 'DELETE',
+    const deleteLog = await gatewayRequest(`/api/super-admin/logs/${auditLog.id}/delete`, {
+        method: 'POST',
         headers: superAuth
     });
     assert(deleteLog.response.ok, 'Log eliminado por el gateway');

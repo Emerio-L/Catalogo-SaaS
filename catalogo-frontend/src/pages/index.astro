@@ -876,6 +876,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
                         <form action="javascript:void(0)" onsubmit="event.preventDefault(); recuperarPasswordLanding(event); return false;" class="space-y-4 text-left">
                             <div id="landing-recovery-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 border-l-4 border-l-rose-500"></div>
+                            <div id="landing-recovery-status" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold leading-relaxed text-emerald-800 border-l-4 border-l-emerald-500"></div>
                             <div>
                                 <label class="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Correo, usuario o número de cuenta</label>
                                 <input type="text" id="landing-recovery-identifier" placeholder="admin@correo.com, usuario o CT-000001" required
@@ -6987,12 +6988,25 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             errorEl.classList.remove('hidden');
         }
 
+        function mostrarEstadoRecoveryLanding(mensaje = '') {
+            const statusEl = document.getElementById('landing-recovery-status');
+            if (!statusEl) return;
+            if (!mensaje) {
+                statusEl.classList.add('hidden');
+                statusEl.innerText = '';
+                return;
+            }
+            statusEl.innerText = mensaje;
+            statusEl.classList.remove('hidden');
+        }
+
         async function recuperarPasswordLanding(e) {
             if (e) e.preventDefault();
             const identifier = document.getElementById('landing-recovery-identifier')?.value.trim();
             const submitBtn = document.getElementById('landing-recovery-submit');
             const devLinkEl = document.getElementById('landing-dev-reset-link');
             mostrarErrorRecoveryLanding('');
+            mostrarEstadoRecoveryLanding('');
             if (devLinkEl) {
                 devLinkEl.classList.add('hidden');
                 devLinkEl.innerHTML = '';
@@ -7018,7 +7032,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     mostrarErrorRecoveryLanding(data.error || 'No se pudo solicitar la recuperación.');
                     return;
                 }
-                showToast(data.mensaje || 'Si la cuenta existe, enviaremos instrucciones de recuperación.', 'success');
+                mostrarEstadoRecoveryLanding(
+                    `${data.mensaje || 'Solicitud recibida.'} Revisa también la carpeta de spam. Si no llega, contacta a soporte para verificar el correo asociado a la cuenta.`
+                );
                 if (data.devResetUrl && devLinkEl) {
                     devLinkEl.innerHTML = `Modo desarrollo: <a class="text-purple-600 font-black underline" href="${data.devResetUrl}">${data.devResetUrl}</a>`;
                     devLinkEl.classList.remove('hidden');

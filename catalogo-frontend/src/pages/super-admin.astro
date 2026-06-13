@@ -1556,7 +1556,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function deleteLog(id) {
             if (!confirm('¿Eliminar este log? Esta acción no se puede deshacer.')) return;
-            const res = await superFetch(`/logs/${id}`, { method: 'DELETE' });
+            const res = await superFetch(`/logs/${id}/delete`, { method: 'POST' });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 showSuperToast(data.error || 'No se pudo eliminar el log.', 'error');
@@ -1570,7 +1570,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         async function deleteAllLogs() {
             if (!superLogs.length) return showSuperToast('No hay logs para eliminar.', 'info');
             if (!confirm('¿Eliminar todos los logs? Esta acción no se puede deshacer.')) return;
-            const res = await superFetch('/logs', { method: 'DELETE' });
+            const res = await superFetch('/logs/delete-all', { method: 'POST' });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 showSuperToast(data.error || 'No se pudieron eliminar los logs.', 'error');
@@ -1628,7 +1628,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function deleteSupportTicket(id) {
             if (!confirm('¿Eliminar este mensaje de soporte? Esta acción no se puede deshacer.')) return;
-            const res = await superFetch(`/support/tickets/${id}`, { method: 'DELETE' });
+            const res = await superFetch(`/support/tickets/${id}/delete`, { method: 'POST' });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 showSuperToast(data.error || 'No se pudo eliminar el mensaje.', 'error');
@@ -1642,7 +1642,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         async function deleteAllSupportTickets() {
             if (!superSupportTickets.length) return showSuperToast('No hay mensajes para eliminar.', 'info');
             if (!confirm('¿Eliminar todos los mensajes de soporte? Esta acción no se puede deshacer.')) return;
-            const res = await superFetch('/support/tickets', { method: 'DELETE' });
+            const res = await superFetch('/support/tickets/delete-all', { method: 'POST' });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 showSuperToast(data.error || 'No se pudieron eliminar los mensajes.', 'error');

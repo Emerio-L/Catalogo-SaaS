@@ -77,6 +77,7 @@ const PAYMENT_STATUSES = ['pendiente', 'aprobado', 'rechazado'];
 const SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'closed'];
 const SUPER_ADMIN_COOKIE = 'catalogo_super_admin_session';
 const DELETED_ACCOUNT_RETENTION_DAYS = 30;
+const DEPLOYMENT_COMMIT = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || '';
 const DEFAULT_TENANT_THEME = {
     mode: 'default',
     selectedColor: '#3B82F6',
@@ -146,7 +147,8 @@ app.get('/health', async (req, res) => {
             ok: true,
             service: 'catalogo-backend',
             postgres: 'connected',
-            cloudinary: cloudinaryEnabled
+            cloudinary: cloudinaryEnabled,
+            deploymentCommit: DEPLOYMENT_COMMIT || null
         });
     } catch (error) {
         console.error('Healthcheck de PostgreSQL fallido:', error);
@@ -292,7 +294,7 @@ async function createPasswordResetForUser(req, user, tenant) {
         expiresAt: new Date(Date.now() + 15 * 60 * 1000),
         ip: req.ip
     });
-    const frontendUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host').replace(':3005', ':4321')}`;
+    const frontendUrl = configuredOrigins[0] || `${req.protocol}://${req.get('host').replace(':3005', ':4321')}`;
     const resetUrl = `${frontendUrl}/c/${tenant.slug}/reset-password?token=${token}`;
     const emailStatus = await enviarEmailRecuperacion({ to: user.email, resetUrl });
     return { resetUrl, emailStatus };
@@ -1699,7 +1701,7 @@ app.get('/api/super-admin/logs', requireSuperAdminAuth, async (req, res) => {
     }
 });
 
-app.delete('/api/super-admin/logs/:id', requireSuperAdminAuth, async (req, res) => {
+async function deleteSuperAdminLog(req, res) {
     try {
         const logId = String(req.params.id || '').trim();
         if (!logId) {
@@ -1712,9 +1714,9 @@ app.delete('/api/super-admin/logs/:id', requireSuperAdminAuth, async (req, res) 
         console.error('Error al eliminar log:', error);
         res.status(500).json({ error: 'Error al eliminar log' });
     }
-});
+}
 
-app.delete('/api/super-admin/logs', requireSuperAdminAuth, async (req, res) => {
+async function deleteAllSuperAdminLogs(req, res) {
     try {
         const result = await prisma.auditLog.deleteMany({});
         res.json({ success: true, deletedCount: result.count });
@@ -1722,7 +1724,12 @@ app.delete('/api/super-admin/logs', requireSuperAdminAuth, async (req, res) => {
         console.error('Error al eliminar logs:', error);
         res.status(500).json({ error: 'Error al eliminar logs' });
     }
-});
+}
+
+app.delete('/api/super-admin/logs/:id', requireSuperAdminAuth, deleteSuperAdminLog);
+app.post('/api/super-admin/logs/:id/delete', requireSuperAdminAuth, deleteSuperAdminLog);
+app.delete('/api/super-admin/logs', requireSuperAdminAuth, deleteAllSuperAdminLogs);
+app.post('/api/super-admin/logs/delete-all', requireSuperAdminAuth, deleteAllSuperAdminLogs);
 
 app.get('/api/super-admin/support/tickets', requireSuperAdminAuth, async (req, res) => {
     try {
@@ -1753,7 +1760,7 @@ app.patch('/api/super-admin/support/tickets/:id', requireSuperAdminAuth, async (
     }
 });
 
-app.delete('/api/super-admin/support/tickets/:id', requireSuperAdminAuth, async (req, res) => {
+async function deleteSupportTicket(req, res) {
     try {
         const ticketId = String(req.params.id || '').trim();
         if (!ticketId) {
@@ -1767,9 +1774,9 @@ app.delete('/api/super-admin/support/tickets/:id', requireSuperAdminAuth, async 
         console.error('Error al eliminar ticket de soporte:', error);
         res.status(500).json({ error: 'Error al eliminar ticket' });
     }
-});
+}
 
-app.delete('/api/super-admin/support/tickets', requireSuperAdminAuth, async (req, res) => {
+async function deleteAllSupportTickets(req, res) {
     try {
         const result = await prisma.supportTicket.deleteMany({});
         await auditLog(req, 'support_tickets_deleted', { deletedCount: result.count });
@@ -1778,7 +1785,12 @@ app.delete('/api/super-admin/support/tickets', requireSuperAdminAuth, async (req
         console.error('Error al eliminar tickets de soporte:', error);
         res.status(500).json({ error: 'Error al eliminar tickets' });
     }
-});
+}
+
+app.delete('/api/super-admin/support/tickets/:id', requireSuperAdminAuth, deleteSupportTicket);
+app.post('/api/super-admin/support/tickets/:id/delete', requireSuperAdminAuth, deleteSupportTicket);
+app.delete('/api/super-admin/support/tickets', requireSuperAdminAuth, deleteAllSupportTickets);
+app.post('/api/super-admin/support/tickets/delete-all', requireSuperAdminAuth, deleteAllSupportTickets);
 
 app.get('/api/super-admin/trash', requireSuperAdminAuth, async (req, res) => {
     try {
@@ -2847,7 +2859,10 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
     try {
         const identifier = normalizeIdentifier(req.body.identifier);
-        const genericResponse = { success: true, mensaje: 'Si la cuenta existe, enviaremos instrucciones de recuperación.' };
+        const genericResponse = {
+            success: true,
+            mensaje: 'Solicitud recibida. Si la cuenta existe y tiene un correo válido, recibirás un enlace en los próximos minutos.'
+        };
         if (!identifier) return res.json(genericResponse);
 
         const user = await findUserByIdentifier(identifier);
@@ -2881,6 +2896,7 @@ app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
             devResetUrl: emailStatus.dev && process.env.NODE_ENV !== 'production' ? resetUrl : undefined
         });
     } catch (err) {
+        console.error('Error al solicitar recuperación global:', err);
         res.status(500).json({ error: 'Error al solicitar recuperación' });
     }
 });
@@ -3093,7 +3109,10 @@ app.put('/api/:tenant/auth/password', tenantMiddleware, requireAdminAuth, authLi
 app.post('/api/:tenant/auth/forgot-password', tenantMiddleware, authLimiter, async (req, res) => {
     try {
         const identifier = normalizeIdentifier(req.body.identifier);
-        const genericResponse = { success: true, mensaje: 'Si la cuenta existe, enviaremos instrucciones de recuperación.' };
+        const genericResponse = {
+            success: true,
+            mensaje: 'Solicitud recibida. Si la cuenta existe y tiene un correo válido, recibirás un enlace en los próximos minutos.'
+        };
         if (!identifier) return res.json(genericResponse);
 
         const user = await findUserByIdentifier(identifier, { tenantId: req.tenantId });
@@ -3121,6 +3140,7 @@ app.post('/api/:tenant/auth/forgot-password', tenantMiddleware, authLimiter, asy
             devResetUrl: emailStatus.dev && process.env.NODE_ENV !== 'production' ? resetUrl : undefined
         });
     } catch (err) {
+        console.error('Error al solicitar recuperación del tenant:', err);
         res.status(500).json({ error: 'Error al solicitar recuperación' });
     }
 });
