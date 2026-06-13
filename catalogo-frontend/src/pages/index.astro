@@ -2073,6 +2073,15 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <option value="circle">Circular</option>
                 </select>
             </div>
+            <div class="mt-4">
+                <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Orientación de la imagen</label>
+                <select id="perfil-logo-rotation" onchange="actualizarPreviewRotacionLogo(this.value)" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-700 outline-none focus:ring-4 focus:ring-primary-100">
+                    <option value="0">Sin rotación</option>
+                    <option value="90">Girar 90° a la derecha</option>
+                    <option value="180">Girar 180°</option>
+                    <option value="270">Girar 90° a la izquierda</option>
+                </select>
+            </div>
             <div class="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button id="perfil-logo-save-btn" onclick="guardarLogoCatalogo()" class="w-full rounded-2xl bg-primary-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-700">Guardar cambios</button>
                 <button type="button" onclick="cerrarModalImagenCatalogo()" class="w-full rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-600 transition hover:bg-slate-200">Cancelar</button>
@@ -2363,6 +2372,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             descripcionNegocio: 'Selecciona tus productos y confirma tu pedido',
             logo: '',
             logoShape: 'rectangle',
+            logoRotation: 0,
             mostrarBuscador: true,
             mostrarCategorias: true,
             mostrarDescripcion: false,
@@ -2746,7 +2756,19 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             brandMark.classList.toggle('rounded-[1.5rem]', safeShape !== 'circle');
         }
 
-        function actualizarLogoCatalogo(logo = '', shape = configuracionNegocio.logoShape || 'rectangle') {
+        function actualizarPreviewRotacionLogo(rotation) {
+            const safeRotation = [0, 90, 180, 270].includes(Number(rotation)) ? Number(rotation) : 0;
+            ['catalog-logo', 'perfil-logo-preview', 'perfil-logo-modal-preview'].forEach(id => {
+                const image = document.getElementById(id);
+                if (image) image.style.transform = `rotate(${safeRotation}deg)`;
+            });
+        }
+
+        function actualizarLogoCatalogo(
+            logo = '',
+            shape = configuracionNegocio.logoShape || 'rectangle',
+            rotation = configuracionNegocio.logoRotation || 0
+        ) {
             const logoUrl = normalizarAssetUrl(logo);
             const catalogLogo = document.getElementById('catalog-logo');
             const catalogFallback = document.getElementById('catalog-logo-fallback');
@@ -2755,8 +2777,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const modalPreview = document.getElementById('perfil-logo-modal-preview');
             const modalPlaceholder = document.getElementById('perfil-logo-modal-placeholder');
             const shapeSelect = document.getElementById('perfil-logo-shape');
+            const rotationSelect = document.getElementById('perfil-logo-rotation');
+            const safeRotation = [0, 90, 180, 270].includes(Number(rotation)) ? Number(rotation) : 0;
             aplicarLogoShape(shape);
             if (shapeSelect) shapeSelect.value = shape === 'circle' ? 'circle' : 'rectangle';
+            if (rotationSelect) rotationSelect.value = String(safeRotation);
+            actualizarPreviewRotacionLogo(safeRotation);
             if (catalogLogo) {
                 catalogLogo.src = logoUrl;
                 catalogLogo.classList.toggle('hidden', !logoUrl);
@@ -3391,7 +3417,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 });
                 const data = await res.json();
                 if (!res.ok) {
-                    showToast(data.error || "Error al crear categoría", "error");
+                    showToast(res.status === 409 ? "La categoría ya existe" : (data.error || "Error al crear categoría"), "error");
                     return;
                 }
                 if (input) input.value = '';
@@ -3459,7 +3485,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         body: JSON.stringify({ nombre: nombreLimpio, orden: categorias.length + 1 })
                     });
                     const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || "Error al crear categoría");
+                    if (!res.ok) {
+                        throw new Error(res.status === 409 ? "La categoría ya existe" : (data.error || "Error al crear categoría"));
+                    }
                     
                     showToast("Categoría creada", "success");
                     await cargarCategorias();
@@ -4599,12 +4627,15 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     const profileName = document.getElementById('perfil-business-name');
                     const profileNameDisplay = document.getElementById('perfil-business-name-display');
                     const logoShape = document.getElementById('perfil-logo-shape');
+                    const logoRotation = document.getElementById('perfil-logo-rotation');
                     if (profileName) profileName.value = data.nombreNegocio || '';
                     if (profileNameDisplay) profileNameDisplay.innerText = data.nombreNegocio || 'Nombre del negocio';
                     if (logoShape) logoShape.value = data.logoShape || 'rectangle';
+                    if (logoRotation) logoRotation.value = String(data.logoRotation || 0);
                     actualizarTituloCatalogoUI(data.catalogTitle);
                     configuracionNegocio.logo = data.logo || '';
                     configuracionNegocio.logoShape = data.logoShape || 'rectangle';
+                    configuracionNegocio.logoRotation = Number(data.logoRotation) || 0;
                     configuracionNegocio.account = data.account || null;
                     configuracionNegocio.orderCartEnabled = data.orderCartEnabled !== false;
                     configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled !== false;
@@ -4612,7 +4643,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     configuracionNegocio.commentRequirement = data.commentRequirement || 'optional';
                     actualizarInformacionCuenta(configuracionNegocio.account);
                     await cargarHistorialPagosPerfil();
-                    actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape);
+                    actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape, configuracionNegocio.logoRotation);
                     if (data.tema) {
                         aplicarTema(data.tema);
                         actualizarBotonTemaActivo(data.tema);
@@ -4841,19 +4872,22 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function guardarLogoShapeCatalogo(options = {}) {
             const logoShape = document.getElementById('perfil-logo-shape')?.value === 'circle' ? 'circle' : 'rectangle';
+            const requestedRotation = Number(document.getElementById('perfil-logo-rotation')?.value);
+            const logoRotation = [0, 90, 180, 270].includes(requestedRotation) ? requestedRotation : 0;
             try {
                 const res = await fetch(`${TENANT_API_URL}/admin/settings`, {
                     method: 'PUT',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ logoShape })
+                    body: JSON.stringify({ logoShape, logoRotation })
                 });
                 if (!res.ok) {
                     if (!options.silent) showToast("Error al guardar forma del logo", "error");
                     return false;
                 }
                 configuracionNegocio.logoShape = logoShape;
-                actualizarLogoCatalogo(configuracionNegocio.logo, logoShape);
+                configuracionNegocio.logoRotation = logoRotation;
+                actualizarLogoCatalogo(configuracionNegocio.logo, logoShape, logoRotation);
                 if (!options.silent) showToast("Forma del logo actualizada", "success");
                 return true;
             } catch (err) {
@@ -6678,6 +6712,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     }
                     configuracionNegocio.logo = data.logo || '';
                     configuracionNegocio.logoShape = data.logoShape || 'rectangle';
+                    configuracionNegocio.logoRotation = Number(data.logoRotation) || 0;
                     configuracionNegocio.account = data.account || null;
                     configuracionNegocio.orderCartEnabled = data.orderCartEnabled !== false;
                     configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled !== false;
@@ -6685,7 +6720,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     configuracionNegocio.commentRequirement = data.commentRequirement || 'optional';
                     actualizarTituloCatalogoUI(data.catalogTitle);
                     actualizarInformacionCuenta(configuracionNegocio.account);
-                    actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape);
+                    actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape, configuracionNegocio.logoRotation);
                     actualizarCheckoutOpciones();
                     const nombreEl = document.getElementById('catalog-business-name');
                     const searchWrapper = document.getElementById('catalog-search-wrapper');

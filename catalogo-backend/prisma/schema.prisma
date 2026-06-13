@@ -108,6 +108,7 @@ model Settings {
   logo                   String   @default("")
   logoCloudinaryPublicId String   @default("")
   logoShape              String   @default("rectangle") // rectangle, circle
+  logoRotation           Int      @default(0) // 0, 90, 180, 270
   catalogTitle           String   @default("Catalogo de productos")
   tema                   String   @default("emerald")
   theme                  Json?    // Guarda el theme flexible

@@ -1,0 +1,2 @@
+ALTER TABLE "Settings"
+ADD COLUMN "logoRotation" INTEGER NOT NULL DEFAULT 0;

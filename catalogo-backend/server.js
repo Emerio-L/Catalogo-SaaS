@@ -763,6 +763,16 @@ function normalizarCategoria(nombre) {
         .trim();
 }
 
+function normalizarRotacionLogo(value) {
+    const rotation = Number(value);
+    return [0, 90, 180, 270].includes(rotation) ? rotation : 0;
+}
+
+function esErrorCategoriaDuplicada(error) {
+    return error?.code === 'P2002'
+        || /unique constraint|duplicate key/i.test(String(error?.message || ''));
+}
+
 function productoResponse(producto, categoria) {
     const doc = producto.toObject ? producto.toObject() : producto;
     const nombreCategoria = categoria?.nombre || doc.categoria || 'Otros';
@@ -1203,6 +1213,7 @@ app.get('/api/config', async (req, res) => {
             colorPrimario: settings.colorPrimario,
             logo: settings.logo,
             logoShape: settings.logoShape || 'rectangle',
+            logoRotation: normalizarRotacionLogo(settings.logoRotation),
             catalogTitle: settings.catalogTitle || 'Catalogo de productos'
         });
     } catch (err) {
@@ -1221,6 +1232,7 @@ app.get('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (r
             colorPrimario: settings.colorPrimario || req.tenant.colorPrimario,
             logo: settings.logo || req.tenant.logo,
             logoShape: settings.logoShape || 'rectangle',
+            logoRotation: normalizarRotacionLogo(settings.logoRotation),
             catalogTitle: settings.catalogTitle || 'Catalogo de productos',
             nombreNegocio: settings.nombreNegocio || req.tenant.nombre,
             descripcionNegocio: settings.descripcionNegocio || ''
@@ -1689,11 +1701,15 @@ app.get('/api/super-admin/logs', requireSuperAdminAuth, async (req, res) => {
 
 app.delete('/api/super-admin/logs/:id', requireSuperAdminAuth, async (req, res) => {
     try {
-        const log = await prisma.auditLog.findUnique({ where: { id: req.params.id } });
-        if (!log) return res.status(404).json({ error: 'Log no encontrado' });
-        await prisma.auditLog.delete({ where: { id: req.params.id } });
+        const logId = String(req.params.id || '').trim();
+        if (!logId) {
+            return res.status(400).json({ error: 'El identificador del log no es válido.' });
+        }
+        const result = await prisma.auditLog.deleteMany({ where: { id: logId } });
+        if (result.count === 0) return res.status(404).json({ error: 'Log no encontrado' });
         res.json({ success: true });
     } catch (error) {
+        console.error('Error al eliminar log:', error);
         res.status(500).json({ error: 'Error al eliminar log' });
     }
 });
@@ -1703,6 +1719,7 @@ app.delete('/api/super-admin/logs', requireSuperAdminAuth, async (req, res) => {
         const result = await prisma.auditLog.deleteMany({});
         res.json({ success: true, deletedCount: result.count });
     } catch (error) {
+        console.error('Error al eliminar logs:', error);
         res.status(500).json({ error: 'Error al eliminar logs' });
     }
 });
@@ -1738,22 +1755,27 @@ app.patch('/api/super-admin/support/tickets/:id', requireSuperAdminAuth, async (
 
 app.delete('/api/super-admin/support/tickets/:id', requireSuperAdminAuth, async (req, res) => {
     try {
-        const ticket = await SupportTicket.findOne({ _id: req.params.id });
-        if (!ticket) return res.status(404).json({ error: 'Ticket no encontrado' });
-        await SupportTicket.deleteOne({ _id: ticket._id });
-        await auditLog(req, 'support_ticket_deleted', { ticketId: ticket._id });
+        const ticketId = String(req.params.id || '').trim();
+        if (!ticketId) {
+            return res.status(400).json({ error: 'El identificador del mensaje no es válido.' });
+        }
+        const result = await prisma.supportTicket.deleteMany({ where: { id: ticketId } });
+        if (result.count === 0) return res.status(404).json({ error: 'Ticket no encontrado' });
+        await auditLog(req, 'support_ticket_deleted', { ticketId });
         res.json({ success: true });
     } catch (error) {
+        console.error('Error al eliminar ticket de soporte:', error);
         res.status(500).json({ error: 'Error al eliminar ticket' });
     }
 });
 
 app.delete('/api/super-admin/support/tickets', requireSuperAdminAuth, async (req, res) => {
     try {
-        const result = await SupportTicket.deleteMany({});
-        await auditLog(req, 'support_tickets_deleted', { deletedCount: result.deletedCount || 0 });
-        res.json({ success: true, deletedCount: result.deletedCount || 0 });
+        const result = await prisma.supportTicket.deleteMany({});
+        await auditLog(req, 'support_tickets_deleted', { deletedCount: result.count });
+        res.json({ success: true, deletedCount: result.count });
     } catch (error) {
+        console.error('Error al eliminar tickets de soporte:', error);
         res.status(500).json({ error: 'Error al eliminar tickets' });
     }
 });
@@ -2289,6 +2311,7 @@ app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
             colorPrimario: settings.colorPrimario,
             logo: settings.logo,
             logoShape: settings.logoShape || 'rectangle',
+            logoRotation: normalizarRotacionLogo(settings.logoRotation),
             catalogTitle: settings.catalogTitle || 'Catalogo de productos',
             tema: settings.tema,
             theme: normalizarThemeTenant(settings.theme),
@@ -2321,6 +2344,7 @@ app.get('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             colorPrimario: settings.colorPrimario,
             logo: settings.logo,
             logoShape: settings.logoShape || 'rectangle',
+            logoRotation: normalizarRotacionLogo(settings.logoRotation),
             catalogTitle: settings.catalogTitle || 'Catalogo de productos',
             tema: settings.tema,
             theme: normalizarThemeTenant(settings.theme),
@@ -2351,6 +2375,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             colorPrimario,
             logo,
             logoShape,
+            logoRotation,
             catalogTitle,
             theme,
             nombreNegocio,
@@ -2381,6 +2406,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             ...(colorPrimario ? { colorPrimario } : {}),
             ...(logo !== undefined ? { logo } : {}),
             ...(logoShape ? { logoShape } : {}),
+            ...(logoRotation !== undefined ? { logoRotation: normalizarRotacionLogo(logoRotation) } : {}),
             ...(catalogTitle !== undefined ? { catalogTitle: String(catalogTitle).trim() || 'Catalogo de productos' } : {}),
             ...(themeNormalizado ? { theme: themeNormalizado } : {}),
             ...(mostrarBuscador !== undefined ? { mostrarBuscador: Boolean(mostrarBuscador) } : {}),
@@ -2403,6 +2429,9 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
                 colorPrimario: colorPrimario || currentSettings.colorPrimario || req.tenant.colorPrimario || '#10b981',
                 logo: logo !== undefined ? logo : currentSettings.logo || '',
                 logoShape: logoShape || currentSettings.logoShape || 'rectangle',
+                logoRotation: logoRotation !== undefined
+                    ? normalizarRotacionLogo(logoRotation)
+                    : normalizarRotacionLogo(currentSettings.logoRotation),
                 catalogTitle: catalogTitle !== undefined ? String(catalogTitle).trim() || 'Catalogo de productos' : currentSettings.catalogTitle || 'Catalogo de productos',
                 tema: tema || currentSettings.tema || 'emerald',
                 theme: themeNormalizado || currentSettings.theme || DEFAULT_TENANT_THEME,
@@ -2541,6 +2570,7 @@ app.get('/api/tenant/:slug', async (req, res) => {
             descripcion: tenant.descripcion || '',
             logo: tenant.logo,
             logoShape: settings.logoShape || 'rectangle',
+            logoRotation: normalizarRotacionLogo(settings.logoRotation),
             colorPrimario: tenant.colorPrimario,
             whatsapp: tenant.whatsapp,
             activo: tenant.activo
@@ -3162,15 +3192,10 @@ app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, re
         if (!nombre) {
             return res.status(400).json({ error: 'Escribe el nombre de la categoría.' });
         }
-        const existing = await prisma.category.findFirst({
-            where: {
-                tenantId: req.tenantId,
-                nombre: {
-                    equals: nombre,
-                    mode: 'insensitive'
-                }
-            }
-        });
+        const categoriasTenant = await Category.find({ tenantId: req.tenantId });
+        const existing = categoriasTenant.find(categoria =>
+            normalizarCategoria(categoria.nombre) === normalizarCategoria(nombre)
+        );
         if (existing) {
             return res.status(409).json({ error: 'La categoría ya existe.' });
         }
@@ -3182,9 +3207,10 @@ app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, re
         });
         res.status(201).json(categoria);
     } catch (err) {
-        if (err.code === 'P2002') {
+        if (esErrorCategoriaDuplicada(err)) {
             return res.status(409).json({ error: 'La categoría ya existe.' });
         }
+        console.error('Error al crear categoría:', err);
         res.status(500).json({ error: 'Error al crear categoría' });
     }
 });

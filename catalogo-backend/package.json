@@ -15,6 +15,7 @@
     "prisma:deploy": "npx prisma migrate deploy",
     "accounts:backfill": "node backfill-account-numbers.js",
     "test:saas-upgrade": "node test-saas-upgrade.js",
+    "test:targeted-regressions": "node test-targeted-regressions.js",
     "ensure:superadmin": "node ensure-superadmin.js",
     "reset:superadmin": "node reset-superadmin.js"
   },
