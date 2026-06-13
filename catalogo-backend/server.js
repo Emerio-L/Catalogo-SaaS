@@ -1107,6 +1107,7 @@ async function guardarImagenCatalogo(file, tenantSlug) {
     }
 
     const webpBuffer = await sharp(file.buffer)
+        .rotate()
         .resize({ width: 512, height: 512, fit: 'inside', withoutEnlargement: true })
         .webp({ quality: 82 })
         .toBuffer();
@@ -3157,7 +3158,10 @@ app.get('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, asy
 
 app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, requireTenantOperational, async (req, res) => {
     try {
-        const nombre = req.body.nombre;
+        const nombre = String(req.body.nombre || '').trim();
+        if (!nombre) {
+            return res.status(400).json({ error: 'Escribe el nombre de la categoría.' });
+        }
         const existing = await prisma.category.findFirst({
             where: {
                 tenantId: req.tenantId,
@@ -3168,7 +3172,7 @@ app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, re
             }
         });
         if (existing) {
-            return res.status(400).json({ error: 'La categoría ya existe, crea una nueva categoría.' });
+            return res.status(409).json({ error: 'La categoría ya existe.' });
         }
 
         const categoria = await Category.create({
@@ -3179,7 +3183,7 @@ app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, re
         res.status(201).json(categoria);
     } catch (err) {
         if (err.code === 'P2002') {
-            return res.status(400).json({ error: 'La categoría ya existe, crea una nueva categoría.' });
+            return res.status(409).json({ error: 'La categoría ya existe.' });
         }
         res.status(500).json({ error: 'Error al crear categoría' });
     }

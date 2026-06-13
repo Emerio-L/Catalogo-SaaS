@@ -123,24 +123,25 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .logoContainer {
-                  width: auto;
+                  width: 230px;
                   max-width: 100%;
-                  height: auto;
-                  min-height: 48px;
+                  height: 72px;
                   display: flex;
                   align-items: center;
                   justify-content: flex-start;
-                  flex-shrink: 1;
+                  flex-shrink: 0;
+                  overflow: hidden;
                 }
 
                 .logoContainer img {
-                  height: auto;
-                  max-height: 56px;
-                  max-width: 100%;
+                  width: 100%;
+                  height: 100%;
                   object-fit: contain;
                   display: block;
                   opacity: 1;
                   filter: none;
+                  transform: scale(1.65);
+                  transform-origin: center;
                 }
 
                 .logoContainer img.hidden {
@@ -148,16 +149,16 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .logoContainer #landing-logo-fallback {
-                  height: 56px;
+                  height: 100%;
                   max-width: 100%;
-                  width: auto;
+                  width: 100%;
                   align-items: center;
                   justify-content: flex-start;
                 }
 
                 .logoContainer #landing-logo-fallback svg {
                   width: 100%;
-                  height: auto;
+                  height: 100%;
                   display: block;
                 }
 
@@ -370,21 +371,17 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   }
 
                   .logoContainer {
-                    width: 220px;
-                    height: 64px;
+                    width: min(44vw, 190px);
+                    height: 60px;
                   }
 
                   .logoContainer img {
-                    max-width: 210px;
-                    max-height: 58px;
-                    transform: scale(1.75);
+                    transform: scale(1.65);
                   }
 
                   .logoContainer #landing-logo-fallback {
-                    max-width: 210px;
-                    max-height: 58px;
-                    width: 210px;
-                    height: 58px;
+                    width: 100%;
+                    height: 100%;
                   }
 
                   .heroVisual {
@@ -3381,6 +3378,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 showToast("Escribe el nombre de la categoría", "error");
                 return;
             }
+            if (categorias.some(cat => String(cat.nombre).trim().toLocaleLowerCase() === nombre.toLocaleLowerCase())) {
+                showToast("La categoría ya existe", "error");
+                return;
+            }
             try {
                 const res = await fetch(`${TENANT_API_URL}/admin/categories`, {
                     method: 'POST',
@@ -3433,6 +3434,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const nombreLimpio = input.value.trim();
             if (!nombreLimpio) {
                 showToast("El nombre no puede estar vacío", "error");
+                return;
+            }
+            const categoriaDuplicada = categorias.some(cat =>
+                String(cat.nombre).trim().toLocaleLowerCase() === nombreLimpio.toLocaleLowerCase()
+                && String(cat._id) !== String(categoriaAccionActual.id || '')
+            );
+            if (categoriaDuplicada) {
+                showToast("La categoría ya existe", "error");
                 return;
             }
 
@@ -3772,8 +3781,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-200/40">
                             <button onclick="toggleProductStatus('${productId}', ${!prod.activo})" class="text-[9px] font-black uppercase text-slate-500">
                                 ${prod.activo 
-                                    ? `<span class="text-primary-600"><i class="fa-solid fa-eye mr-1"></i> Visible</span>`
-                                    : `<span class="text-rose-500"><i class="fa-solid fa-eye-slash mr-1"></i> Oculto</span>`}
+                                    ? `<span class="text-primary-600"><i class="fa-solid fa-eye mr-1"></i> Activo</span>`
+                                    : `<span class="text-rose-500"><i class="fa-solid fa-eye-slash mr-1"></i> Inactivo</span>`}
                             </button>
                             <div class="flex gap-2">
                                 <button onclick="editarProducto('${productId}')" class="text-xs bg-white text-slate-600 border border-slate-200 px-3 py-1 rounded-lg font-bold"><i class="fa-solid fa-pen mr-1"></i>Editar</button>
