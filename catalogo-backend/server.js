@@ -2362,7 +2362,7 @@ app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
             vistaPredeterminada: settings.vistaPredeterminada,
             monedaVisible: settings.monedaVisible,
             orderCartEnabled: settings.orderCartEnabled !== false,
-            orderWhatsappEnabled: settings.orderWhatsappEnabled !== false,
+            orderWhatsappEnabled: settings.orderWhatsappEnabled === true,
             addressRequirement: settings.addressRequirement || 'optional',
             commentRequirement: settings.commentRequirement || 'optional',
             account: tenantBillingPayload(req.tenant, plan)
@@ -2395,7 +2395,7 @@ app.get('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             vistaPredeterminada: settings.vistaPredeterminada,
             monedaVisible: settings.monedaVisible,
             orderCartEnabled: settings.orderCartEnabled !== false,
-            orderWhatsappEnabled: settings.orderWhatsappEnabled !== false,
+            orderWhatsappEnabled: settings.orderWhatsappEnabled === true,
             addressRequirement: settings.addressRequirement || 'optional',
             commentRequirement: settings.commentRequirement || 'optional',
             account: tenantBillingPayload(req.tenant, plan)

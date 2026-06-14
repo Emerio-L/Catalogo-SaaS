@@ -3787,7 +3787,7 @@ if (noindex) {
                     configuracionNegocio.logoRotation = Number(data.logoRotation) || 0;
                     configuracionNegocio.account = data.account || null;
                     configuracionNegocio.orderCartEnabled = data.orderCartEnabled !== false;
-                    configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled !== false;
+                    configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled === true;
                     configuracionNegocio.addressRequirement = data.addressRequirement || 'optional';
                     configuracionNegocio.commentRequirement = data.commentRequirement || 'optional';
                     actualizarInformacionCuenta(configuracionNegocio.account);
@@ -4211,7 +4211,7 @@ if (noindex) {
             if (categoriasToggle) categoriasToggle.checked = configuracionNegocio.mostrarCategorias !== false;
             if (moneda) moneda.value = configuracionNegocio.monedaVisible || 'GTQ';
             if (cartEnabled) cartEnabled.checked = configuracionNegocio.orderCartEnabled !== false;
-            if (whatsappEnabled) whatsappEnabled.checked = configuracionNegocio.orderWhatsappEnabled !== false;
+            if (whatsappEnabled) whatsappEnabled.checked = configuracionNegocio.orderWhatsappEnabled === true;
             if (addressRequirement) addressRequirement.value = configuracionNegocio.addressRequirement || 'optional';
             if (commentRequirement) commentRequirement.value = configuracionNegocio.commentRequirement || 'optional';
             renderPaletaColores();
@@ -4395,7 +4395,7 @@ if (noindex) {
 
         function actualizarCheckoutOpciones() {
             const cartEnabled = configuracionNegocio.orderCartEnabled !== false;
-            const whatsappEnabled = configuracionNegocio.orderWhatsappEnabled !== false;
+            const whatsappEnabled = configuracionNegocio.orderWhatsappEnabled === true;
             const addressRequirement = configuracionNegocio.addressRequirement || 'optional';
             const commentRequirement = configuracionNegocio.commentRequirement || 'optional';
             const cartBtn = document.getElementById('checkout-cart-btn');
@@ -5864,7 +5864,7 @@ if (noindex) {
                     configuracionNegocio.logoRotation = Number(data.logoRotation) || 0;
                     configuracionNegocio.account = data.account || null;
                     configuracionNegocio.orderCartEnabled = data.orderCartEnabled !== false;
-                    configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled !== false;
+                    configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled === true;
                     configuracionNegocio.addressRequirement = data.addressRequirement || 'optional';
                     configuracionNegocio.commentRequirement = data.commentRequirement || 'optional';
                     actualizarTituloCatalogoUI(data.catalogTitle);
