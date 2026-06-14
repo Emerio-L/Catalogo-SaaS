@@ -51,7 +51,11 @@ if (noindex) {
     <script define:vars={{ publicBackendUrl }}>
         window.__PUBLIC_BACKEND_URL__ = publicBackendUrl;
     </script>
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
 
+    {!isAdminInitialRoute && (
+    <>
     <!-- CLIENT VIEW (CATALOG) -->
         <div id="client-view" class={`w-full pb-36 ${isAdminInitialRoute ? 'hidden' : ''}`}>
         <!-- HEADER -->
@@ -115,8 +119,12 @@ if (noindex) {
         </main>
 
         </div>
+    </>
+    )}
 
 
+    {isAdminInitialRoute && (
+    <>
     <!-- ADMIN VIEW (DASHBOARD) -->
     <div id="admin-view" class="w-full min-h-screen bg-slate-50 hidden">
         <div class="min-h-screen lg:flex">
@@ -654,8 +662,12 @@ if (noindex) {
             </main>
         </div>
     </div>
+    </>
+    )}
 
 
+    {isAdminInitialRoute && (
+    <>
     <!-- MODALS SECTION -->
 
     <!-- MODAL AUTENTICACION ADMIN V2 -->
@@ -894,7 +906,11 @@ if (noindex) {
             </form>
         </div>
     </div>
+    </>
+    )}
 
+    {!isAdminInitialRoute && (
+    <>
     <!-- MODAL CHECKOUT CLIENTE -->
     <div id="modal-validacion" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 transition-all duration-300 hidden">
         <div class="bg-white rounded-[2.5rem] p-6 sm:p-8 w-full max-w-sm max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl text-center transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
@@ -967,8 +983,12 @@ if (noindex) {
             </div>
         </div>
     </div>
+    </>
+    )}
 
 
+    {isAdminInitialRoute && (
+    <>
     <!-- MODAL FORMULARIO ADMIN (CREAR / EDITAR) -->
     <div id="modal-admin-form" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 transition-all duration-300 hidden overflow-y-auto">
         <div class="bg-white rounded-[2.5rem] p-6 w-full max-w-md shadow-2xl my-auto transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
@@ -1253,6 +1273,9 @@ if (noindex) {
             </div>
         </div>
     </div>
+
+    </>
+    )}
 
     <style is:inline>
         .catalog-search-input::placeholder {

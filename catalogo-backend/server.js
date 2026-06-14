@@ -513,6 +513,19 @@ async function saasSettings() {
 }
 
 function saasSettingsPayload(settings) {
+    const legacyHeroText = 'Crea tu tienda en línea, recibe pedidos y haz crecer tu negocio. Sin comisiones, sin complicaciones.';
+    const legacyTitle = 'Vende cualquier producto en línea por';
+    const legacySubtitle = 'carrito y WhatsApp';
+    const landingHeroText = !settings.landingHeroText || settings.landingHeroText === legacyHeroText
+        ? 'Sedelynk te permite crear un catálogo digital, recibir pedidos por carrito y vender en línea sin comisiones. WhatsApp queda disponible como opción adicional para tus clientes.'
+        : settings.landingHeroText;
+    const landingTitle = !settings.landingTitle || settings.landingTitle === legacyTitle
+        ? 'Crea tu tienda en línea con carrito de compras en Guatemala'
+        : settings.landingTitle;
+    const landingSubtitle = !settings.landingSubtitle || settings.landingSubtitle === legacySubtitle
+        ? 'WhatsApp opcional'
+        : settings.landingSubtitle;
+
     return {
         supportWhatsapp: settings.supportWhatsapp || '',
         supportMessage: settings.supportMessage || 'Hola, necesito ayuda con mi catalogo.',
@@ -536,9 +549,9 @@ function saasSettingsPayload(settings) {
         faviconUrl: settings.faviconUrl || '',
         
         // Landing contents
-        landingHeroText: settings.landingHeroText || 'Crea tu tienda en línea, recibe pedidos y haz crecer tu negocio. Sin comisiones, sin complicaciones.',
-        landingTitle: settings.landingTitle || 'Vende cualquier producto en línea por',
-        landingSubtitle: settings.landingSubtitle || 'carrito y WhatsApp',
+        landingHeroText,
+        landingTitle,
+        landingSubtitle,
         landingFaqs: settings.landingFaqs || '[]',
         
         // Notifications configs

@@ -22,6 +22,7 @@ const testPng = Buffer.from(
 
 let tenant;
 let testSuper;
+let testAuditLogId = '';
 const supportTicketIds = [];
 const uploadedLocalFiles = [];
 
@@ -68,6 +69,9 @@ async function cleanup() {
     }
     if (supportTicketIds.length) {
         await prisma.supportTicket.deleteMany({ where: { id: { in: supportTicketIds } } }).catch(() => {});
+    }
+    if (testAuditLogId) {
+        await prisma.auditLog.deleteMany({ where: { id: testAuditLogId } }).catch(() => {});
     }
     for (const filePath of uploadedLocalFiles) {
         await fs.promises.unlink(filePath).catch(() => {});
@@ -223,30 +227,34 @@ async function main() {
     const recovery = await request(`/api/super-admin/tenants/${tenant.id}/recovery`, {
         method: 'POST',
         headers: superHeaders,
-        body: JSON.stringify({ method: 'whatsapp_code' })
+        body: JSON.stringify({ method: 'temporary_password' })
     });
-    assert(recovery.response.ok && /^\d{6}$/.test(recovery.data.code), 'Generar codigo WhatsApp desde Super Admin');
+    assert(
+        recovery.response.ok && recovery.data.temporaryUsername && recovery.data.temporaryPassword,
+        'Generar usuario y contrasena temporales desde Super Admin'
+    );
+    const temporaryLogin = await login(
+        `/api/${tenantSlug}/auth/login`,
+        recovery.data.temporaryUsername,
+        recovery.data.temporaryPassword
+    );
+    assert(
+        temporaryLogin.response.ok
+            && temporaryLogin.data.mustChangeUsername
+            && temporaryLogin.data.mustChangePassword,
+        'Credenciales temporales exigen cambio de usuario y contrasena'
+    );
     const recoveredPassword = `Recovered-${runId}-A1`;
-    const useCode = await request('/api/auth/recovery-code', {
+    const recoveredUsername = `recovered${runId}`;
+    const forceCredentials = await request(`/api/${tenantSlug}/auth/force-change-password`, {
         method: 'POST',
-        body: JSON.stringify({
-            identifier: tenant.accountNumber,
-            code: recovery.data.code,
-            password: recoveredPassword
-        })
+        headers: { Authorization: `Bearer ${temporaryLogin.data.devSessionToken}` },
+        body: JSON.stringify({ newUsername: recoveredUsername, newPassword: recoveredPassword })
     });
-    assert(useCode.response.ok, 'Usar codigo WhatsApp para cambiar contrasena');
-    const reuseCode = await request('/api/auth/recovery-code', {
-        method: 'POST',
-        body: JSON.stringify({
-            identifier: tenant.accountNumber,
-            code: recovery.data.code,
-            password: recoveredPassword
-        })
-    });
-    assert(reuseCode.response.status === 400, 'Codigo WhatsApp solo se usa una vez');
+    assert(forceCredentials.response.ok, 'Reemplazar credenciales temporales por credenciales definitivas');
 
     const relogin = await login(`/api/${tenantSlug}/auth/login`, tenantEmail, recoveredPassword);
+    assert(relogin.response.ok, 'Login funciona despues de cambiar credenciales temporales');
     const currentTenantHeaders = { Authorization: `Bearer ${relogin.data.devSessionToken}` };
     const category = await prisma.category.create({
         data: { tenantId: tenant.id, nombre: 'Pruebas', orden: 1 }
@@ -364,22 +372,45 @@ async function main() {
     assert(adminPanel.ok, 'Panel admin tenant responde');
     assert(landing.ok, 'Landing responde');
     assert(superAdmin.ok, 'Super Admin responde');
+    const publicCatalogHtml = await publicCatalog.text();
     const adminHtml = await adminPanel.text();
     const landingHtml = await landing.text();
+    assert(publicCatalogHtml.includes('id="client-view"'), 'Catalogo publico renderiza solo la vista de clientes');
+    assert(!publicCatalogHtml.includes('id="admin-view"'), 'Catalogo publico no renderiza el panel administrativo');
+    assert(!publicCatalogHtml.includes('id="modal-admin-form"'), 'Catalogo publico no incluye formularios privados');
+    assert(!adminHtml.includes('id="client-view"'), 'Panel privado no renderiza la vista publica del catalogo');
+    assert(adminHtml.includes('id="admin-view"'), 'Panel privado renderiza la vista administrativa');
+    assert(adminHtml.includes('noindex, nofollow, noarchive'), 'Panel privado declara noindex y nofollow');
     assert(!adminHtml.includes('Mostrar descripcion del negocio'), 'Configuracion ya no muestra el control de descripcion');
+    assert(
+        landingHtml.includes('Sedelynk | Tienda en línea con carrito para negocios en Guatemala'),
+        'Landing publica expone el title SEO orientado a carrito'
+    );
+    assert(
+        landingHtml.includes('Crea tu tienda en línea con carrito de compras en Guatemala'),
+        'Landing publica expone el H1 orientado a tienda en linea'
+    );
+    assert(!landingHtml.includes('adminAccessKey'), 'Landing publica no imprime nombres de claves privadas');
+    assert(!landingHtml.includes('id="admin-view"'), 'Landing publica no renderiza el panel administrativo');
+    assert(!landingHtml.includes('Historial de pagos'), 'Landing publica no contiene contenido interno de pagos');
     assert(landingHtml.includes('setTimeout(closeSupportModal, 30000)'), 'Exito de soporte permanece visible 30 segundos');
 
+    const testAuditLog = await prisma.auditLog.create({
+        data: { tipo: 'saas_upgrade_test', metadata: { runId } }
+    });
+    testAuditLogId = testAuditLog.id;
     const dashboard = await request('/api/super-admin/dashboard', { headers: superHeaders });
     const logs = await request('/api/super-admin/logs', { headers: superHeaders });
     assert(dashboard.response.ok && typeof dashboard.data.mrr === 'number', 'Dashboard Super User expone MRR y metricas');
     assert(logs.response.ok && Array.isArray(logs.data), 'Logs Super User disponibles');
-    const logToDelete = logs.data.find(log => log.id);
-    assert(Boolean(logToDelete), 'Existe un log para probar eliminacion');
-    const deleteLog = await request(`/api/super-admin/logs/${logToDelete.id}`, {
+    const logToDelete = logs.data.find(log => log.id === testAuditLog.id);
+    assert(Boolean(logToDelete), 'El log temporal de la prueba aparece en Super User');
+    const deleteLog = await request(`/api/super-admin/logs/${testAuditLog.id}`, {
         method: 'DELETE',
         headers: superHeaders
     });
     assert(deleteLog.response.ok, 'Super User puede eliminar logs');
+    testAuditLogId = '';
 
     const saasSettings = await request('/api/super-admin/settings', { headers: superHeaders });
     assert(

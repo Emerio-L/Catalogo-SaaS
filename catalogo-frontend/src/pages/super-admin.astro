@@ -375,7 +375,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                         </label>
                                         <label class="block">
                                             <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Subtítulo Resaltado Landing (Parte 2)</span>
-                                            <input id="config-landing-subtitle" class="super-input" placeholder="carrito y WhatsApp">
+                                            <input id="config-landing-subtitle" class="super-input" placeholder="WhatsApp opcional">
                                         </label>
                                     </div>
                                     <label class="block">
@@ -1913,8 +1913,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             document.getElementById('config-support-message').value = superSettings.supportMessage || '';
 
             // Landing settings
-            document.getElementById('config-landing-title').value = superSettings.landingTitle || 'Vende cualquier producto en línea por';
-            document.getElementById('config-landing-subtitle').value = superSettings.landingSubtitle || 'carrito y WhatsApp';
+            document.getElementById('config-landing-title').value = superSettings.landingTitle || 'Crea tu tienda en línea con carrito de compras en Guatemala';
+            document.getElementById('config-landing-subtitle').value = superSettings.landingSubtitle || 'WhatsApp opcional';
             document.getElementById('config-landing-hero-text').value = superSettings.landingHeroText || '';
             document.getElementById('config-saas-monthly-price').value = superSettings.monthlyPrice !== undefined ? superSettings.monthlyPrice : 50;
             document.getElementById('config-saas-trial-days').value = superSettings.freeTrialDays !== undefined ? superSettings.freeTrialDays : 7;

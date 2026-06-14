@@ -2,13 +2,15 @@
 interface Props {
 	title: string;
 	description?: string;
+	keywords?: string;
 	noindex?: boolean;
 	locale?: string;
 }
 
 const {
 	title,
-	description = 'Crea tu catálogo digital, recibe pedidos por carrito y WhatsApp y vende en toda Guatemala con Sedelynk.',
+	description = 'Crea tu tienda en línea con carrito de compras en Guatemala. Recibe pedidos organizados, administra productos y vende sin comisiones con Sedelynk.',
+	keywords = '',
 	noindex = false,
 	locale = 'es_GT'
 } = Astro.props;
@@ -64,6 +66,7 @@ const structuredData = Astro.url.pathname === '/' ? {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
     <meta name="description" content={description}>
+    {keywords && <meta name="keywords" content={keywords}>}
     <meta name="robots" content={noindex ? 'noindex, nofollow, noarchive, nosnippet' : 'index, follow, max-image-preview:large'}>
     <meta name="googlebot" content={noindex ? 'noindex, nofollow, noarchive, nosnippet' : 'index, follow, max-image-preview:large'}>
     <meta name="geo.region" content="GT">
@@ -127,10 +130,6 @@ const structuredData = Astro.url.pathname === '/' ? {
     </script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- jsPDF and jsPDF-AutoTable for PDF generation -->
-    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
-    
     <style is:inline>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 

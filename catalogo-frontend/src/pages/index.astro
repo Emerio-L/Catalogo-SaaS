@@ -7,8 +7,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 ---
 
 <Layout
-    title="Sedelynk"
-    description="Crea tu catálogo digital, recibe pedidos por carrito y WhatsApp y vende en toda Guatemala con Sedelynk."
+    title="Sedelynk | Tienda en línea con carrito para negocios en Guatemala"
+    description="Crea tu tienda en línea con carrito de compras en Guatemala. Recibe pedidos organizados, administra productos y vende sin comisiones con Sedelynk."
+    keywords="tienda en línea Guatemala, carrito de compras para negocio, crear tienda online Guatemala, catálogo digital con carrito, sistema de pedidos en línea, vender productos en línea Guatemala, tienda virtual para emprendedores, catálogo online para negocios"
 >
     <!-- FLOATING TOAST NOTIFICATIONS CONTAINER -->
     <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
@@ -490,11 +491,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 {/* Columna Izquierda */}
                 <div class="text-left space-y-4">
                     <h1 id="landing-hero-title" class="text-3xl md:text-4xl lg:text-[2.85rem] font-black tracking-tight text-[#070B24] leading-[1.15] max-w-xl">
-                        Vende cualquier producto en línea <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#D946EF]">En toda</span> <span class="text-[#FF6B1A]">Guatemala</span>
+                        Crea tu tienda en línea con carrito de compras en <span class="text-[#FF6B1A]">Guatemala</span>
                     </h1>
                     
                     <p id="landing-hero-text" class="text-slate-500 text-xs md:text-sm font-semibold leading-relaxed max-w-xl">
-                        Crea tu tienda en línea, recibe pedidos y haz crecer tu negocio. Sin comisiones, sin complicaciones.
+                        Sedelynk te permite crear un catálogo digital, recibir pedidos por carrito y vender en línea sin comisiones. WhatsApp queda disponible como opción adicional para tus clientes.
                     </p>
 
                     {/* Mini Beneficios en dos columnas estilo tarjetas blancas con sombra */}
@@ -509,7 +510,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         </div>
                         <div class="flex items-center gap-2.5 bg-white border border-slate-100 rounded-2xl p-2.5 shadow-sm shadow-purple-950/[0.02]">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><i class="fa-brands fa-whatsapp text-sm"></i></span>
-                            <span class="text-slate-800 font-extrabold text-[10px] leading-tight">Recibe pedidos por<br>carrito y WhatsApp</span>
+                            <span class="text-slate-800 font-extrabold text-[10px] leading-tight">Carrito de pedidos<br>organizado</span>
                         </div>
                         <div class="flex items-center gap-2.5 bg-white border border-slate-100 rounded-2xl p-2.5 shadow-sm shadow-purple-950/[0.02]">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600"><i class="fa-solid fa-box-open text-xs"></i></span>
@@ -605,7 +606,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     </div>
                     {/* Laptop Illustration Block */}
                     <div class="hidden md:flex justify-center items-center bg-white pr-4 py-1.5">
-                        <img src={laptopWhatsapp.src} alt="Laptop WhatsApp" class="max-h-[85px] w-auto object-contain" />
+                        <img src={laptopWhatsapp.src} alt="Tienda online con carrito y WhatsApp opcional" class="max-h-[85px] w-auto object-contain" />
                     </div>
                 </div>
             </div>
@@ -641,8 +642,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             <section id="beneficios" class="relative z-10 w-full max-w-6xl mx-auto px-6 py-16 lg:py-24 border-t border-slate-100 space-y-16 scroll-mt-20">
                 <div class="text-center space-y-3">
                     <span class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Por qué elegirnos</span>
-                    <h2 class="text-3xl md:text-4xl font-black text-[#070B24] uppercase">Todo lo que necesitas para tu negocio</h2>
-                    <p class="text-slate-500 text-sm font-semibold max-w-xl mx-auto">Vende más de forma automatizada y sin dolores de cabeza. Diseñado para aumentar tus conversiones.</p>
+                    <h2 class="text-3xl md:text-4xl font-black text-[#070B24] uppercase">Tu tienda virtual para emprendedores y pequeños negocios</h2>
+                    <p class="text-slate-500 text-sm font-semibold max-w-xl mx-auto">Crea un catálogo online para tu negocio, organiza pedidos y vende productos en línea en Guatemala sin pagar comisiones.</p>
                 </div>
 
                 <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
@@ -653,8 +654,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     </div>
                     <div class="landing-card p-6 space-y-4">
                         <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl shadow-inner ring-1 ring-orange-100"><i class="fa-brands fa-whatsapp"></i></div>
-                        <h3 class="text-lg font-black text-slate-900 uppercase">Pedidos por WhatsApp</h3>
-                        <p class="text-xs font-semibold text-slate-500 leading-relaxed">Recibe cada pedido listo para responder y despachar.</p>
+                        <h3 class="text-lg font-black text-slate-900 uppercase">WhatsApp opcional</h3>
+                        <p class="text-xs font-semibold text-slate-500 leading-relaxed">Activa WhatsApp como canal adicional para clientes que prefieren escribir directamente.</p>
                     </div>
                     <div class="landing-card p-6 space-y-4">
                         <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shadow-inner ring-1 ring-blue-100"><i class="fa-solid fa-sliders"></i></div>
@@ -674,7 +675,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 <div class="text-center space-y-3">
                     <span class="text-[10px] font-black uppercase tracking-[0.24em] text-purple-600">Flujo de trabajo</span>
                     <h2 class="text-3xl md:text-4xl font-black text-[#070B24] uppercase">¿Cómo funciona?</h2>
-                    <p class="text-slate-500 text-sm font-semibold max-w-xl mx-auto">Configura tu catálogo digital en cuestión de minutos siguiendo estos sencillos pasos.</p>
+                    <p class="text-slate-500 text-sm font-semibold max-w-xl mx-auto">Configura tu catálogo digital con carrito en minutos y empieza a hacer crecer tu negocio.</p>
                 </div>
 
                 <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-left">
@@ -691,12 +692,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <div class="space-y-3 relative group">
                         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-[#FF6B1A] text-white text-sm font-black shadow-md">3</span>
                         <h3 class="text-base font-black text-[#070B24] uppercase pt-2">Comparte tu enlace</h3>
-                        <p class="text-xs text-slate-500 font-semibold leading-relaxed">Envía tu catálogo a tus clientes por redes sociales o WhatsApp.</p>
+                        <p class="text-xs text-slate-500 font-semibold leading-relaxed">Comparte tu tienda por redes sociales y usa WhatsApp como canal opcional.</p>
                     </div>
                     <div class="space-y-3 relative group">
                         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white text-sm font-black shadow-md">4</span>
                         <h3 class="text-base font-black text-[#070B24] uppercase pt-2">Recibe pedidos</h3>
-                        <p class="text-xs text-slate-500 font-semibold leading-relaxed">Tus clientes compran por carrito y finalizan por WhatsApp.</p>
+                        <p class="text-xs text-slate-500 font-semibold leading-relaxed">Tus clientes agregan productos al carrito y envían su pedido organizado.</p>
                     </div>
                 </div>
             </section>
@@ -781,7 +782,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <span class="faq-icon text-slate-400 shrink-0 transition-transform duration-200"><i class="fa-solid fa-chevron-down"></i></span>
                         </div>
                         <p class="faq-answer text-xs md:text-sm font-semibold text-slate-500 leading-relaxed">
-                            Los pedidos se enviaran al carrito o whatsapp de tu cliente.
+                            Los pedidos quedan organizados en tu panel. Si lo activas, WhatsApp aparece como opción adicional.
                         </p>
                     </div>
 
@@ -935,7 +936,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             
                             <div class="grid gap-3 sm:grid-cols-2">
                                 <div>
-                                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">WhatsApp (Recibe pedidos)</label>
+                                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">WhatsApp de contacto</label>
                                     <input type="tel" id="landing-register-whatsapp" required placeholder="502XXXXXXXX"
                                     class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                                 </div>
@@ -1720,7 +1721,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
             const heroTextEl = document.getElementById('landing-hero-text');
             if (heroTextEl) {
-                heroTextEl.innerText = saasSupportSettings.landingHeroText || 'Crea tu tienda en línea, recibe pedidos y haz crecer tu negocio. Sin comisiones, sin complicaciones.';
+                heroTextEl.innerText = saasSupportSettings.landingHeroText || 'Sedelynk te permite crear un catálogo digital, recibir pedidos por carrito y vender en línea sin comisiones. WhatsApp queda disponible como opción adicional para tus clientes.';
             }
 
             const logoFallback = document.getElementById('landing-logo-fallback');
