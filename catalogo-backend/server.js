@@ -2609,7 +2609,7 @@ const registerTenantSchema = z.object({
     slug: z.string().trim().min(2).max(60).optional(),
     whatsapp: z.string().trim().min(8).max(20),
     usuario: z.string().trim().min(3).max(40),
-    email: z.string().trim().email().optional(),
+    email: z.string().trim().email(),
     password: z.string().min(8).max(100),
     tipoNegocio: z.string().trim().max(50).optional().default('personalizado')
 });
@@ -2618,20 +2618,25 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
     let tenantCreado = null;
     try {
         const data = registerTenantSchema.parse(req.body);
-        const slug = normalizarSlug(data.slug || data.nombre);
+        let baseSlug = normalizarSlug(data.slug || data.nombre);
+        if (!baseSlug) {
+            baseSlug = 'negocio';
+        }
+        let slug = baseSlug;
         const usuario = data.usuario.toLowerCase().trim();
-        const email = (data.email || `${usuario}@${slug}.local`).toLowerCase().trim();
+        const email = data.email.toLowerCase().trim();
         const whatsapp = data.whatsapp.replace(/\D/g, '');
 
         const reservedSlugs = ['admin', 'api', 'super-admin', 'health', 'uploads', 'default', 'c', 'p', 'auth', 'login', 'register'];
         if (!slug || reservedSlugs.includes(slug)) {
-            return res.status(400).json({ error: 'Slug inválido o reservado para el negocio' });
+            slug = `${slug}-negocio`;
+            baseSlug = slug;
         }
         if (whatsapp.length < 8) {
             return res.status(400).json({ error: 'WhatsApp inválido' });
         }
 
-        const tenantExistente = await Tenant.findOne({ slug });
+        let tenantExistente = await Tenant.findOne({ slug });
         if (tenantExistente) {
             const userExistente = await User.findOne({
                 tenantId: tenantExistente._id,
@@ -2657,7 +2662,17 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
                 });
             }
 
-            return res.status(409).json({ error: 'Ese enlace de catálogo ya está en uso' });
+            let existe = true;
+            let iter = 1;
+            while (existe) {
+                slug = `${baseSlug}-${iter}`;
+                const tTemp = await Tenant.findOne({ slug });
+                if (!tTemp) {
+                    existe = false;
+                } else {
+                    iter++;
+                }
+            }
         }
 
         tenantCreado = await createTenantWithAccountNumber({

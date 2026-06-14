@@ -933,15 +933,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                 class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                             </div>
                             
-                            <div>
-                                <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Enlace deseado para tu catálogo</label>
-                                <div class="flex overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 focus-within:border-purple-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-purple-500/10">
-                                    <span class="flex items-center border-r border-slate-200 px-3 text-xs font-black text-slate-400">/c/</span>
-                                    <input type="text" id="landing-register-slug" required placeholder="verduleria-lucero"
-                                    class="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm font-bold text-slate-900 outline-none">
-                                </div>
-                            </div>
-                            
                             <div class="grid gap-3 sm:grid-cols-2">
                                 <div>
                                     <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">WhatsApp (Recibe pedidos)</label>
@@ -963,7 +954,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                 </div>
                                 <div>
                                     <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Correo</label>
-                                    <input type="email" id="landing-register-email" placeholder="usuario@correo.com"
+                                    <input type="email" id="landing-register-email" required placeholder="usuario@correo.com"
                                     class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                                 </div>
                             </div>
@@ -1392,16 +1383,15 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }
             const payload = {
                 nombre: document.getElementById('landing-register-name')?.value.trim(),
-                slug: slugifyClient(document.getElementById('landing-register-slug')?.value.trim()),
                 whatsapp: document.getElementById('landing-register-whatsapp')?.value.trim(),
                 usuario: document.getElementById('landing-register-user')?.value.trim(),
-                email: document.getElementById('landing-register-email')?.value.trim() || undefined,
+                email: document.getElementById('landing-register-email')?.value.trim(),
                 password: document.getElementById('landing-register-password')?.value,
                 tipoNegocio: document.getElementById('landing-register-type')?.value || 'personalizado'
             };
 
             mostrarErrorRegistroLanding('');
-            if (!payload.nombre || !payload.slug || !payload.whatsapp || !payload.usuario || !payload.password) {
+            if (!payload.nombre || !payload.whatsapp || !payload.usuario || !payload.email || !payload.password) {
                 mostrarErrorRegistroLanding('Completa los campos requeridos para crear la cuenta.');
                 return;
             }
@@ -1456,7 +1446,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     }
                     const mensaje = data.error || 'No se pudo crear la cuenta.';
                     mostrarErrorRegistroLanding(res.status === 409
-                        ? `${mensaje}. Cambia el enlace del catálogo o usa otro nombre para tu negocio.`
+                        ? `${mensaje}. Usa otro nombre para tu negocio.`
                         : mensaje);
                     return;
                 }
