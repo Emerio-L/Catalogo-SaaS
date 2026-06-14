@@ -3509,13 +3509,13 @@ if (noindex) {
                     return;
                 }
                 ocultarAuthModalInmediato();
-                document.getElementById('client-view').classList.add('hidden');
-                document.getElementById('admin-view').classList.remove('hidden');
+                document.getElementById('client-view')?.classList.add('hidden');
+                document.getElementById('admin-view')?.classList.remove('hidden');
                 registrarActividadAdmin();
                 switchAdminTab(tabAdminActual);
             } else {
-                document.getElementById('admin-view').classList.add('hidden');
-                document.getElementById('client-view').classList.remove('hidden');
+                document.getElementById('admin-view')?.classList.add('hidden');
+                document.getElementById('client-view')?.classList.remove('hidden');
                 cargarDesdeAPI();
             }
         }
@@ -3698,8 +3698,8 @@ if (noindex) {
         }
 
         function mostrarPanelAdminProtegido() {
-            document.getElementById('client-view').classList.add('hidden');
-            document.getElementById('admin-view').classList.add('hidden');
+            document.getElementById('client-view')?.classList.add('hidden');
+            document.getElementById('admin-view')?.classList.add('hidden');
             abrirAuthModal();
         }
 
