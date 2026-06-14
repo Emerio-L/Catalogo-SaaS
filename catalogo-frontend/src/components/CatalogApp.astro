@@ -1454,7 +1454,8 @@ if (noindex) {
             return nativeFetch(input, { ...init, headers }).then((response) => {
                 const isLoginRequest = url.includes('/auth/login');
                 const isLogoutRequest = url.includes('/auth/logout');
-                if (response.status === 401 && isAdminRoute && !isLoginRequest && !isLogoutRequest) {
+                const isMeRequest = url.includes('/auth/me');
+                if (response.status === 401 && isAdminRoute && !isLoginRequest && !isLogoutRequest && !isMeRequest) {
                     cerrarSesionPorInactividad('Tu sesión expiró por seguridad. Ingresa nuevamente.');
                 }
                 return response;
@@ -6202,7 +6203,7 @@ if (noindex) {
                     error.classList.remove('hidden');
                     return;
                 }
-                window.open(`/c/${tenant}/p/${accessKey}`, '_blank');
+                window.location.href = `/c/${tenant}/p/${accessKey}`;
                 const modal = document.getElementById('force-credentials-modal');
                 if (modal) {
                     modal.classList.add('hidden');
@@ -6328,7 +6329,7 @@ if (noindex) {
                         return;
                     }
                     
-                    window.open(`/c/${tSlug}/p/${aKey}`, '_blank');
+                    window.location.href = `/c/${tSlug}/p/${aKey}`;
                     mostrarLandingStep('close');
                 } else {
                     mostrarErrorLoginLanding(data.error || "Credenciales inválidas.");
