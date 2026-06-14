@@ -26,7 +26,7 @@ if (!isLandingPage) {
 
     <!-- FLOATING TOAST NOTIFICATIONS CONTAINER -->
     <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
-    {isLandingPage ? (
+    {isLandingPage && (
         <div id="landing-view" class="w-full min-h-screen landing-view text-slate-800 selection:bg-purple-500 selection:text-white font-sans relative flex flex-col justify-between">
             {/* CONTENEDOR HERO SECTION (PRIMERA PANTALLA) */}
             <div class="hero-section relative overflow-hidden flex flex-col justify-between">
@@ -1044,7 +1044,9 @@ if (!isLandingPage) {
                 </div>
             </footer>
         </div>
-    ) : (
+    )}
+
+    {!isLandingPage && (
         <!-- CLIENT VIEW (CATALOG) -->
         <div id="client-view" class={`w-full pb-36 ${isAdminInitialRoute ? 'hidden' : ''}`}>
         <!-- HEADER -->
@@ -1108,7 +1110,6 @@ if (!isLandingPage) {
         </main>
 
         </div>
-    )}
 
 
     <!-- ADMIN VIEW (DASHBOARD) -->
@@ -2389,6 +2390,7 @@ if (!isLandingPage) {
             </button>
         </div>
     </div>
+    )}
 
     <script is:inline>
         /* ===========================
