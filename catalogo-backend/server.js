@@ -2151,13 +2151,16 @@ app.post('/api/super-admin/tenants/:id/recovery', requireSuperAdminAuth, async (
             return res.json({
                 success: true,
                 message: 'Enlace de recuperacion enviado por correo.',
-                devResetUrl: emailStatus.dev && process.env.NODE_ENV !== 'production' ? resetUrl : undefined
+                devResetUrl: process.env.NODE_ENV !== 'production' ? resetUrl : undefined
             });
         }
 
+        const temporaryUsername = `temp-${crypto.randomBytes(4).toString('hex')}`;
         const temporaryPassword = `Tmp-${crypto.randomBytes(8).toString('base64url')}A1`;
+        user.usuario = temporaryUsername;
         user.passwordHash = await bcrypt.hash(temporaryPassword, 12);
         user.mustChangePassword = true;
+        user.mustChangeUsername = true;
         user.temporaryPasswordExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
         user.failedLoginAttempts = 0;
         user.lockedUntil = undefined;
@@ -2169,7 +2172,8 @@ app.post('/api/super-admin/tenants/:id/recovery', requireSuperAdminAuth, async (
         });
         res.json({
             success: true,
-            message: 'Contraseña temporal generada. Se mostrará una sola vez y expirará en 24 horas.',
+            message: 'Usuario y contraseña temporales generados. Se mostrarán una sola vez y expirarán en 24 horas.',
+            temporaryUsername,
             temporaryPassword
         });
     } catch (error) {
@@ -2193,7 +2197,9 @@ app.post('/api/super-admin/tenants/:id/reset-credentials', requireSuperAdminAuth
         if (newUsuario) {
             const normalized = String(newUsuario).toLowerCase().trim();
             if (normalized.length < 3) return res.status(400).json({ error: 'El usuario debe tener al menos 3 caracteres' });
-            const existing = await User.findOne({ tenantId: tenant._id, usuario: normalized, _id: { $ne: user._id } });
+            const existing = await prisma.user.findFirst({
+                where: { tenantId: tenant._id, usuario: normalized, id: { not: user._id } }
+            });
             if (existing) return res.status(409).json({ error: 'Ese nombre de usuario ya está en uso en esta cuenta' });
             user.usuario = normalized;
             changes.usuario = normalized;
@@ -2204,7 +2210,9 @@ app.post('/api/super-admin/tenants/:id/reset-credentials', requireSuperAdminAuth
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
                 return res.status(400).json({ error: 'Formato de correo inválido' });
             }
-            const existing = await User.findOne({ tenantId: tenant._id, email: normalizedEmail, _id: { $ne: user._id } });
+            const existing = await prisma.user.findFirst({
+                where: { tenantId: tenant._id, email: normalizedEmail, id: { not: user._id } }
+            });
             if (existing) return res.status(409).json({ error: 'Ese correo ya está en uso en esta cuenta' });
             user.email = normalizedEmail;
             changes.email = normalizedEmail;
@@ -2221,6 +2229,10 @@ app.post('/api/super-admin/tenants/:id/reset-credentials', requireSuperAdminAuth
         }
 
         user.mustChangePassword = Boolean(newPassword);
+        user.mustChangeUsername = Boolean(newUsuario);
+        if (newPassword || newUsuario) {
+            user.temporaryPasswordExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        }
         user.failedLoginAttempts = 0;
         user.lockedUntil = undefined;
         await user.save();
@@ -2813,7 +2825,6 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
         user.failedLoginAttempts = 0;
         user.lockedUntil = undefined;
         user.ultimoLogin = new Date();
-        user.temporaryPasswordExpiresAt = null;
         await user.save();
 
         const token = crearTokenSeguro();
@@ -2839,8 +2850,12 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
                 usuario: user.usuario,
                 rol: user.rol,
                 accountNumber: tenant.accountNumber,
+                mustChangePassword: user.mustChangePassword === true,
+                mustChangeUsername: user.mustChangeUsername === true,
                 adminAccessKey: user.rol !== 'super_admin' ? tenant.adminAccessKey : undefined
             },
+            mustChangePassword: user.mustChangePassword === true,
+            mustChangeUsername: user.mustChangeUsername === true,
             adminAccessKey: user.rol !== 'super_admin' ? tenant.adminAccessKey : undefined
         };
         if (process.env.NODE_ENV !== 'production') {
@@ -2893,7 +2908,7 @@ app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
 
         res.json({
             ...genericResponse,
-            devResetUrl: emailStatus.dev && process.env.NODE_ENV !== 'production' ? resetUrl : undefined
+            devResetUrl: process.env.NODE_ENV !== 'production' ? resetUrl : undefined
         });
     } catch (err) {
         console.error('Error al solicitar recuperación global:', err);
@@ -2994,6 +3009,10 @@ app.post('/api/:tenant/auth/login', tenantMiddleware, authLimiter, async (req, r
             return res.status(401).json(genericError);
         }
 
+        if (user.temporaryPasswordExpiresAt && user.temporaryPasswordExpiresAt < new Date()) {
+            return res.status(401).json({ error: 'El acceso temporal ha expirado. Contacta al administrador del servicio.' });
+        }
+
         user.failedLoginAttempts = 0;
         user.lockedUntil = undefined;
         user.ultimoLogin = new Date();
@@ -3021,9 +3040,11 @@ app.post('/api/:tenant/auth/login', tenantMiddleware, authLimiter, async (req, r
                 rol: user.rol,
                 accountNumber: req.tenant.accountNumber,
                 mustChangePassword: user.mustChangePassword === true,
+                mustChangeUsername: user.mustChangeUsername === true,
                 adminAccessKey: user.rol === 'tenant_admin' ? req.tenant.adminAccessKey : undefined
             },
             mustChangePassword: user.mustChangePassword === true,
+            mustChangeUsername: user.mustChangeUsername === true,
             adminAccessKey: user.rol === 'tenant_admin' ? req.tenant.adminAccessKey : undefined
         };
         if (process.env.NODE_ENV !== 'production') {
@@ -3057,24 +3078,48 @@ app.post('/api/:tenant/auth/logout', tenantMiddleware, requireAdminAuth, async (
     res.json({ success: true });
 });
 
-// Force-change-password: called when mustChangePassword=true (post super-admin reset).
-// Does NOT require the current password — the temporary password was already verified at login.
+// Completes the mandatory credential change after a temporary access was verified.
 app.post('/api/:tenant/auth/force-change-password', tenantMiddleware, requireAdminAuth, authLimiter, async (req, res) => {
     try {
-        if (!req.user.mustChangePassword) {
-            return res.status(403).json({ error: 'No se requiere cambio de contraseña forzado para este usuario' });
+        if (!req.user.mustChangePassword && !req.user.mustChangeUsername) {
+            return res.status(403).json({ error: 'No se requiere cambio obligatorio de credenciales para este usuario' });
         }
+        const newUsername = String(req.body.newUsername || '').toLowerCase().trim();
         const newPassword = String(req.body.newPassword || '');
-        if (newPassword.length < 8) {
+        if (req.user.mustChangeUsername && newUsername.length < 3) {
+            return res.status(400).json({ error: 'El nuevo usuario debe tener al menos 3 caracteres' });
+        }
+        if (req.user.mustChangePassword && newPassword.length < 8) {
             return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
         }
-        req.user.passwordHash = await bcrypt.hash(newPassword, 12);
+        if (req.user.mustChangeUsername) {
+            const existing = await prisma.user.findFirst({
+                where: {
+                    tenantId: req.tenantId,
+                    usuario: newUsername,
+                    id: { not: req.user._id }
+                }
+            });
+            if (existing) return res.status(409).json({ error: 'Ese nombre de usuario ya está en uso' });
+            req.user.usuario = newUsername;
+        }
+        if (req.user.mustChangePassword) {
+            req.user.passwordHash = await bcrypt.hash(newPassword, 12);
+        }
         req.user.mustChangePassword = false;
+        req.user.mustChangeUsername = false;
+        req.user.temporaryPasswordExpiresAt = null;
         await req.user.save();
         // Invalidate all other active sessions so only this one persists
-        await Session.deleteMany({ tenantId: req.tenantId, userId: req.user._id, _id: { $ne: req.session._id } });
-        await auditLog(req, 'force_password_changed', { userId: req.user._id });
-        res.json({ success: true, message: 'Contraseña actualizada correctamente. Bienvenido.' });
+        await prisma.session.deleteMany({
+            where: { tenantId: req.tenantId, userId: req.user._id, id: { not: req.session._id } }
+        });
+        await auditLog(req, 'force_credentials_changed', { userId: req.user._id });
+        res.json({
+            success: true,
+            message: 'Usuario y contraseña actualizados correctamente.',
+            user: { usuario: req.user.usuario }
+        });
     } catch (err) {
         console.error('Error in force-change-password:', err);
         res.status(500).json({ error: 'Error al cambiar contraseña' });
@@ -3097,7 +3142,9 @@ app.put('/api/:tenant/auth/password', tenantMiddleware, requireAdminAuth, authLi
 
         req.user.passwordHash = await bcrypt.hash(newPassword, 12);
         await req.user.save();
-        await Session.deleteMany({ tenantId: req.tenantId, userId: req.user._id, _id: { $ne: req.session._id } });
+        await prisma.session.deleteMany({
+            where: { tenantId: req.tenantId, userId: req.user._id, id: { not: req.session._id } }
+        });
         await auditLog(req, 'password_changed', { userId: req.user._id });
 
         res.json({ success: true, mensaje: 'Contraseña actualizada correctamente' });
@@ -3137,7 +3184,7 @@ app.post('/api/:tenant/auth/forgot-password', tenantMiddleware, authLimiter, asy
 
         res.json({
             ...genericResponse,
-            devResetUrl: emailStatus.dev && process.env.NODE_ENV !== 'production' ? resetUrl : undefined
+            devResetUrl: process.env.NODE_ENV !== 'production' ? resetUrl : undefined
         });
     } catch (err) {
         console.error('Error al solicitar recuperación del tenant:', err);

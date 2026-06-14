@@ -1,12 +1,16 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import heroCommerce from '../assets/landing/hero-commerce.png';
+import heroCommerce from '../assets/landing/hero-commerce-sedelynk.png';
 import laptopWhatsapp from '../assets/landing/laptop-whatsapp.png';
 
 const initialPathParts = Astro.url.pathname.split('/').filter(Boolean);
 const isLandingPage = Astro.url.pathname === '/';
 const isAdminInitialRoute = initialPathParts[0] === 'c' && initialPathParts[2] === 'p' && Boolean(initialPathParts[3]);
+const initialTenantSlug = initialPathParts[0] === 'c' ? initialPathParts[1] : '';
 const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
+if (!isLandingPage) {
+    Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+}
 ---
 
 <Layout
@@ -14,7 +18,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
     description={isLandingPage
         ? "Crea tu catálogo digital, recibe pedidos por carrito y WhatsApp y vende en toda Guatemala con Sedelynk."
         : "Consulta productos y realiza tu pedido en línea."}
-    noindex={isAdminInitialRoute}
+    noindex={!isLandingPage}
 >
     <script define:vars={{ publicBackendUrl }}>
         window.__PUBLIC_BACKEND_URL__ = publicBackendUrl;
@@ -1003,6 +1007,33 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 </div>
             </div>
 
+            <div id="force-credentials-modal" class="fixed inset-0 z-[220] hidden items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm">
+                <div class="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
+                    <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-xl text-amber-700">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">Acceso temporal</p>
+                    <h2 class="mt-1 text-2xl font-black text-slate-950">Crea tus credenciales definitivas</h2>
+                    <p class="mt-2 text-sm font-semibold leading-6 text-slate-500">Por seguridad debes reemplazar los datos temporales antes de entrar al panel.</p>
+                    <form id="force-credentials-form" onsubmit="guardarCredencialesDefinitivas(event)" class="mt-6 space-y-4">
+                        <div id="force-credentials-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700"></div>
+                        <div id="force-username-wrapper">
+                            <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Nuevo usuario</label>
+                            <input id="force-new-username" minlength="3" autocomplete="username" placeholder="Tu nuevo usuario" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                        </div>
+                        <div id="force-password-wrapper">
+                            <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Nueva contraseña</label>
+                            <input id="force-new-password" type="password" minlength="8" autocomplete="new-password" placeholder="Mínimo 8 caracteres" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                        </div>
+                        <div id="force-confirm-wrapper">
+                            <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Confirmar contraseña</label>
+                            <input id="force-confirm-password" type="password" minlength="8" autocomplete="new-password" placeholder="Repite la nueva contraseña" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                        </div>
+                        <button id="force-credentials-submit" class="w-full rounded-2xl bg-violet-600 px-5 py-4 text-xs font-black uppercase tracking-wider text-white transition hover:bg-violet-700">Guardar y entrar al panel</button>
+                    </form>
+                </div>
+            </div>
+
             {/* FOOTER */}
             <footer class="relative z-10 w-full max-w-6xl mx-auto px-6 py-8 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-slate-400 text-xs font-semibold bg-white/50 rounded-t-3xl">
                 <p>&copy; 2026 sedelynk. Todos los derechos reservados.</p>
@@ -1115,7 +1146,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             </div>
                             <p class="text-sm font-extrabold text-white">Soporte por WhatsApp</p>
                             <p class="mt-1 text-xs font-semibold text-slate-300">¿Necesitas ayuda?</p>
-                            <p id="admin-support-whatsapp" class="mt-3 text-sm font-black text-primary-300">Soporte no configurado</p>
+                            <p id="admin-support-whatsapp" class="mt-3 text-sm font-black text-primary-300">Configura tu canal de soporte</p>
                             <div class="mt-3 grid gap-2">
                                 <button id="admin-support-whatsapp-btn" type="button" onclick="abrirSoporteWhatsapp()" class="rounded-2xl bg-primary-500 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-50">
                                     Abrir soporte
@@ -1129,7 +1160,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <div id="admin-sidebar-avatar" class="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 font-black">A</div>
                             <div class="min-w-0 flex-1">
                                 <p id="admin-sidebar-name" class="truncate text-sm font-extrabold text-white">Admin</p>
-                                <p id="admin-sidebar-email" class="truncate text-[11px] font-semibold text-slate-300">admin@example.com</p>
+                                <p id="admin-sidebar-email" class="truncate text-[11px] font-semibold text-slate-300">Correo de la cuenta</p>
                                 <p class="mt-0.5 text-[10px] font-black uppercase tracking-wider text-primary-300">En línea</p>
                             </div>
                             <i class="fa-solid fa-chevron-down text-xs text-slate-400"></i>
@@ -1188,9 +1219,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                             <button onclick="abrirAdminForm()" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-primary-900/20 transition hover:bg-primary-500 active:scale-95">
                                 <i class="fa-solid fa-plus"></i> Agregar producto
                             </button>
-                            <button onclick="abrirCatalogoNuevaVentana()" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#071b33] px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-slate-900/10 transition hover:bg-[#102a4a] active:scale-95">
+                            <a href={`/c/${initialTenantSlug}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#071b33] px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-slate-900/10 transition hover:bg-[#102a4a] active:scale-95">
                                 <i class="fa-solid fa-eye"></i> Ir a catálogo
-                            </button>
+                            </a>
                             <button onclick="cerrarSesion()" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-rose-900/20 transition hover:bg-rose-500 active:scale-95">
                                 <i class="fa-solid fa-right-from-bracket"></i> Salir
                             </button>
@@ -1643,7 +1674,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Correo, usuario o número de cuenta</label>
                         <div class="relative">
                             <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" id="auth2-identifier" placeholder="admin o admin@example.com" required autocomplete="username"
+                            <input type="text" id="auth2-identifier" placeholder="Tu correo, usuario o número de cuenta" required autocomplete="username"
                             class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                         </div>
                     </div>
@@ -1765,16 +1796,34 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <p class="text-xs font-semibold text-slate-500 mt-1">Te enviaremos un enlace seguro para restablecer tu contraseña.</p>
                 </div>
 
-                <form onsubmit="recuperarPassword(event)" class="space-y-4 text-left">
+                <form id="auth2-recovery-form" onsubmit="recuperarPassword(event)" class="space-y-4 text-left">
                     <div>
                         <label class="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Correo, usuario o número de cuenta</label>
-                        <input type="text" id="auth2-recovery-identifier" placeholder="admin@example.com" required
+                        <input type="text" id="auth2-recovery-identifier" placeholder="correo@negocio.com, usuario o CT-000001" required
                         class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10">
                     </div>
-                    <button type="submit" class="w-full py-4 bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-500/10 active:scale-95 uppercase tracking-wider text-xs transition-all">
-                        Enviar Enlace
+                    <button id="auth2-recovery-submit" type="submit" class="w-full py-4 bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-500 hover:to-orange-400 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-500/10 active:scale-95 uppercase tracking-wider text-xs transition-all">
+                        Enviar enlace a tu correo
                     </button>
                 </form>
+
+                <div id="auth2-recovery-success" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-left">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                            <i class="fa-solid fa-envelope-circle-check"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-emerald-950">Enlace enviado</h3>
+                            <p class="mt-1 text-xs font-semibold leading-relaxed text-emerald-800">Si la cuenta está activa y tiene un correo válido, recibirás allí el enlace para crear una nueva contraseña.</p>
+                        </div>
+                    </div>
+                    <ol class="mt-4 space-y-2 text-xs font-bold leading-relaxed text-emerald-900">
+                        <li>1. Revisa la bandeja de entrada y spam.</li>
+                        <li>2. Abre el enlace antes de que expire.</li>
+                        <li>3. Escribe y confirma tu nueva contraseña.</li>
+                        <li>4. Regresa al panel e inicia sesión.</li>
+                    </ol>
+                </div>
 
                 <p id="auth2-dev-reset-link" class="hidden text-[10px] text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-3 break-all"></p>
 
@@ -1806,6 +1855,33 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     </button>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <div id="force-credentials-modal" class="fixed inset-0 z-[220] hidden items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
+            <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-xl text-amber-700">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <p class="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">Acceso temporal</p>
+            <h2 class="mt-1 text-2xl font-black text-slate-950">Crea tus credenciales definitivas</h2>
+            <p class="mt-2 text-sm font-semibold leading-6 text-slate-500">Por seguridad debes reemplazar los datos temporales antes de entrar al panel.</p>
+            <form id="force-credentials-form" onsubmit="guardarCredencialesDefinitivas(event)" class="mt-6 space-y-4">
+                <div id="force-credentials-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700"></div>
+                <div id="force-username-wrapper">
+                    <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Nuevo usuario</label>
+                    <input id="force-new-username" minlength="3" autocomplete="username" placeholder="Tu nuevo usuario" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                </div>
+                <div id="force-password-wrapper">
+                    <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Nueva contraseña</label>
+                    <input id="force-new-password" type="password" minlength="8" autocomplete="new-password" placeholder="Mínimo 8 caracteres" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                </div>
+                <div id="force-confirm-wrapper">
+                    <label class="mb-2 block text-[10px] font-black uppercase tracking-wider text-slate-500">Confirmar contraseña</label>
+                    <input id="force-confirm-password" type="password" minlength="8" autocomplete="new-password" placeholder="Repite la nueva contraseña" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10">
+                </div>
+                <button id="force-credentials-submit" class="w-full rounded-2xl bg-violet-600 px-5 py-4 text-xs font-black uppercase tracking-wider text-white transition hover:bg-violet-700">Guardar y entrar al panel</button>
+            </form>
         </div>
     </div>
 
@@ -4047,7 +4123,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         function actualizarIdentidadAdmin(user = {}) {
             const nombreVisible = obtenerNombreAdmin(user);
-            const emailVisible = user.email || 'admin@example.com';
+            const emailVisible = user.email || 'Correo de la cuenta';
             const inicial = nombreVisible.charAt(0).toUpperCase() || 'A';
             const welcomeTitle = document.getElementById('admin-welcome-title');
             const sidebarName = document.getElementById('admin-sidebar-name');
@@ -4195,11 +4271,13 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     if (data.devSessionToken) {
                         sessionStorage.setItem(DEV_SESSION_KEY, data.devSessionToken);
                     }
-                    if (data.mustChangePassword) {
-                        // Force the user to change their password before accessing the panel
-                        window._pendingAdminTenantSlug = tenantSlug;
-                        window._pendingAdminAccessKey = data.adminAccessKey || data.user?.adminAccessKey || adminAccessKey;
-                        abrirForzarCambioPassword();
+                    if (data.mustChangePassword || data.mustChangeUsername) {
+                        abrirCambioCredencialesObligatorio({
+                            tenant: tenantSlug,
+                            accessKey: data.adminAccessKey || data.user?.adminAccessKey || adminAccessKey,
+                            changeUsername: data.mustChangeUsername,
+                            changePassword: data.mustChangePassword
+                        });
                         return;
                     }
                     actualizarIdentidadAdmin(data.user || {});
@@ -4262,8 +4340,13 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             if (e) e.preventDefault();
             const identifier = document.getElementById("auth2-recovery-identifier").value.trim();
             const devLinkEl = document.getElementById("auth2-dev-reset-link");
+            const form = document.getElementById('auth2-recovery-form');
+            const success = document.getElementById('auth2-recovery-success');
+            const submit = document.getElementById('auth2-recovery-submit');
             devLinkEl.classList.add('hidden');
             try {
+                submit.disabled = true;
+                submit.textContent = 'Enviando enlace...';
                 const res = await fetch(`${TENANT_API_URL}/auth/forgot-password`, {
                     method: 'POST',
                     credentials: 'include',
@@ -4271,13 +4354,21 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     body: JSON.stringify({ identifier })
                 });
                 const data = await res.json();
-                showToast(data.mensaje || "Si la cuenta existe, enviaremos instrucciones.", res.ok ? "success" : "error");
+                if (!res.ok) {
+                    showToast(data.error || "No se pudo solicitar la recuperación.", "error");
+                    return;
+                }
+                form?.classList.add('hidden');
+                success?.classList.remove('hidden');
                 if (data.devResetUrl) {
                     devLinkEl.innerHTML = `Modo desarrollo: <a class="text-primary-600 font-black underline" href="${data.devResetUrl}">${data.devResetUrl}</a>`;
                     devLinkEl.classList.remove('hidden');
                 }
             } catch (err) {
                 showToast("Error de conexión al recuperar", "error");
+            } finally {
+                submit.disabled = false;
+                submit.textContent = 'Enviar enlace a tu correo';
             }
             return;
             const pin = document.getElementById("recovery-pin").value.trim();
@@ -4678,7 +4769,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     const me = await meRes.json();
                     actualizarIdentidadAdmin(me.user || {});
                     const userValue = me.user?.usuario || 'admin';
-                    const emailValue = me.user?.email || 'admin@example.com';
+                    const emailValue = me.user?.email || 'Correo de la cuenta';
                     const settingsUser = document.getElementById('settings-user');
                     const settingsEmail = document.getElementById('settings-email');
                     if (settingsUser) settingsUser.value = userValue;
@@ -7016,6 +7107,79 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             errorEl.classList.remove('hidden');
         }
 
+        function abrirCambioCredencialesObligatorio({ tenant, accessKey, changeUsername, changePassword }) {
+            window._pendingAdminTenantSlug = tenant;
+            window._pendingAdminAccessKey = accessKey;
+            window._forceChangeUsername = changeUsername === true;
+            window._forceChangePassword = changePassword === true;
+            const usernameWrapper = document.getElementById('force-username-wrapper');
+            const passwordWrapper = document.getElementById('force-password-wrapper');
+            const confirmWrapper = document.getElementById('force-confirm-wrapper');
+            const usernameInput = document.getElementById('force-new-username');
+            const passwordInput = document.getElementById('force-new-password');
+            const confirmInput = document.getElementById('force-confirm-password');
+            usernameWrapper?.classList.toggle('hidden', !window._forceChangeUsername);
+            passwordWrapper?.classList.toggle('hidden', !window._forceChangePassword);
+            confirmWrapper?.classList.toggle('hidden', !window._forceChangePassword);
+            if (usernameInput) usernameInput.required = window._forceChangeUsername;
+            if (passwordInput) passwordInput.required = window._forceChangePassword;
+            if (confirmInput) confirmInput.required = window._forceChangePassword;
+            document.getElementById('force-credentials-error')?.classList.add('hidden');
+            const modal = document.getElementById('force-credentials-modal');
+            modal?.classList.remove('hidden');
+            modal?.classList.add('flex');
+            setTimeout(() => (window._forceChangeUsername ? usernameInput : passwordInput)?.focus(), 20);
+        }
+        window.abrirCambioCredencialesObligatorio = abrirCambioCredencialesObligatorio;
+
+        async function guardarCredencialesDefinitivas(event) {
+            event?.preventDefault();
+            const tenant = window._pendingAdminTenantSlug;
+            const accessKey = window._pendingAdminAccessKey;
+            const newUsername = document.getElementById('force-new-username')?.value.trim() || '';
+            const newPassword = document.getElementById('force-new-password')?.value || '';
+            const confirmPassword = document.getElementById('force-confirm-password')?.value || '';
+            const error = document.getElementById('force-credentials-error');
+            const submit = document.getElementById('force-credentials-submit');
+            error?.classList.add('hidden');
+            if (window._forceChangeUsername && newUsername.length < 3) {
+                error.textContent = 'El nuevo usuario debe tener al menos 3 caracteres.';
+                error.classList.remove('hidden');
+                return;
+            }
+            if (window._forceChangePassword && (newPassword.length < 8 || newPassword !== confirmPassword)) {
+                error.textContent = newPassword !== confirmPassword
+                    ? 'Las contraseñas no coinciden.'
+                    : 'La contraseña debe tener al menos 8 caracteres.';
+                error.classList.remove('hidden');
+                return;
+            }
+            try {
+                submit.disabled = true;
+                submit.textContent = 'Guardando...';
+                const response = await fetch(`${API_URL}/${encodeURIComponent(tenant)}/auth/force-change-password`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newUsername, newPassword })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    error.textContent = data.error || 'No se pudieron actualizar las credenciales.';
+                    error.classList.remove('hidden');
+                    return;
+                }
+                window.location.href = `/c/${tenant}/p/${accessKey}`;
+            } catch {
+                error.textContent = 'No se pudo conectar con el servicio.';
+                error.classList.remove('hidden');
+            } finally {
+                submit.disabled = false;
+                submit.textContent = 'Guardar y entrar al panel';
+            }
+        }
+        window.guardarCredencialesDefinitivas = guardarCredencialesDefinitivas;
+
         function mostrarEstadoRecoveryLanding(mensaje = '') {
             const statusEl = document.getElementById('landing-recovery-status');
             if (!statusEl) return;
@@ -7115,12 +7279,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                         sessionStorage.setItem(`catalogo_dev_session_${tSlug}`, data.devSessionToken);
                     }
                     
-                    if (data.mustChangePassword) {
-                        // Store redirect info and show forced password change modal
-                        window._pendingAdminTenantSlug = tSlug;
-                        window._pendingAdminAccessKey = aKey;
+                    if (data.mustChangePassword || data.mustChangeUsername) {
                         mostrarLandingStep('close');
-                        abrirForzarCambioPasswordLanding(tSlug);
+                        abrirCambioCredencialesObligatorio({
+                            tenant: tSlug,
+                            accessKey: aKey,
+                            changeUsername: data.mustChangeUsername,
+                            changePassword: data.mustChangePassword
+                        });
                         return;
                     }
                     

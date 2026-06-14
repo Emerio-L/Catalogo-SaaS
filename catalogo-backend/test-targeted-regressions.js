@@ -98,7 +98,7 @@ async function main() {
         body: JSON.stringify({ identifier: tenantUsername, password: tenantPassword })
     });
     assert(tenantLogin.response.ok && tenantLogin.data.devSessionToken, 'Sesion tenant creada');
-    const tenantAuth = { Authorization: `Bearer ${tenantLogin.data.devSessionToken}` };
+    let tenantAuth = { Authorization: `Bearer ${tenantLogin.data.devSessionToken}` };
 
     const superLogin = await request(API, '/api/super-admin/auth/login', {
         method: 'POST',
@@ -108,15 +108,69 @@ async function main() {
     assert(superLogin.response.ok && superLogin.data.devSessionToken, 'Sesion super admin creada');
     const superAuth = { Authorization: `Bearer ${superLogin.data.devSessionToken}` };
 
+    const temporaryAccess = await gatewayRequest(`/api/super-admin/tenants/${tenant.id}/recovery`, {
+        method: 'POST',
+        headers: { ...superAuth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: 'temporary_password' })
+    });
+    assert(
+        temporaryAccess.response.ok && temporaryAccess.data.temporaryUsername && temporaryAccess.data.temporaryPassword,
+        `Super admin genera usuario y contraseña temporales (${temporaryAccess.response.status}: ${temporaryAccess.data.error || 'sin error'})`
+    );
+
+    const temporaryLogin = await request(API, `/api/${tenantSlug}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            identifier: temporaryAccess.data.temporaryUsername,
+            password: temporaryAccess.data.temporaryPassword
+        })
+    });
+    assert(
+        temporaryLogin.response.ok
+            && temporaryLogin.data.mustChangeUsername
+            && temporaryLogin.data.mustChangePassword
+            && temporaryLogin.data.devSessionToken,
+        'Acceso temporal exige cambiar usuario y contraseña'
+    );
+
+    const definitiveUsername = `definitive${runId}`;
+    const definitivePassword = `Definitive-${runId}-A1`;
+    const forceCredentials = await request(API, `/api/${tenantSlug}/auth/force-change-password`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${temporaryLogin.data.devSessionToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            newUsername: definitiveUsername,
+            newPassword: definitivePassword
+        })
+    });
+    assert(forceCredentials.response.ok, 'Credenciales temporales se reemplazan por credenciales definitivas');
+
+    const definitiveLogin = await request(API, `/api/${tenantSlug}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: definitiveUsername, password: definitivePassword })
+    });
+    assert(
+        definitiveLogin.response.ok
+            && !definitiveLogin.data.mustChangeUsername
+            && !definitiveLogin.data.mustChangePassword,
+        'Credenciales definitivas permiten ingresar sin cambio pendiente'
+    );
+    tenantAuth = { Authorization: `Bearer ${definitiveLogin.data.devSessionToken}` };
+
     const forgotPassword = await gatewayRequest('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: tenantUsername })
+        body: JSON.stringify({ identifier: definitiveUsername })
     });
     assert(forgotPassword.response.ok, 'Solicitud de recuperacion aceptada por el gateway');
     assert(
         String(forgotPassword.data.devResetUrl || '').startsWith(`${FRONTEND}/c/${tenantSlug}/reset-password?token=`),
-        'Enlace de recuperacion usa un origen frontend valido'
+        `Enlace de recuperacion usa un origen frontend valido (${forgotPassword.data.devResetUrl || 'sin enlace de desarrollo'})`
     );
 
     await prisma.category.create({

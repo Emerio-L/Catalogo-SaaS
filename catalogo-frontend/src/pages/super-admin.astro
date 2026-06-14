@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
 
 const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 ---
@@ -635,7 +636,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 <div class="grid grid-cols-2 gap-3" id="drawer-stats-grid"></div>
 
                 <div class="grid gap-2 sm:grid-cols-2">
-                    <a id="drawer-full-account-link" href="#" target="_blank" class="rounded-xl bg-violet-600 px-3 py-2.5 text-center text-xs font-black text-white">Ver cuenta completa</a>
+                    <a id="drawer-public-catalog-link" href="#" target="_blank" rel="noopener" class="rounded-xl bg-emerald-600 px-3 py-2.5 text-center text-xs font-black text-white">Abrir catálogo público</a>
+                    <a id="drawer-admin-panel-link" href="#" target="_blank" rel="noopener" class="rounded-xl bg-violet-600 px-3 py-2.5 text-center text-xs font-black text-white">Abrir panel administrativo</a>
+                    <button id="drawer-copy-public-link" type="button" class="rounded-xl bg-white/8 px-3 py-2.5 text-xs font-black text-white">Copiar enlace público</button>
+                    <button id="drawer-copy-admin-link" type="button" class="rounded-xl bg-white/8 px-3 py-2.5 text-xs font-black text-white">Copiar enlace del panel</button>
                     <button onclick="sendPaymentReminder(selectedTenantId)" class="rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-black text-white">Enviar recordatorio de pago</button>
                     <button onclick="openRecoveryModal(selectedTenantId)" class="rounded-xl bg-amber-500 px-3 py-2.5 text-xs font-black text-slate-950">Restablecer acceso</button>
                     <button onclick="updateTenantStatus(selectedTenantId, 'suspended')" class="rounded-xl bg-rose-600 px-3 py-2.5 text-xs font-black text-white">Suspender cuenta</button>
@@ -748,8 +752,8 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <span class="mt-1 block text-xs font-semibold text-slate-400">Genera un enlace de un solo uso por 15 minutos.</span>
                 </button>
                 <button onclick="runRecoveryAction('temporary_password')" class="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10">
-                    <span class="block text-sm font-black text-white"><i class="fa-solid fa-key mr-2 text-amber-300"></i>Generar contraseña temporal</span>
-                    <span class="mt-1 block text-xs font-semibold text-slate-400">Expira en 24 horas y obliga a cambiarla en el siguiente ingreso.</span>
+                    <span class="block text-sm font-black text-white"><i class="fa-solid fa-key mr-2 text-amber-300"></i>Generar usuario y contraseña temporales</span>
+                    <span class="mt-1 block text-xs font-semibold text-slate-400">Expiran en 24 horas y obligan a crear credenciales definitivas.</span>
                 </button>
             </div>
             <div id="recovery-result" class="mt-5 hidden rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4 text-sm font-bold text-violet-100"></div>
@@ -1383,8 +1387,19 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <p class="mt-1 text-xs font-black text-white truncate" title="${s.value}">${s.value}</p>
                 </div>
             `).join('');
-            const fullAccountLink = document.getElementById('drawer-full-account-link');
-            if (fullAccountLink) fullAccountLink.href = tenant.adminUrl || tenant.publicUrl || '#';
+            const publicUrl = tenant.publicUrl ? new URL(tenant.publicUrl, window.location.origin).href : '';
+            const adminUrl = tenant.adminUrl ? new URL(tenant.adminUrl, window.location.origin).href : '';
+            const publicLink = document.getElementById('drawer-public-catalog-link');
+            const adminLink = document.getElementById('drawer-admin-panel-link');
+            if (publicLink) publicLink.href = publicUrl || '#';
+            if (adminLink) adminLink.href = adminUrl || '#';
+            const copyLink = async (url, label) => {
+                if (!url) return showSuperToast('Enlace no disponible.', 'error');
+                await navigator.clipboard.writeText(url);
+                showSuperToast(`${label} copiado.`, 'success');
+            };
+            document.getElementById('drawer-copy-public-link').onclick = () => copyLink(publicUrl, 'Enlace público');
+            document.getElementById('drawer-copy-admin-link').onclick = () => copyLink(adminUrl, 'Enlace del panel');
             const notes = document.getElementById('drawer-internal-notes');
             if (notes) notes.value = tenant.internalNotes || '';
             
@@ -1744,7 +1759,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             if (data.code) {
                 result.innerHTML = `Código temporal: <strong class="ml-2 text-2xl tracking-[0.25em]">${data.code}</strong><p class="mt-2 text-xs text-violet-200">Visible una sola vez. Expira en 10 minutos.</p>`;
             } else if (data.temporaryPassword) {
-                result.innerHTML = `Contraseña temporal: <strong class="ml-2 break-all text-lg">${escapeHtml(data.temporaryPassword)}</strong><p class="mt-2 text-xs text-violet-200">Visible una sola vez.</p>`;
+                result.innerHTML = `
+                    <p class="text-xs font-black uppercase tracking-wider text-violet-200">Credenciales temporales</p>
+                    <p class="mt-3">Usuario: <strong class="ml-2 break-all text-lg text-white">${escapeHtml(data.temporaryUsername || '')}</strong></p>
+                    <p class="mt-2">Contraseña: <strong class="ml-2 break-all text-lg text-white">${escapeHtml(data.temporaryPassword)}</strong></p>
+                    <p class="mt-3 text-xs text-violet-200">Visibles una sola vez. Expiran en 24 horas y obligan a cambiar usuario y contraseña.</p>`;
             } else {
                 result.innerHTML = `${escapeHtml(data.message || 'Recuperación preparada.')}${data.devResetUrl ? `<a class="mt-2 block break-all underline" href="${data.devResetUrl}" target="_blank">${data.devResetUrl}</a>` : ''}`;
             }

@@ -42,8 +42,8 @@ const structuredData = Astro.url.pathname === '/' ? {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
     <meta name="description" content={description}>
-    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'}>
-    <meta name="googlebot" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'}>
+    <meta name="robots" content={noindex ? 'noindex, nofollow, noarchive, nosnippet' : 'index, follow, max-image-preview:large'}>
+    <meta name="googlebot" content={noindex ? 'noindex, nofollow, noarchive, nosnippet' : 'index, follow, max-image-preview:large'}>
     <meta name="geo.region" content="GT">
     <meta name="geo.placename" content="Guatemala">
     <link rel="canonical" href={canonicalUrl}>
