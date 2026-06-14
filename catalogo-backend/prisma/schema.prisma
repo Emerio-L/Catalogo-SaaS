@@ -119,7 +119,7 @@ model Settings {
   vistaPredeterminada    String   @default("grid")
   monedaVisible          String   @default("GTQ")
   orderCartEnabled       Boolean  @default(true)
-  orderWhatsappEnabled   Boolean  @default(true)
+  orderWhatsappEnabled   Boolean  @default(false)
   addressRequirement     String   @default("optional") // optional, required, disabled
   commentRequirement     String   @default("optional") // optional, required, disabled
 

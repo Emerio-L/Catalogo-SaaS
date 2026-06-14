@@ -975,7 +975,9 @@ async function settingsTenant(tenant) {
             mostrarCategorias: true,
             mostrarDescripcion: false,
             vistaPredeterminada: 'grid',
-            monedaVisible: 'GTQ'
+            monedaVisible: 'GTQ',
+            orderCartEnabled: true,
+            orderWhatsappEnabled: false
         });
     }
     return settings;
@@ -2706,7 +2708,9 @@ app.post('/api/tenants/register', authLimiter, async (req, res) => {
             mostrarCategorias: true,
             mostrarDescripcion: false,
             vistaPredeterminada: 'grid',
-            monedaVisible: 'GTQ'
+            monedaVisible: 'GTQ',
+            orderCartEnabled: true,
+            orderWhatsappEnabled: false
         });
 
         await User.create({
