@@ -61,16 +61,21 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .landing-card {
-                    background: rgba(255, 255, 255, 0.72);
-                    backdrop-filter: blur(18px);
-                    -webkit-backdrop-filter: blur(18px);
-                    border: 1px solid rgba(255, 255, 255, 0.48);
-                    box-shadow:
-                      0 24px 60px rgba(15, 23, 42, 0.14),
-                      inset 0 1px 0 rgba(255, 255, 255, 0.55);
-                    border-radius: var(--radius-card);
-                    position: relative;
-                    overflow: hidden;
+                  position: relative;
+                  overflow: hidden;
+                  background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.78) 0%,
+                    rgba(255, 255, 255, 0.64) 100%
+                  );
+                  backdrop-filter: blur(24px) saturate(160%);
+                  -webkit-backdrop-filter: blur(24px) saturate(160%);
+                  border: 1px solid rgba(255, 255, 255, 0.50);
+                  box-shadow:
+                    0 20px 50px rgba(88, 28, 135, 0.10),
+                    0 8px 24px rgba(15, 23, 42, 0.08),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+                  border-radius: var(--radius-card);
                 }
 
                 .landing-card::before {
@@ -80,16 +85,42 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   border-radius: inherit;
                   background: linear-gradient(
                     135deg,
-                    rgba(255, 255, 255, 0.38),
-                    rgba(255, 255, 255, 0.08)
+                    rgba(255, 255, 255, 0.42) 0%,
+                    rgba(255, 255, 255, 0.10) 45%,
+                    rgba(255, 255, 255, 0.04) 100%
                   );
                   pointer-events: none;
                 }
+                
+                .landing-card::after {
+                  content: "";
+                  position: absolute;
+                  inset: 1px;
+                  border-radius: inherit;
+                  pointer-events: none;
+                  box-shadow: inset 0 0 0 1px rgba(196, 181, 253, 0.18);
+                }
 
-                @supports not ((backdrop-filter: blur(18px)) or (-webkit-backdrop-filter: blur(18px))) {
-                  .landing-card {
-                    background: rgba(255, 255, 255, 0.94);
-                  }
+                .feature-card {
+                  background: rgba(255, 255, 255, 0.72);
+                  border: 1px solid rgba(255, 255, 255, 0.44);
+                  backdrop-filter: blur(14px);
+                  -webkit-backdrop-filter: blur(14px);
+                  box-shadow:
+                    0 10px 24px rgba(88, 28, 135, 0.05),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+                  position: relative;
+                  overflow: hidden;
+                }
+
+                .top-nav-shell {
+                  background: rgba(255, 255, 255, 0.74);
+                  backdrop-filter: blur(18px) saturate(150%);
+                  -webkit-backdrop-filter: blur(18px) saturate(150%);
+                  border: 1px solid rgba(255, 255, 255, 0.48);
+                  box-shadow:
+                    0 12px 30px rgba(88, 28, 135, 0.06),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.60);
                 }
 
                 .landing-btn-primary {
@@ -139,9 +170,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   position: relative;
                   overflow: hidden;
                   background:
-                    radial-gradient(circle at 12% 18%, rgba(45, 212, 191, 0.22), transparent 34%),
-                    radial-gradient(circle at 82% 12%, rgba(59, 130, 246, 0.16), transparent 30%),
-                    linear-gradient(135deg, #f6f7ff 0%, #eef3ff 44%, #f8f4ff 100%);
+                    radial-gradient(circle at 12% 18%, rgba(168, 85, 247, 0.16), transparent 34%),
+                    radial-gradient(circle at 82% 18%, rgba(236, 72, 153, 0.10), transparent 30%),
+                    radial-gradient(circle at 65% 72%, rgba(192, 132, 252, 0.10), transparent 28%),
+                    linear-gradient(135deg, #f6f3ff 0%, #eef2ff 45%, #f8f5ff 100%);
                 }
 
                 .hero-section::before,
@@ -149,26 +181,26 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   content: "";
                   position: absolute;
                   border-radius: 999px;
-                  filter: blur(48px);
+                  filter: blur(52px);
                   opacity: 0.55;
                   pointer-events: none;
                   z-index: 0;
                 }
 
                 .hero-section::before {
-                  width: 320px;
-                  height: 320px;
-                  top: -110px;
-                  left: -80px;
-                  background: rgba(45, 212, 191, 0.32);
+                  width: 340px;
+                  height: 340px;
+                  top: -120px;
+                  left: -90px;
+                  background: rgba(168, 85, 247, 0.20);
                 }
 
                 .hero-section::after {
-                  width: 360px;
-                  height: 360px;
+                  width: 380px;
+                  height: 380px;
                   right: -120px;
-                  bottom: -130px;
-                  background: rgba(59, 130, 246, 0.22);
+                  bottom: -140px;
+                  background: rgba(192, 132, 252, 0.18);
                 }
 
                 .hero-section > * {
@@ -261,39 +293,39 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   min-height: 410px;
                   padding: 20px 20px 18px;
                   border-radius: 24px;
-                  background: rgba(255, 255, 255, 0.72);
-                  backdrop-filter: blur(18px);
-                  -webkit-backdrop-filter: blur(18px);
                   position: relative;
                   overflow: hidden;
+                  background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.78) 0%,
+                    rgba(255, 255, 255, 0.64) 100%
+                  );
+                  backdrop-filter: blur(24px) saturate(160%);
+                  -webkit-backdrop-filter: blur(24px) saturate(160%);
+                  border: 1px solid rgba(255, 255, 255, 0.50);
+                  box-shadow:
+                    0 20px 50px rgba(88, 28, 135, 0.10),
+                    0 8px 24px rgba(15, 23, 42, 0.08),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.65);
                   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 }
 
                 .heroActionCard:hover {
                   transform: translateY(-5px);
                   box-shadow:
-                    0 35px 75px rgba(45, 212, 191, 0.15),
+                    0 35px 75px rgba(168, 85, 247, 0.15),
                     0 12px 28px rgba(15, 23, 42, 0.08);
                 }
 
                 .heroActionCard.portal:hover {
                   box-shadow:
-                    0 35px 75px rgba(59, 130, 246, 0.15),
+                    0 35px 75px rgba(192, 132, 252, 0.15),
                     0 12px 28px rgba(15, 23, 42, 0.08);
                 }
 
-                .heroActionCard.signup {
-                  border: 1px solid rgba(255, 255, 255, 0.48);
-                  box-shadow:
-                    0 24px 60px rgba(15, 23, 42, 0.14),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.55);
-                }
-
+                .heroActionCard.signup,
                 .heroActionCard.portal {
-                  border: 1px solid rgba(255, 255, 255, 0.48);
-                  box-shadow:
-                    0 24px 60px rgba(15, 23, 42, 0.14),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+                  /* Hover handles the dynamic shadow now, base shadow is in .heroActionCard */
                 }
 
                 .heroActionCard::before {
@@ -303,15 +335,29 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   border-radius: inherit;
                   background: linear-gradient(
                     135deg,
-                    rgba(255, 255, 255, 0.38),
-                    rgba(255, 255, 255, 0.08)
+                    rgba(255, 255, 255, 0.42) 0%,
+                    rgba(255, 255, 255, 0.10) 45%,
+                    rgba(255, 255, 255, 0.04) 100%
                   );
                   pointer-events: none;
                 }
 
-                @supports not ((backdrop-filter: blur(18px)) or (-webkit-backdrop-filter: blur(18px))) {
-                  .heroActionCard {
-                    background: rgba(255, 255, 255, 0.94);
+                .heroActionCard::after {
+                  content: "";
+                  position: absolute;
+                  inset: 1px;
+                  border-radius: inherit;
+                  pointer-events: none;
+                  box-shadow: inset 0 0 0 1px rgba(196, 181, 253, 0.18);
+                }
+
+                @supports not ((backdrop-filter: blur(24px)) or (-webkit-backdrop-filter: blur(24px))) {
+                  .landing-card,
+                  .auth-card,
+                  .heroActionCard,
+                  .top-nav-shell,
+                  .feature-card {
+                    background: rgba(255, 255, 255, 0.92);
                   }
                 }
 
@@ -476,7 +522,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             </script>
 
             {/* NAVBAR */}
-            <header class="landingHeader relative z-50 mx-auto px-5 md:px-8 py-3.5 md:py-4 flex justify-between items-center bg-white shadow-xl shadow-purple-950/[0.03] border border-slate-100/80 rounded-3xl sticky top-3 mt-3 w-[calc(100%-24px)] md:w-auto">
+            <header class="landingHeader top-nav-shell relative z-50 mx-auto px-5 md:px-8 py-3.5 md:py-4 flex justify-between items-center rounded-3xl sticky top-3 mt-3 w-[calc(100%-24px)] md:w-auto">
                 <div class="flex items-center">
                     <a href="/" class="flex items-center gap-3">
                         <div class="logoContainer">
@@ -565,19 +611,19 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
                     {/* Mini Beneficios en dos columnas estilo tarjetas blancas con sombra */}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-xl">
-                        <div class="flex items-center gap-2.5 bg-white border border-slate-100 rounded-2xl p-2.5 shadow-sm shadow-purple-950/[0.02]">
+                        <div class="feature-card flex items-center gap-2.5 rounded-2xl p-2.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600"><i class="fa-solid fa-cart-shopping text-xs"></i></span>
                             <span class="text-slate-800 font-extrabold text-[10px] leading-tight">Sin comisiones ni<br>cargos ocultos</span>
                         </div>
-                        <div class="flex items-center gap-2.5 bg-white border border-slate-100 rounded-2xl p-2.5 shadow-sm shadow-purple-950/[0.02]">
+                        <div class="feature-card flex items-center gap-2.5 rounded-2xl p-2.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-pink-50 text-pink-600"><i class="fa-solid fa-bolt text-xs"></i></span>
                             <span class="text-slate-800 font-extrabold text-[10px] leading-tight">Empieza tu tienda<br>en minutos</span>
                         </div>
-                        <div class="flex items-center gap-2.5 bg-white border border-slate-100 rounded-2xl p-2.5 shadow-sm shadow-purple-950/[0.02]">
+                        <div class="feature-card flex items-center gap-2.5 rounded-2xl p-2.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><i class="fa-brands fa-whatsapp text-sm"></i></span>
                             <span class="text-slate-800 font-extrabold text-[10px] leading-tight">Carrito de pedidos<br>organizado</span>
                         </div>
-                        <div class="flex items-center gap-2.5 bg-white border border-slate-100 rounded-2xl p-2.5 shadow-sm shadow-purple-950/[0.02]">
+                        <div class="feature-card flex items-center gap-2.5 rounded-2xl p-2.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600"><i class="fa-solid fa-box-open text-xs"></i></span>
                             <span class="text-slate-800 font-extrabold text-[10px] leading-tight">Organiza y envía sin<br>complicaciones</span>
                         </div>
