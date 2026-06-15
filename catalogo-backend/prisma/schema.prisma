@@ -61,6 +61,7 @@ model Tenant {
   products           Product[]
   orders             Order[]
   payments           Payment[]
+  paymentDetails     PaymentDetails?
   sessions           Session[]
   passwordResetTokens PasswordResetToken[]
   accountStatusLogs  AccountStatusLog[]
@@ -211,6 +212,24 @@ model Payment {
 
   @@index([tenantId])
   @@index([status])
+}
+
+model PaymentDetails {
+  id                String    @id @default(uuid())
+  tenantId          String    @unique
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  mostrarDatosPago  Boolean   @default(false)
+  banco             String    @default("")
+  tipoCuenta        String    @default("")
+  numeroCuenta      String    @default("")
+  nombreTitular     String    @default("")
+  montoSugerido     Decimal?  @db.Decimal(10, 2)
+  instruccionesPago String    @default("")
+  fechaLimitePago   DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tenantId])
 }
 
 model PasswordResetToken {

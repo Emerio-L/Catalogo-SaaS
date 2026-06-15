@@ -358,29 +358,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                             <textarea id="config-support-message" class="super-input min-h-20" placeholder="Mensaje inicial para WhatsApp"></textarea>
                                         </label>
                                     </div>
-                                    <div class="mt-4 pt-4 border-t border-white/10">
-                                        <h3 class="mb-4 text-base font-black text-violet-300"><i class="fa-solid fa-money-bill-transfer mr-2"></i>Datos Bancarios para Suscripción (Global)</h3>
-                                        <div class="grid gap-4 md:grid-cols-2">
-                                            <label class="block">
-                                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Nombre del Banco</span>
-                                                <input id="config-bank-name" class="super-input" placeholder="Ej. Banco Industrial">
-                                            </label>
-                                            <label class="block">
-                                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Número de Cuenta</span>
-                                                <input id="config-bank-account" class="super-input" placeholder="Ej. 123456789">
-                                            </label>
-                                        </div>
-                                        <div class="grid gap-4 md:grid-cols-2 mt-4">
-                                            <label class="block">
-                                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Tipo de Cuenta</span>
-                                                <input id="config-bank-account-type" class="super-input" placeholder="Monetaria o Ahorro">
-                                            </label>
-                                            <label class="block">
-                                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Nombre de la Cuenta (A nombre de)</span>
-                                                <input id="config-bank-account-name" class="super-input" placeholder="Ej. Juan Perez">
-                                            </label>
-                                        </div>
-                                    </div>
                                     <button class="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-violet-950/40 transition hover:bg-violet-500" type="submit">Guardar General</button>
                                 </form>
                             </div>
@@ -674,6 +651,31 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <button onclick="saveTenantNotes()" class="mt-3 rounded-xl bg-violet-600 px-4 py-2 text-xs font-black text-white">Guardar notas</button>
                 </div>
 
+                <form onsubmit="saveTenantPaymentDetails(event)" class="rounded-2xl border border-white/8 bg-white/5 p-4">
+                    <div class="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-sm font-black text-violet-300"><i class="fa-solid fa-building-columns mr-2"></i>Datos de pago</h4>
+                            <p class="mt-1 text-[11px] font-semibold text-slate-400">Configuración privada asignada únicamente a este cliente.</p>
+                        </div>
+                        <label class="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-300">
+                            Mostrar
+                            <input id="drawer-payment-show" type="checkbox" class="h-5 w-5 accent-violet-500">
+                        </label>
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <input id="drawer-payment-bank" class="super-input" maxlength="120" placeholder="Banco">
+                        <input id="drawer-payment-account-type" class="super-input" maxlength="80" placeholder="Tipo de cuenta">
+                        <input id="drawer-payment-account-number" class="super-input" maxlength="120" placeholder="Número de cuenta">
+                        <input id="drawer-payment-holder" class="super-input" maxlength="160" placeholder="Nombre del titular">
+                        <input id="drawer-payment-amount" type="number" min="0" step="0.01" class="super-input" placeholder="Monto sugerido">
+                        <input id="drawer-payment-due-date" type="date" class="super-input">
+                    </div>
+                    <textarea id="drawer-payment-instructions" rows="3" maxlength="2000" class="super-input mt-3 resize-none" placeholder="Instrucciones de pago"></textarea>
+                    <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                        <button type="submit" class="rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-black text-white transition hover:bg-violet-500">Guardar datos de pago</button>
+                        <button type="button" onclick="deleteTenantPaymentDetails()" class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-xs font-black text-rose-300 transition hover:bg-rose-500/20">Eliminar datos de pago</button>
+                    </div>
+                </form>
                 
                 <div class="space-y-4">
                     <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
@@ -1426,6 +1428,17 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             document.getElementById('drawer-copy-admin-link').onclick = () => copyLink(adminUrl, 'Enlace del panel');
             const notes = document.getElementById('drawer-internal-notes');
             if (notes) notes.value = tenant.internalNotes || '';
+            const paymentDetails = data.paymentDetails || {};
+            document.getElementById('drawer-payment-show').checked = paymentDetails.mostrarDatosPago === true;
+            document.getElementById('drawer-payment-bank').value = paymentDetails.banco || '';
+            document.getElementById('drawer-payment-account-type').value = paymentDetails.tipoCuenta || '';
+            document.getElementById('drawer-payment-account-number').value = paymentDetails.numeroCuenta || '';
+            document.getElementById('drawer-payment-holder').value = paymentDetails.nombreTitular || '';
+            document.getElementById('drawer-payment-amount').value = paymentDetails.montoSugerido ?? '';
+            document.getElementById('drawer-payment-instructions').value = paymentDetails.instruccionesPago || '';
+            document.getElementById('drawer-payment-due-date').value = paymentDetails.fechaLimitePago
+                ? String(paymentDetails.fechaLimitePago).slice(0, 10)
+                : '';
             
             document.getElementById('drawer-history-payments').innerHTML = data.payments.length 
                 ? data.payments.map(p => `
@@ -1477,6 +1490,46 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     </div>
                 `).join('')
                 : '<p class="text-slate-500 italic text-[11px]">Sin comprobantes subidos</p>';
+        }
+
+        async function saveTenantPaymentDetails(event) {
+            event.preventDefault();
+            if (!selectedTenantId) return;
+            const payload = {
+                mostrarDatosPago: document.getElementById('drawer-payment-show').checked,
+                banco: document.getElementById('drawer-payment-bank').value.trim(),
+                tipoCuenta: document.getElementById('drawer-payment-account-type').value.trim(),
+                numeroCuenta: document.getElementById('drawer-payment-account-number').value.trim(),
+                nombreTitular: document.getElementById('drawer-payment-holder').value.trim(),
+                montoSugerido: document.getElementById('drawer-payment-amount').value === ''
+                    ? null
+                    : Number(document.getElementById('drawer-payment-amount').value),
+                instruccionesPago: document.getElementById('drawer-payment-instructions').value.trim(),
+                fechaLimitePago: document.getElementById('drawer-payment-due-date').value || null
+            };
+            const res = await superFetch(`/tenants/${selectedTenantId}/payment-details`, {
+                method: 'PATCH',
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showSuperToast(data.error || 'No se pudieron guardar los datos de pago.', 'error');
+                return;
+            }
+            showSuperToast('Datos de pago guardados.', 'success');
+            await loadTenantDrawerDetail(selectedTenantId);
+        }
+
+        async function deleteTenantPaymentDetails() {
+            if (!selectedTenantId || !confirm('¿Eliminar los datos de pago asignados a este cliente?')) return;
+            const res = await superFetch(`/tenants/${selectedTenantId}/payment-details`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showSuperToast(data.error || 'No se pudieron eliminar los datos de pago.', 'error');
+                return;
+            }
+            showSuperToast('Datos de pago eliminados.', 'success');
+            await loadTenantDrawerDetail(selectedTenantId);
         }
 
         async function loadTrash() {
@@ -1743,8 +1796,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         window.updateTenantStatus = updateTenantStatus;
         window.openTenantCancelModal = openTenantCancelModal;
         window.openTenantPlanModal = openTenantPlanModal;
-        window.saveTenantNotes = saveTenantNotes;
-        window.savePaymentConfig = savePaymentConfig;
         window.hardDeleteTenant = hardDeleteTenant;
         window.deleteSuperAdminUser = deleteSuperAdminUser;
 
@@ -1937,10 +1988,6 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             document.getElementById('config-favicon-url').value = superSettings.faviconUrl || '';
             document.getElementById('config-support-whatsapp').value = superSettings.supportWhatsapp || '';
             document.getElementById('config-support-message').value = superSettings.supportMessage || '';
-            document.getElementById('config-bank-name').value = superSettings.paymentBankName || '';
-            document.getElementById('config-bank-account').value = superSettings.paymentBankAccount || '';
-            document.getElementById('config-bank-account-type').value = superSettings.paymentBankAccountType || '';
-            document.getElementById('config-bank-account-name').value = superSettings.paymentBankAccountName || '';
 
             // Landing settings
             document.getElementById('config-landing-title').value = superSettings.landingTitle || 'Crea tu tienda en línea con carrito de compras en Guatemala';
@@ -2097,11 +2144,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 timezone: document.getElementById('config-timezone').value.trim(),
                 faviconUrl: document.getElementById('config-favicon-url').value.trim(),
                 supportWhatsapp: document.getElementById('config-support-whatsapp').value.trim(),
-                supportMessage: document.getElementById('config-support-message').value.trim(),
-                paymentBankName: document.getElementById('config-bank-name').value.trim(),
-                paymentBankAccount: document.getElementById('config-bank-account').value.trim(),
-                paymentBankAccountType: document.getElementById('config-bank-account-type').value.trim(),
-                paymentBankAccountName: document.getElementById('config-bank-account-name').value.trim()
+                supportMessage: document.getElementById('config-support-message').value.trim()
             };
             if (await patchSettings(payload)) {
                 showSuperToast('Configuración general guardada');
