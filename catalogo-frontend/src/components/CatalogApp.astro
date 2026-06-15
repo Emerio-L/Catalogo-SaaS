@@ -443,7 +443,7 @@ if (noindex) {
                                 </div>
                             </div>
                             <form id="payment-receipt-form" onsubmit="subirComprobantePago(event)" class="mt-5 hidden space-y-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
-                                <p class="text-xs font-black uppercase tracking-wider text-slate-700">Pago pendiente</p>
+                                <p class="text-xs font-black uppercase tracking-wider text-slate-700">Reportar pago</p>
                                 <div class="grid gap-3 sm:grid-cols-2">
                                     <input id="payment-receipt-amount" type="number" min="0" step="0.01" placeholder="Monto" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary-100">
                                     <input id="payment-receipt-month" placeholder="Mes pagado (2026-06)" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-primary-100">
@@ -1549,7 +1549,6 @@ if (noindex) {
             addressRequirement: 'optional',
             commentRequirement: 'optional',
             account: null,
-            paymentDetails: null,
             theme: DEFAULT_TENANT_THEME
         };
 
@@ -1592,9 +1591,7 @@ if (noindex) {
                 const sourceDate = safeAccount.currentPeriodEnd ? new Date(safeAccount.currentPeriodEnd) : new Date();
                 monthInput.value = `${sourceDate.getFullYear()}-${String(sourceDate.getMonth() + 1).padStart(2, '0')}`;
             }
-            const receiptForm = document.getElementById('payment-receipt-form');
-            receiptForm?.classList.toggle('hidden', status !== 'pending_payment');
-            actualizarDatosPago(configuracionNegocio.paymentDetails);
+            reiniciarFlujoPago();
             const statusEl = document.getElementById('account-status');
             if (statusEl) {
                 statusEl.innerText = statusLabel;
@@ -1631,17 +1628,15 @@ if (noindex) {
             }
         }
 
-        function actualizarDatosPago(details = configuracionNegocio.paymentDetails) {
-            // With the new intent-based flow, we just store the details
-            // but don't show them automatically — the button handles reveal
-            configuracionNegocio.paymentDetails = details || {};
-            // Reset intent UI back to initial state when account data reloads
+        function reiniciarFlujoPago() {
             const initial = document.getElementById('payment-intent-initial');
             const selector = document.getElementById('payment-intent-selector');
             const detailContainer = document.getElementById('account-payment-details');
+            const receiptForm = document.getElementById('payment-receipt-form');
             if (initial) initial.classList.remove('hidden');
             if (selector) selector.classList.add('hidden');
             if (detailContainer) detailContainer.classList.add('hidden');
+            if (receiptForm) receiptForm.classList.add('hidden');
         }
 
         window.showPaymentIntentSelector = function() {
@@ -3880,7 +3875,6 @@ if (noindex) {
                     configuracionNegocio.logoShape = data.logoShape || 'rectangle';
                     configuracionNegocio.logoRotation = Number(data.logoRotation) || 0;
                     configuracionNegocio.account = data.account || null;
-                    configuracionNegocio.paymentDetails = data.paymentDetails || null;
                     configuracionNegocio.orderCartEnabled = data.orderCartEnabled !== false;
                     configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled === true;
                     configuracionNegocio.addressRequirement = data.addressRequirement || 'optional';

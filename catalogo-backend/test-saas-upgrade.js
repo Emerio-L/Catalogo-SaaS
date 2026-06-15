@@ -21,7 +21,6 @@ const testPng = Buffer.from(
 );
 
 let tenant;
-let otherTenant;
 let testSuper;
 let testAuditLogId = '';
 const supportTicketIds = [];
@@ -64,9 +63,6 @@ async function login(path, identifier, password) {
 async function cleanup() {
     if (tenant?.id) {
         await prisma.tenant.delete({ where: { id: tenant.id } }).catch(() => {});
-    }
-    if (otherTenant?.id) {
-        await prisma.tenant.delete({ where: { id: otherTenant.id } }).catch(() => {});
     }
     if (testSuper?.id) {
         await prisma.user.delete({ where: { id: testSuper.id } }).catch(() => {});
@@ -264,130 +260,14 @@ async function main() {
     assert(relogin.response.ok, 'Login funciona despues de cambiar credenciales temporales');
     const currentTenantHeaders = { Authorization: `Bearer ${relogin.data.devSessionToken}` };
 
-    const otherSlug = `${tenantSlug}-b`;
-    const otherPassword = `Other-${runId}-A1`;
-    otherTenant = await prisma.tenant.create({
-        data: {
-            slug: otherSlug,
-            nombre: `Negocio B ${runId}`,
-            email: `other-${runId}@example.test`,
-            whatsapp: '50255550109',
-            adminAccessKey: crypto.randomBytes(24).toString('hex'),
-            accountNumber: `CT-${crypto.randomInt(100000, 999999)}`,
-            status: 'trial',
-            trialStartDate: new Date(),
-            billingDay: new Date().getDate(),
-            settings: {
-                create: {
-                    whatsapp: '50255550109'
-                }
-            },
-            users: {
-                create: {
-                    nombre: 'Administrador B',
-                    email: `other-${runId}@example.test`,
-                    usuario: `other${runId}`,
-                    passwordHash: await bcrypt.hash(otherPassword, 12),
-                    rol: 'tenant_admin',
-                    activo: true
-                }
-            }
-        }
-    });
-    assert(otherTenant?.id, 'Segundo tenant creado para validar aislamiento');
-    const actualOtherSlug = otherTenant.slug;
-    const otherUser = await prisma.user.findFirst({
-        where: { tenantId: otherTenant.id, usuario: `other${runId}` }
-    });
-    assert(otherUser?.id, 'Segundo tenant dispone de usuario para validar aislamiento');
-    const otherToken = crypto.randomBytes(32).toString('hex');
-    const otherSession = await prisma.session.create({
-        data: {
-            tenantId: otherTenant.id,
-            userId: otherUser.id,
-            tokenHash: sha256(otherToken),
-            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-            ip: '127.0.0.1',
-            userAgent: 'saas-upgrade-test'
-        }
-    });
-    assert(otherSession?.id, 'Segundo tenant dispone de sesion para validar aislamiento');
-    const otherTenantHeaders = { Authorization: `Bearer ${otherToken}` };
-
-    const paymentDetailsPayload = {
-        mostrarDatosPago: true,
-        banco: 'Banco Pruebas',
-        tipoCuenta: 'Monetaria',
-        numeroCuenta: `GT-${runId}`,
-        nombreTitular: 'Sedelynk Pruebas',
-        montoSugerido: 50.25,
-        instruccionesPago: 'Incluye tu numero de cuenta en la referencia.',
-        fechaLimitePago: '2026-07-15'
-    };
-    const tenantCannotEditPaymentDetails = await request(`/api/super-admin/tenants/${tenant.id}/payment-details`, {
-        method: 'PATCH',
-        headers: currentTenantHeaders,
-        body: JSON.stringify(paymentDetailsPayload)
-    });
-    assert(
-        tenantCannotEditPaymentDetails.response.status === 403,
-        'Cliente no puede crear ni editar datos de pago'
-    );
-    const tenantCannotDeletePaymentDetails = await request(`/api/super-admin/tenants/${tenant.id}/payment-details`, {
-        method: 'DELETE',
-        headers: currentTenantHeaders
-    });
-    assert(
-        tenantCannotDeletePaymentDetails.response.status === 403,
-        'Cliente no puede eliminar datos de pago'
-    );
-    const savePaymentDetails = await request(`/api/super-admin/tenants/${tenant.id}/payment-details`, {
+    const removedPaymentDetailsEndpoint = await request(`/api/super-admin/tenants/${tenant.id}/payment-details`, {
         method: 'PATCH',
         headers: superHeaders,
-        body: JSON.stringify(paymentDetailsPayload)
+        body: JSON.stringify({})
     });
     assert(
-        savePaymentDetails.response.ok
-            && savePaymentDetails.data.paymentDetails.numeroCuenta === paymentDetailsPayload.numeroCuenta,
-        'Super User guarda datos de pago por cliente'
-    );
-    const hidePaymentDetails = await request(`/api/super-admin/tenants/${tenant.id}/payment-details`, {
-        method: 'PATCH',
-        headers: superHeaders,
-        body: JSON.stringify({ ...paymentDetailsPayload, mostrarDatosPago: false })
-    });
-    assert(hidePaymentDetails.response.ok, 'Super User puede ocultar datos de pago sin eliminarlos');
-    const hiddenTenantSettings = await request(`/api/${tenantSlug}/admin/settings`, { headers: currentTenantHeaders });
-    assert(
-        hiddenTenantSettings.data.paymentDetails.mostrarDatosPago === false
-            && !hiddenTenantSettings.data.paymentDetails.numeroCuenta,
-        'Endpoint del cliente redacta datos bancarios cuando mostrarDatosPago es false'
-    );
-    const showPaymentDetails = await request(`/api/super-admin/tenants/${tenant.id}/payment-details`, {
-        method: 'PATCH',
-        headers: superHeaders,
-        body: JSON.stringify(paymentDetailsPayload)
-    });
-    assert(showPaymentDetails.response.ok, 'Super User vuelve a habilitar datos de pago');
-    const tenantPrivateSettings = await request(`/api/${tenantSlug}/admin/settings`, { headers: currentTenantHeaders });
-    assert(
-        tenantPrivateSettings.response.ok
-            && tenantPrivateSettings.data.paymentDetails.numeroCuenta === paymentDetailsPayload.numeroCuenta,
-        'Cliente puede ver sus propios datos de pago'
-    );
-    const otherPrivateSettings = await request(`/api/${actualOtherSlug}/admin/settings`, { headers: otherTenantHeaders });
-    assert(
-        otherPrivateSettings.response.ok
-            && otherPrivateSettings.data.paymentDetails.mostrarDatosPago === false
-            && !otherPrivateSettings.data.paymentDetails.numeroCuenta,
-        'Un tenant no puede ver datos de pago de otro tenant'
-    );
-    const publicSettingsWithoutPaymentDetails = await request(`/api/${tenantSlug}/settings`);
-    assert(
-        publicSettingsWithoutPaymentDetails.response.ok
-            && publicSettingsWithoutPaymentDetails.data.paymentDetails === undefined
-            && !JSON.stringify(publicSettingsWithoutPaymentDetails.data).includes(paymentDetailsPayload.numeroCuenta),
-        'Datos bancarios no se exponen en el endpoint publico'
+        removedPaymentDetailsEndpoint.response.status === 404,
+        'Endpoint obsoleto de datos de pago por cliente fue retirado'
     );
 
     const category = await prisma.category.create({
@@ -475,7 +355,11 @@ async function main() {
 
     await prisma.tenant.update({
         where: { id: tenant.id },
-        data: { status: 'pending_payment', activo: true }
+        data: {
+            status: 'trial',
+            activo: true,
+            trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        }
     });
     const receiptForm = new FormData();
     receiptForm.append('amount', '50.25');
@@ -489,8 +373,10 @@ async function main() {
     });
     assert(
         receiptUpload.response.status === 201 && receiptUpload.data.payment.receiptUrl,
-        'Cliente con pago pendiente puede subir comprobante'
+        'Cliente en prueba gratis puede subir comprobante'
     );
+    const tenantAfterTrialReceipt = await prisma.tenant.findUnique({ where: { id: tenant.id } });
+    assert(tenantAfterTrialReceipt.status === 'trial', 'Reportar pago conserva el periodo de prueba');
     if (String(receiptUpload.data.payment.receiptUrl).startsWith('/uploads/')) {
         uploadedLocalFiles.push(path.join(__dirname, receiptUpload.data.payment.receiptUrl.replace(/^\//, '')));
     }
@@ -498,14 +384,22 @@ async function main() {
         where: { id: tenant.id },
         data: { status: 'active', activo: true }
     });
-    const blockedReceiptForm = new FormData();
-    blockedReceiptForm.append('receipt', new Blob([testPng], { type: 'image/png' }), 'receipt-blocked.png');
-    const blockedReceipt = await frontendRequest(`/api/${tenantSlug}/admin/payments/receipt`, {
+    const activeReceiptForm = new FormData();
+    activeReceiptForm.append('amount', '50.25');
+    activeReceiptForm.append('paymentMonth', `active-receipt-${runId}`);
+    activeReceiptForm.append('paymentMethod', 'Deposito');
+    activeReceiptForm.append('receipt', new Blob([testPng], { type: 'image/png' }), 'receipt-active.png');
+    const activeReceipt = await frontendRequest(`/api/${tenantSlug}/admin/payments/receipt`, {
         method: 'POST',
         headers: { ...currentTenantHeaders, Origin: FRONTEND },
-        body: blockedReceiptForm
+        body: activeReceiptForm
     });
-    assert(blockedReceipt.response.status === 409, 'Cliente sin pago pendiente no puede subir comprobante');
+    assert(activeReceipt.response.status === 201, 'Cliente activo puede subir comprobante');
+    const tenantAfterActiveReceipt = await prisma.tenant.findUnique({ where: { id: tenant.id } });
+    assert(tenantAfterActiveReceipt.status === 'active', 'Reportar pago conserva la cuenta activa');
+    if (String(activeReceipt.data.payment.receiptUrl).startsWith('/uploads/')) {
+        uploadedLocalFiles.push(path.join(__dirname, activeReceipt.data.payment.receiptUrl.replace(/^\//, '')));
+    }
 
     const support = await frontendRequest('/api/support/tickets', {
         method: 'POST',
@@ -529,10 +423,7 @@ async function main() {
 
     const settings = await request(`/api/${tenantSlug}/admin/settings`, { headers: currentTenantHeaders });
     assert(settings.response.ok && settings.data.mostrarDescripcion === false, 'Configuracion mantiene descripcion desactivada');
-    assert(
-        settings.data.paymentDetails.numeroCuenta === paymentDetailsPayload.numeroCuenta,
-        'Panel cliente recibe datos de pago asignados'
-    );
+    assert(settings.data.paymentDetails === undefined, 'Panel cliente ya no recibe datos de pago por cliente');
 
     const [publicCatalog, adminPanel, landing, superAdmin] = await Promise.all([
         fetch(`${FRONTEND}/c/${tenantSlug}`),
@@ -566,7 +457,7 @@ async function main() {
     assert(!landingHtml.includes('adminAccessKey'), 'Landing publica no imprime nombres de claves privadas');
     assert(!landingHtml.includes('id="admin-view"'), 'Landing publica no renderiza el panel administrativo');
     assert(!landingHtml.includes('Historial de pagos'), 'Landing publica no contiene contenido interno de pagos');
-    assert(!landingHtml.includes(paymentDetailsPayload.numeroCuenta), 'Landing publica no contiene datos bancarios');
+    assert(!landingHtml.includes('Configuracion privada asignada unicamente a este cliente'), 'Landing no contiene configuracion bancaria por cliente');
     assert(landingHtml.includes('setTimeout(closeSupportModal, 30000)'), 'Exito de soporte permanece visible 30 segundos');
 
     const testAuditLog = await prisma.auditLog.create({
@@ -592,17 +483,6 @@ async function main() {
         'Super User muestra estado de configuracion del correo'
     );
 
-    const deletePaymentDetails = await request(`/api/super-admin/tenants/${tenant.id}/payment-details`, {
-        method: 'DELETE',
-        headers: superHeaders
-    });
-    assert(deletePaymentDetails.response.ok, 'Super User elimina datos de pago');
-    const settingsAfterDelete = await request(`/api/${tenantSlug}/admin/settings`, { headers: currentTenantHeaders });
-    assert(
-        settingsAfterDelete.data.paymentDetails.mostrarDatosPago === false
-            && !settingsAfterDelete.data.paymentDetails.numeroCuenta,
-        'Cliente recibe mensaje seguro despues de eliminar datos de pago'
-    );
 }
 
 main()
