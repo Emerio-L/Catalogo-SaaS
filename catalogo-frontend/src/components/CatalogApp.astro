@@ -6188,6 +6188,7 @@ if (noindex) {
                 error.classList.remove('hidden');
                 return;
             }
+            const newWindow = window.open('', '_blank');
             try {
                 submit.disabled = true;
                 submit.textContent = 'Guardando...';
@@ -6199,22 +6200,37 @@ if (noindex) {
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
+                    if (newWindow) newWindow.close();
                     error.textContent = data.error || 'No se pudieron actualizar las credenciales.';
                     error.classList.remove('hidden');
                     return;
                 }
-                window.location.href = `/c/${tenant}/p/${accessKey}`;
+                const url = `/c/${tenant}/p/${accessKey}`;
+                if (newWindow) {
+                    newWindow.location.href = url;
+                } else {
+                    submit.innerHTML = `<a href="${url}" target="_blank" class="w-full h-full flex items-center justify-center text-white" onclick="document.getElementById('force-credentials-modal').classList.add('hidden');">Continuar al Panel <i class="fa-solid fa-arrow-up-right-from-square ml-2"></i></a>`;
+                    submit.classList.remove('opacity-70', 'cursor-wait', 'bg-primary-600');
+                    submit.classList.add('bg-green-600');
+                    submit.disabled = false;
+                    return;
+                }
                 const modal = document.getElementById('force-credentials-modal');
                 if (modal) {
                     modal.classList.add('hidden');
                     modal.classList.remove('flex');
                 }
-            } catch {
-                error.textContent = 'No se pudo conectar con el servicio.';
-                error.classList.remove('hidden');
-            } finally {
                 submit.disabled = false;
                 submit.textContent = 'Guardar y entrar al panel';
+            } catch (err) {
+                if (newWindow) newWindow.close();
+                error.textContent = 'Ocurrió un error inesperado al guardar las credenciales.';
+                error.classList.remove('hidden');
+            } finally {
+                if (submit && !submit.querySelector('a')) {
+                    submit.disabled = false;
+                    submit.textContent = 'Guardar y entrar al panel';
+                }
             }
         }
         window.guardarCredencialesDefinitivas = guardarCredencialesDefinitivas;
@@ -6319,6 +6335,7 @@ if (noindex) {
                     }
                     
                     if (data.mustChangePassword || data.mustChangeUsername) {
+                        if (newWindow) newWindow.close();
                         mostrarLandingStep('close');
                         abrirCambioCredencialesObligatorio({
                             tenant: tSlug,
@@ -6329,15 +6346,26 @@ if (noindex) {
                         return;
                     }
                     
-                    window.location.href = `/c/${tSlug}/p/${aKey}`;
-                    mostrarLandingStep('close');
+                    const url = `/c/${tSlug}/p/${aKey}`;
+                    if (newWindow) {
+                        newWindow.location.href = url;
+                        mostrarLandingStep('close');
+                    } else {
+                        submitBtn.innerHTML = `<a href="${url}" target="_blank" class="w-full h-full flex items-center justify-center text-white" onclick="document.getElementById('landing-modal').classList.add('hidden');">Continuar al Panel <i class="fa-solid fa-arrow-up-right-from-square ml-2"></i></a>`;
+                        submitBtn.classList.remove('opacity-70', 'cursor-wait', 'bg-primary-600');
+                        submitBtn.classList.add('bg-green-600');
+                        submitBtn.disabled = false;
+                        return;
+                    }
                 } else {
+                    if (newWindow) newWindow.close();
                     mostrarErrorLoginLanding(data.error || "Credenciales inválidas.");
                 }
             } catch (err) {
+                if (newWindow) newWindow.close();
                 mostrarErrorLoginLanding("Error de conexión al servidor.");
             } finally {
-                if (submitBtn) {
+                if (submitBtn && !submitBtn.querySelector('a')) {
                     submitBtn.disabled = false;
                     submitBtn.classList.remove('opacity-70', 'cursor-wait');
                     submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar al panel';

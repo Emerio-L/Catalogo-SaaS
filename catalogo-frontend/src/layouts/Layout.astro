@@ -38,6 +38,10 @@ const finalFaviconUrl = faviconUrl
 		: new URL(faviconUrl, publicBackendUrl).toString())
 	: new URL('/favicon.png', siteUrl).toString();
 
+const appleTouchIconUrl = finalFaviconUrl.endsWith('.webp') 
+	? new URL('/favicon.png', siteUrl).toString() 
+	: finalFaviconUrl;
+
 const socialImageUrl = finalFaviconUrl;
 const gaMeasurementId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || '';
 const structuredData = Astro.url.pathname === '/' ? {
@@ -75,7 +79,7 @@ const structuredData = Astro.url.pathname === '/' ? {
     <link rel="alternate" hreflang="es-GT" href={canonicalUrl}>
     <link rel="alternate" hreflang="x-default" href={canonicalUrl}>
     <link rel="icon" type="image/png" href={finalFaviconUrl}>
-    <link rel="apple-touch-icon" sizes="180x180" href={finalFaviconUrl}>
+    <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIconUrl}>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content={title}>
