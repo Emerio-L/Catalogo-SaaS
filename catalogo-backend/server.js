@@ -34,6 +34,7 @@ const {
 } = require('./data-access');
 const tenantMiddleware = require('./middleware/tenant.middleware');
 const { nextAccountNumber } = require('./account-numbers');
+const { ensureRuntimeSchemaCompatibility } = require('./db');
 
 const app = express();
 const trustProxyHops = Number.parseInt(process.env.TRUST_PROXY_HOPS || '1', 10);
@@ -3872,6 +3873,7 @@ const PORT = process.env.PORT || 3005;
 async function startServer() {
     try {
         console.log('Utilizando base de datos relacional PostgreSQL con Prisma');
+        await ensureRuntimeSchemaCompatibility();
         await inicializarBase();
         console.log('Inicializacion de base de datos PostgreSQL completada');
         app.listen(PORT, '0.0.0.0', () => {
