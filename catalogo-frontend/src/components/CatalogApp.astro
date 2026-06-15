@@ -10,6 +10,8 @@ const isLandingPage = false;
 const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3005';
 
 let noindex = true; // default to true for safety
+let appName = isAdminInitialRoute ? "Panel de Control" : "Catálogo";
+
 if (initialTenantSlug && !isAdminInitialRoute) {
     noindex = false; // public catalogs default to indexable
     try {
@@ -17,6 +19,9 @@ if (initialTenantSlug && !isAdminInitialRoute) {
         if (settingsRes.ok) {
             const settingsData = await settingsRes.json();
             if (settingsData) {
+                if (settingsData.nombreNegocio) {
+                    appName = settingsData.nombreNegocio;
+                }
                 if (settingsData.account && settingsData.account.status) {
                     const status = settingsData.account.status;
                     if (status !== 'active' && status !== 'trial') {
@@ -41,8 +46,9 @@ if (noindex) {
 ---
 
 <Layout
-    title={isAdminInitialRoute ? "Panel de Control" : "Catálogo de Productos"}
+    title={isAdminInitialRoute ? "Panel de Control" : (appName !== "Catálogo" ? `${appName} - Catálogo de Productos` : "Catálogo de Productos")}
     description="Consulta productos y realiza tu pedido en línea."
+    appName={appName}
     noindex={noindex}
 >
     <!-- FLOATING TOAST NOTIFICATIONS CONTAINER -->

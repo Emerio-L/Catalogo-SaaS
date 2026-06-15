@@ -5,6 +5,7 @@ interface Props {
 	keywords?: string;
 	noindex?: boolean;
 	locale?: string;
+	appName?: string;
 }
 
 const {
@@ -12,7 +13,8 @@ const {
 	description = 'Crea tu tienda en línea con carrito de compras en Guatemala. Recibe pedidos organizados, administra productos y vende sin comisiones con Sedelynk.',
 	keywords = '',
 	noindex = false,
-	locale = 'es_GT'
+	locale = 'es_GT',
+	appName = 'Sedelynk'
 } = Astro.props;
 const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.site?.origin || 'https://sedelynk.com';
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
@@ -82,7 +84,7 @@ const structuredData = Astro.url.pathname === '/' ? {
     <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIconUrl}>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content={title}>
+    <meta name="apple-mobile-web-app-title" content={appName}>
     <meta property="og:type" content="website">
     <meta property="og:locale" content={locale}>
     <meta property="og:site_name" content="Sedelynk">
