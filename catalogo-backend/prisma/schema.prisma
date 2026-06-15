@@ -54,6 +54,7 @@ model Tenant {
   internalNotes      String              @default("")
   creadoEn           DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  paymentConfig      Json?
   users              User[]
   settings           Settings?
   categories         Category[]
@@ -344,5 +345,9 @@ model SaasSettings {
   notificationPaymentReminders     Boolean  @default(true)
   notificationUpcomingExpirations  Boolean  @default(true)
   notificationWelcomeMessages      Boolean  @default(true)
+  paymentBankName                  String   @default("")
+  paymentBankAccount               String   @default("")
+  paymentBankAccountType           String   @default("")
+  paymentBankAccountName           String   @default("")
   updatedAt                        DateTime @updatedAt
 }

@@ -197,7 +197,41 @@ function fechaLimiteRetencionRecibos() {
 }
 
 async function limpiarPedidosExpirados(tenantId) {
-    return Pedido.deleteMany({ tenantId, fecha: { $lt: fechaLimiteRetencionRecibos() } });
+    const limite = fechaLimiteRetencionRecibos();
+    
+    // 1. Eliminar pedidos expirados
+    await Pedido.deleteMany({ tenantId, fecha: { $lt: limite } });
+
+    // 2. Eliminar comprobantes de pago expirados de Cloudinary y DB
+    const pagosExpirados = await Payment.find({ tenantId, createdAt: { $lt: limite } });
+    for (const pago of pagosExpirados) {
+        if (pago.receiptUrl && cloudinaryEnabled) {
+            // El publicId no lo guardabamos, así que extraerlo de la URL o intentar borrar
+            // Como no tenemos el publicId exacto, usaremos delete_resources de Cloudinary
+            // o lo ignoramos por ahora. Sin embargo, recibos usan `receipt-${req.tenant.slug}`.
+            // Para simplificar, extraeremos el publicId basico asumiendo estructura Cloudinary
+            const urlParts = pago.receiptUrl.split('/');
+            const filename = urlParts.pop();
+            const folder = urlParts.pop();
+            if (filename && folder) {
+                const publicIdBase = filename.split('.')[0];
+                const publicId = `catalogo-productos/${folder}/${publicIdBase}`;
+                try {
+                    await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+                } catch(e) {}
+            }
+        }
+    }
+    await Payment.deleteMany({ tenantId, createdAt: { $lt: limite } });
+}
+
+async function eliminarTenantCloudinary(tenantSlug) {
+    if (!cloudinaryEnabled) return;
+    try {
+        await cloudinary.api.delete_resources_by_prefix(`catalogo-productos/${tenantSlug}/`);
+    } catch (err) {
+        console.error('Error al limpiar Cloudinary del tenant:', err);
+    }
 }
 
 function crearAdminAccessKey() {
@@ -500,6 +534,7 @@ async function serializeTenantForSuperAdmin(tenant) {
         lastPayment,
         lastLoginAt: owner?.ultimoLogin || null,
         internalNotes: tenant.internalNotes || '',
+        paymentConfig: tenant.paymentConfig || null,
         ...tenantBillingPayload(tenant, plan)
     };
 }
@@ -560,6 +595,11 @@ function saasSettingsPayload(settings) {
         notificationUpcomingExpirations: settings.notificationUpcomingExpirations !== false,
         notificationWelcomeMessages: settings.notificationWelcomeMessages !== false,
         emailRecoveryConfigured: Boolean(process.env.RESEND_API_KEY && process.env.AUTH_EMAIL_FROM),
+
+        paymentBankName: settings.paymentBankName || '',
+        paymentBankAccount: settings.paymentBankAccount || '',
+        paymentBankAccountType: settings.paymentBankAccountType || '',
+        paymentBankAccountName: settings.paymentBankAccountName || '',
 
         updatedAt: settings.updatedAt
     };
@@ -1551,7 +1591,11 @@ const saasSettingsSchema = z.object({
     notificationEmails: z.boolean().optional(),
     notificationPaymentReminders: z.boolean().optional(),
     notificationUpcomingExpirations: z.boolean().optional(),
-    notificationWelcomeMessages: z.boolean().optional()
+    notificationWelcomeMessages: z.boolean().optional(),
+    paymentBankName: z.string().trim().max(100).optional(),
+    paymentBankAccount: z.string().trim().max(100).optional(),
+    paymentBankAccountType: z.string().trim().max(50).optional(),
+    paymentBankAccountName: z.string().trim().max(100).optional()
 });
 
 app.patch('/api/super-admin/settings', requireSuperAdminAuth, async (req, res) => {
@@ -1585,6 +1629,10 @@ app.patch('/api/super-admin/settings', requireSuperAdminAuth, async (req, res) =
         if (data.notificationPaymentReminders !== undefined) settings.notificationPaymentReminders = data.notificationPaymentReminders;
         if (data.notificationUpcomingExpirations !== undefined) settings.notificationUpcomingExpirations = data.notificationUpcomingExpirations;
         if (data.notificationWelcomeMessages !== undefined) settings.notificationWelcomeMessages = data.notificationWelcomeMessages;
+        if (data.paymentBankName !== undefined) settings.paymentBankName = data.paymentBankName;
+        if (data.paymentBankAccount !== undefined) settings.paymentBankAccount = data.paymentBankAccount;
+        if (data.paymentBankAccountType !== undefined) settings.paymentBankAccountType = data.paymentBankAccountType;
+        if (data.paymentBankAccountName !== undefined) settings.paymentBankAccountName = data.paymentBankAccountName;
 
         await settings.save();
         res.json(saasSettingsPayload(settings));
@@ -1886,6 +1934,8 @@ app.patch('/api/super-admin/tenants/:id/notes', requireSuperAdminAuth, async (re
     }
 });
 
+
+
 const statusUpdateSchema = z.object({
     status: z.enum(['trial', 'active', 'pending_payment', 'suspended', 'deleted']),
     reason: z.string().trim().max(200).optional()
@@ -2036,15 +2086,18 @@ app.delete('/api/super-admin/tenants/:id', requireSuperAdminAuth, async (req, re
     try {
         const tenant = await Tenant.findById(req.params.id);
         if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
-        const previousStatus = tenant.status;
-        tenant.status = 'deleted';
-        tenant.activo = false;
-        tenant.deletedAt = new Date();
-        tenant.deletedReason = String(req.body?.reason || '').trim();
-        await tenant.save();
-        await logAccountStatus(tenant, previousStatus, 'deleted', tenant.deletedReason || 'Soft delete super admin', req.user._id);
-        res.json({ success: true, tenant: await serializeTenantForSuperAdmin(tenant) });
+        
+        // 1. Eliminar absolutamente todo de Cloudinary
+        await eliminarTenantCloudinary(tenant.slug);
+        
+        // 2. Eliminar de DB de forma absoluta
+        // AuditLogs are SetNull in Prisma, so we manually wipe them first to be clean
+        await AuditLog.deleteMany({ tenantId: tenant._id });
+        await Tenant.deleteOne({ _id: tenant._id });
+
+        res.json({ success: true, deleted: true });
     } catch (err) {
+        console.error('Error al eliminar cuenta absolutamente:', err);
         res.status(500).json({ error: 'Error al eliminar cuenta' });
     }
 });
@@ -2513,6 +2566,25 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
     } catch (err) {
         console.error('Error al actualizar ajustes del tenant:', err);
         res.status(500).json({ error: 'Error al actualizar ajustes del tenant' });
+    }
+});
+app.post('/api/:tenant/admin/payment-intent', tenantMiddleware, requireAdminAuth, async (req, res) => {
+    try {
+        const method = String(req.body.method || 'Desconocido').trim();
+        await auditLog(req, 'payment_intent', { method });
+        
+        const settings = await saasSettings();
+        const paymentConfig = {
+            bankName: settings.paymentBankName || '',
+            bankAccount: settings.paymentBankAccount || '',
+            bankAccountType: settings.paymentBankAccountType || '',
+            bankAccountName: settings.paymentBankAccountName || ''
+        };
+        
+        res.json({ success: true, paymentConfig: paymentConfig.bankName ? paymentConfig : null });
+    } catch (err) {
+        console.error('Error registrando intención de pago:', err);
+        res.status(500).json({ error: 'Error registrando intención de pago' });
     }
 });
 
