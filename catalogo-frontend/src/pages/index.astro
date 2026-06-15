@@ -106,16 +106,37 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     transform: rotate(180deg);
                 }
 
-                /* Contenedor principal de la primera pantalla visible */
                 .hero-section {
                   min-height: 100vh;
                   justify-content: flex-start;
                   gap: 14px;
-                  background:
-                    radial-gradient(circle at -4% 0%, rgba(124, 58, 237, 0.34) 0px, rgba(124, 58, 237, 0.24) 118px, transparent 300px),
-                    radial-gradient(circle at 45% 34%, rgba(124, 58, 237, 0.13) 0px, transparent 390px),
-                    radial-gradient(circle at 96% 24%, rgba(59, 130, 246, 0.08) 0px, transparent 360px),
-                    linear-gradient(135deg, #f6f7ff 0%, #eef3ff 44%, #f8f4ff 100%);
+                  background-color: #0b1121; /* Dark space base */
+                  background-image: 
+                    /* Subtle glow using primary color */
+                    radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--color-purple) 25%, transparent) 0%, transparent 60%),
+                    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--color-purple) 20%, transparent) 0%, transparent 60%),
+                    /* Stars layer */
+                    radial-gradient(1px 1px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+                    radial-gradient(1px 1px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+                    radial-gradient(1px 1px at 50px 160px, #ffffff, rgba(0,0,0,0)),
+                    radial-gradient(1.5px 1.5px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+                    radial-gradient(2px 2px at 130px 80px, #ffffff, rgba(0,0,0,0)),
+                    radial-gradient(1px 1px at 160px 120px, #ffffff, rgba(0,0,0,0));
+                  background-repeat: no-repeat, no-repeat, repeat, repeat, repeat, repeat, repeat, repeat;
+                  background-size: 100% 100%, 100% 100%, 200px 200px, 250px 250px, 300px 300px, 350px 350px, 400px 400px, 450px 450px;
+                  position: relative;
+                }
+                
+                .hero-section::after {
+                  content: '';
+                  position: absolute;
+                  bottom: -1px;
+                  left: 0;
+                  right: 0;
+                  height: 150px;
+                  background: linear-gradient(to bottom, transparent, var(--color-bg));
+                  pointer-events: none;
+                  z-index: 1;
                 }
 
                 .logoContainer {
@@ -491,11 +512,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             <main class="heroContent relative z-10 mx-auto px-0 py-4 lg:py-6 flex-1">
                 {/* Columna Izquierda */}
                 <div class="text-left space-y-4">
-                    <h1 id="landing-hero-title" class="text-3xl md:text-4xl lg:text-[2.85rem] font-black tracking-tight text-[#070B24] leading-[1.15] max-w-xl">
+                    <h1 id="landing-hero-title" class="text-3xl md:text-4xl lg:text-[2.85rem] font-black tracking-tight text-white leading-[1.15] max-w-xl">
                         Crea tu tienda en línea con carrito de compras en <span class="text-[#FF6B1A]">Guatemala</span>
                     </h1>
                     
-                    <p id="landing-hero-text" class="text-slate-500 text-xs md:text-sm font-semibold leading-relaxed max-w-xl">
+                    <p id="landing-hero-text" class="text-slate-200 text-xs md:text-sm font-semibold leading-relaxed max-w-xl">
                         Sedelynk te permite crear un catálogo digital, recibir pedidos por carrito y vender en línea sin comisiones. WhatsApp queda disponible como opción adicional para tus clientes.
                     </p>
 
