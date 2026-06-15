@@ -61,10 +61,35 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 }
 
                 .landing-card {
-                    background-color: var(--color-surface);
-                    border: 1px solid var(--border-soft);
+                    background: rgba(255, 255, 255, 0.72);
+                    backdrop-filter: blur(18px);
+                    -webkit-backdrop-filter: blur(18px);
+                    border: 1px solid rgba(255, 255, 255, 0.48);
+                    box-shadow:
+                      0 24px 60px rgba(15, 23, 42, 0.14),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.55);
                     border-radius: var(--radius-card);
-                    box-shadow: var(--shadow-card);
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .landing-card::before {
+                  content: "";
+                  position: absolute;
+                  inset: 0;
+                  border-radius: inherit;
+                  background: linear-gradient(
+                    135deg,
+                    rgba(255, 255, 255, 0.38),
+                    rgba(255, 255, 255, 0.08)
+                  );
+                  pointer-events: none;
+                }
+
+                @supports not ((backdrop-filter: blur(18px)) or (-webkit-backdrop-filter: blur(18px))) {
+                  .landing-card {
+                    background: rgba(255, 255, 255, 0.94);
+                  }
                 }
 
                 .landing-btn-primary {
@@ -111,11 +136,44 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   min-height: 100vh;
                   justify-content: flex-start;
                   gap: 14px;
+                  position: relative;
+                  overflow: hidden;
                   background:
-                    radial-gradient(circle at -4% 0%, rgba(124, 58, 237, 0.34) 0px, rgba(124, 58, 237, 0.24) 118px, transparent 300px),
-                    radial-gradient(circle at 45% 34%, rgba(124, 58, 237, 0.13) 0px, transparent 390px),
-                    radial-gradient(circle at 96% 24%, rgba(59, 130, 246, 0.08) 0px, transparent 360px),
+                    radial-gradient(circle at 12% 18%, rgba(45, 212, 191, 0.22), transparent 34%),
+                    radial-gradient(circle at 82% 12%, rgba(59, 130, 246, 0.16), transparent 30%),
                     linear-gradient(135deg, #f6f7ff 0%, #eef3ff 44%, #f8f4ff 100%);
+                }
+
+                .hero-section::before,
+                .hero-section::after {
+                  content: "";
+                  position: absolute;
+                  border-radius: 999px;
+                  filter: blur(48px);
+                  opacity: 0.55;
+                  pointer-events: none;
+                  z-index: 0;
+                }
+
+                .hero-section::before {
+                  width: 320px;
+                  height: 320px;
+                  top: -110px;
+                  left: -80px;
+                  background: rgba(45, 212, 191, 0.32);
+                }
+
+                .hero-section::after {
+                  width: 360px;
+                  height: 360px;
+                  right: -120px;
+                  bottom: -130px;
+                  background: rgba(59, 130, 246, 0.22);
+                }
+
+                .hero-section > * {
+                  position: relative;
+                  z-index: 1;
                 }
 
                 .logoContainer {
@@ -203,7 +261,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   min-height: 410px;
                   padding: 20px 20px 18px;
                   border-radius: 24px;
-                  background: #ffffff;
+                  background: rgba(255, 255, 255, 0.72);
+                  backdrop-filter: blur(18px);
+                  -webkit-backdrop-filter: blur(18px);
                   position: relative;
                   overflow: hidden;
                   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -212,28 +272,28 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 .heroActionCard:hover {
                   transform: translateY(-5px);
                   box-shadow:
-                    0 35px 75px rgba(124, 58, 237, 0.20),
+                    0 35px 75px rgba(45, 212, 191, 0.15),
                     0 12px 28px rgba(15, 23, 42, 0.08);
                 }
 
                 .heroActionCard.portal:hover {
                   box-shadow:
-                    0 35px 75px rgba(15, 107, 255, 0.18),
+                    0 35px 75px rgba(59, 130, 246, 0.15),
                     0 12px 28px rgba(15, 23, 42, 0.08);
                 }
 
                 .heroActionCard.signup {
-                  border: 1.5px solid rgba(124, 58, 237, 0.36);
+                  border: 1px solid rgba(255, 255, 255, 0.48);
                   box-shadow:
-                    0 28px 65px rgba(124, 58, 237, 0.16),
-                    0 10px 24px rgba(15, 23, 42, 0.06);
+                    0 24px 60px rgba(15, 23, 42, 0.14),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.55);
                 }
 
                 .heroActionCard.portal {
-                  border: 1.5px solid rgba(15, 107, 255, 0.36);
+                  border: 1px solid rgba(255, 255, 255, 0.48);
                   box-shadow:
-                    0 28px 65px rgba(15, 107, 255, 0.14),
-                    0 10px 24px rgba(15, 23, 42, 0.06);
+                    0 24px 60px rgba(15, 23, 42, 0.14),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.55);
                 }
 
                 .heroActionCard::before {
@@ -241,14 +301,18 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                   position: absolute;
                   inset: 0;
                   border-radius: inherit;
-                  padding: 1px;
+                  background: linear-gradient(
+                    135deg,
+                    rgba(255, 255, 255, 0.38),
+                    rgba(255, 255, 255, 0.08)
+                  );
                   pointer-events: none;
-                  background: linear-gradient(135deg, rgba(124,58,237,.45), rgba(59,130,246,.35), rgba(249,115,22,.22));
-                  -webkit-mask:
-                    linear-gradient(#fff 0 0) content-box,
-                    linear-gradient(#fff 0 0);
-                  -webkit-mask-composite: xor;
-                  mask-composite: exclude;
+                }
+
+                @supports not ((backdrop-filter: blur(18px)) or (-webkit-backdrop-filter: blur(18px))) {
+                  .heroActionCard {
+                    background: rgba(255, 255, 255, 0.94);
+                  }
                 }
 
                 .heroActionCard .cardBadge {
