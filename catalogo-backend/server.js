@@ -480,6 +480,40 @@ function tenantBillingPayload(tenant, plan = null) {
     };
 }
 
+function paymentDetailsPayload(details) {
+    if (!details) {
+        return {
+            mostrarDatosPago: false,
+            banco: '',
+            tipoCuenta: '',
+            numeroCuenta: '',
+            nombreTitular: '',
+            montoSugerido: null,
+            instruccionesPago: '',
+            fechaLimitePago: null
+        };
+    }
+    return {
+        mostrarDatosPago: details.mostrarDatosPago === true,
+        banco: details.banco || '',
+        tipoCuenta: details.tipoCuenta || '',
+        numeroCuenta: details.numeroCuenta || '',
+        nombreTitular: details.nombreTitular || '',
+        montoSugerido: details.montoSugerido === null || details.montoSugerido === undefined
+            ? null
+            : money(details.montoSugerido),
+        instruccionesPago: details.instruccionesPago || '',
+        fechaLimitePago: details.fechaLimitePago || null
+    };
+}
+
+function clientPaymentDetailsPayload(details) {
+    if (!details?.mostrarDatosPago) {
+        return paymentDetailsPayload(null);
+    }
+    return paymentDetailsPayload(details);
+}
+
 async function serializeTenantForSuperAdmin(tenant) {
     const plan = tenant.planId && tenant.planId.name ? tenant.planId : (tenant.planId ? await Plan.findById(tenant.planId) : null);
     const owner = await User.findOne({ tenantId: tenant._id, rol: { $ne: 'super_admin' } }).sort({ creadoEn: 1 }).lean();
@@ -1843,8 +1877,9 @@ app.get('/api/super-admin/tenants/:id', requireSuperAdminAuth, async (req, res) 
         if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
         await applyAccountTransitions(tenant);
         const thirtyDaysAgo = addDays(new Date(), -30);
-        const [payments, logs, productCount, orderCount, sales30Days] = await Promise.all([
+        const [payments, paymentDetails, logs, productCount, orderCount, sales30Days] = await Promise.all([
             Payment.find({ tenantId: tenant._id }).sort({ createdAt: -1 }).populate('approvedBy', 'nombre email usuario'),
+            prisma.paymentDetails.findUnique({ where: { tenantId: tenant._id } }),
             AccountStatusLog.find({ tenantId: tenant._id }).sort({ createdAt: -1 }).populate('changedBy', 'nombre email usuario'),
             Producto.countDocuments({ tenantId: tenant._id }),
             Pedido.countDocuments({ tenantId: tenant._id }),
@@ -1856,6 +1891,7 @@ app.get('/api/super-admin/tenants/:id', requireSuperAdminAuth, async (req, res) 
         res.json({
             tenant: await serializeTenantForSuperAdmin(tenant),
             payments,
+            paymentDetails: paymentDetailsPayload(paymentDetails),
             statusLogs: logs,
             suspensionLogs: logs.filter(log => log.newStatus === 'suspended' || log.previousStatus === 'suspended'),
             receipts: payments.filter(payment => payment.receiptUrl),
@@ -1867,6 +1903,88 @@ app.get('/api/super-admin/tenants/:id', requireSuperAdminAuth, async (req, res) 
         });
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener detalle del cliente' });
+    }
+});
+
+const paymentDetailsSchema = z.object({
+    mostrarDatosPago: z.boolean(),
+    banco: z.string().trim().max(120).optional().default(''),
+    tipoCuenta: z.string().trim().max(80).optional().default(''),
+    numeroCuenta: z.string().trim().max(120).optional().default(''),
+    nombreTitular: z.string().trim().max(160).optional().default(''),
+    montoSugerido: z.union([z.number().min(0).max(99999999), z.null()]).optional().default(null),
+    instruccionesPago: z.string().trim().max(2000).optional().default(''),
+    fechaLimitePago: z.union([z.string().trim(), z.null()]).optional().default(null)
+});
+
+app.patch('/api/super-admin/tenants/:id/payment-details', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenant = await Tenant.findById(req.params.id);
+        if (!tenant || tenant.status === 'deleted') {
+            return res.status(404).json({ error: 'Cliente no encontrado' });
+        }
+        const data = paymentDetailsSchema.parse(req.body);
+        let fechaLimitePago = null;
+        if (data.fechaLimitePago) {
+            fechaLimitePago = new Date(`${data.fechaLimitePago}T12:00:00.000Z`);
+            if (Number.isNaN(fechaLimitePago.getTime())) {
+                return res.status(400).json({ error: 'Fecha limite de pago invalida' });
+            }
+        }
+        const paymentDetails = await prisma.paymentDetails.upsert({
+            where: { tenantId: tenant._id },
+            update: {
+                mostrarDatosPago: data.mostrarDatosPago,
+                banco: data.banco,
+                tipoCuenta: data.tipoCuenta,
+                numeroCuenta: data.numeroCuenta,
+                nombreTitular: data.nombreTitular,
+                montoSugerido: data.montoSugerido,
+                instruccionesPago: data.instruccionesPago,
+                fechaLimitePago
+            },
+            create: {
+                tenantId: tenant._id,
+                mostrarDatosPago: data.mostrarDatosPago,
+                banco: data.banco,
+                tipoCuenta: data.tipoCuenta,
+                numeroCuenta: data.numeroCuenta,
+                nombreTitular: data.nombreTitular,
+                montoSugerido: data.montoSugerido,
+                instruccionesPago: data.instruccionesPago,
+                fechaLimitePago
+            }
+        });
+        await auditLog(req, 'tenant_payment_details_updated', {
+            tenantId: tenant._id,
+            targetTenantId: tenant._id,
+            mostrarDatosPago: paymentDetails.mostrarDatosPago
+        });
+        res.json({ success: true, paymentDetails: paymentDetailsPayload(paymentDetails) });
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Datos de pago invalidos', detalles: err.issues });
+        }
+        console.error('Error al guardar datos de pago:', err);
+        res.status(500).json({ error: 'Error al guardar datos de pago' });
+    }
+});
+
+app.delete('/api/super-admin/tenants/:id/payment-details', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const tenant = await Tenant.findById(req.params.id);
+        if (!tenant || tenant.status === 'deleted') {
+            return res.status(404).json({ error: 'Cliente no encontrado' });
+        }
+        await prisma.paymentDetails.deleteMany({ where: { tenantId: tenant._id } });
+        await auditLog(req, 'tenant_payment_details_deleted', {
+            tenantId: tenant._id,
+            targetTenantId: tenant._id
+        });
+        res.json({ success: true, paymentDetails: paymentDetailsPayload(null) });
+    } catch (err) {
+        console.error('Error al eliminar datos de pago:', err);
+        res.status(500).json({ error: 'Error al eliminar datos de pago' });
     }
 });
 
@@ -2377,6 +2495,7 @@ app.get('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
         await applyAccountTransitions(req.tenant);
         const settings = await settingsTenant(req.tenant);
         const plan = req.tenant.planId ? await Plan.findById(req.tenant.planId) : null;
+        const paymentDetails = await prisma.paymentDetails.findUnique({ where: { tenantId: req.tenantId } });
         res.json({
             whatsapp: settings.whatsapp,
             telefonoWhatsApp: settings.whatsapp,
@@ -2398,7 +2517,8 @@ app.get('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             orderWhatsappEnabled: settings.orderWhatsappEnabled === true,
             addressRequirement: settings.addressRequirement || 'optional',
             commentRequirement: settings.commentRequirement || 'optional',
-            account: tenantBillingPayload(req.tenant, plan)
+            account: tenantBillingPayload(req.tenant, plan),
+            paymentDetails: clientPaymentDetailsPayload(paymentDetails)
         });
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener la configuración del tenant' });
@@ -2518,6 +2638,13 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
 
 app.post('/api/:tenant/admin/payments/receipt', tenantMiddleware, requireAdminAuth, receiptUpload.single('receipt'), async (req, res) => {
     try {
+        await applyAccountTransitions(req.tenant);
+        if (req.tenant.status !== 'pending_payment') {
+            return res.status(409).json({ error: 'Solo puedes subir un comprobante cuando existe un pago pendiente' });
+        }
+        if (!req.file) {
+            return res.status(400).json({ error: 'Selecciona un comprobante en imagen o PDF' });
+        }
         const amount = money(req.body.amount || req.tenant.monthlyPrice || 0);
         const now = new Date();
         const paymentMonth = String(req.body.paymentMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`).trim();
