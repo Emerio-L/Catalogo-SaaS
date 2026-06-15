@@ -358,6 +358,30 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                                             <textarea id="config-support-message" class="super-input min-h-20" placeholder="Mensaje inicial para WhatsApp"></textarea>
                                         </label>
                                     </div>
+                                    <div class="mt-4 pt-4 border-t border-white/10">
+                                        <h3 class="mb-4 text-base font-black text-violet-300"><i class="fa-solid fa-money-bill-transfer mr-2"></i>Datos Bancarios para Suscripción (Global)</h3>
+                                        <p class="mb-3 text-xs text-slate-400">Estos datos se mostrarán a todos tus clientes cuando quieran pagar su suscripción.</p>
+                                        <div class="grid gap-4 md:grid-cols-2">
+                                            <label class="block">
+                                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Nombre del Banco</span>
+                                                <input id="config-bank-name" class="super-input" placeholder="Ej. Banco Industrial">
+                                            </label>
+                                            <label class="block">
+                                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Número de Cuenta</span>
+                                                <input id="config-bank-account" class="super-input" placeholder="Ej. 123-456789-01">
+                                            </label>
+                                        </div>
+                                        <div class="grid gap-4 md:grid-cols-2 mt-4">
+                                            <label class="block">
+                                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Tipo de Cuenta</span>
+                                                <input id="config-bank-account-type" class="super-input" placeholder="Monetaria o Ahorro">
+                                            </label>
+                                            <label class="block">
+                                                <span class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">A nombre de</span>
+                                                <input id="config-bank-account-name" class="super-input" placeholder="Ej. Juan Pérez">
+                                            </label>
+                                        </div>
+                                    </div>
                                     <button class="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-violet-950/40 transition hover:bg-violet-500" type="submit">Guardar General</button>
                                 </form>
                             </div>
@@ -1988,6 +2012,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             document.getElementById('config-favicon-url').value = superSettings.faviconUrl || '';
             document.getElementById('config-support-whatsapp').value = superSettings.supportWhatsapp || '';
             document.getElementById('config-support-message').value = superSettings.supportMessage || '';
+            document.getElementById('config-bank-name').value = superSettings.paymentBankName || '';
+            document.getElementById('config-bank-account').value = superSettings.paymentBankAccount || '';
+            document.getElementById('config-bank-account-type').value = superSettings.paymentBankAccountType || '';
+            document.getElementById('config-bank-account-name').value = superSettings.paymentBankAccountName || '';
 
             // Landing settings
             document.getElementById('config-landing-title').value = superSettings.landingTitle || 'Crea tu tienda en línea con carrito de compras en Guatemala';
@@ -2144,7 +2172,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 timezone: document.getElementById('config-timezone').value.trim(),
                 faviconUrl: document.getElementById('config-favicon-url').value.trim(),
                 supportWhatsapp: document.getElementById('config-support-whatsapp').value.trim(),
-                supportMessage: document.getElementById('config-support-message').value.trim()
+                supportMessage: document.getElementById('config-support-message').value.trim(),
+                paymentBankName: document.getElementById('config-bank-name').value.trim(),
+                paymentBankAccount: document.getElementById('config-bank-account').value.trim(),
+                paymentBankAccountType: document.getElementById('config-bank-account-type').value.trim(),
+                paymentBankAccountName: document.getElementById('config-bank-account-name').value.trim()
             };
             if (await patchSettings(payload)) {
                 showSuperToast('Configuración general guardada');
