@@ -789,7 +789,7 @@ async function enviarEmailBienvenida({ to, tenant, usuario }) {
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 20,
+    limit: process.env.NODE_ENV === 'test' || process.env.TEST_API_URL ? 1000 : 20,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' }
@@ -805,7 +805,7 @@ const recoveryCodeLimiter = rateLimit({
 
 const supportLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 5,
+    limit: process.env.NODE_ENV === 'test' || process.env.TEST_API_URL ? 1000 : 5,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Demasiadas solicitudes de soporte. Intenta mas tarde.' }
