@@ -1535,6 +1535,7 @@ if (noindex) {
 
         let productos = [];
         let adminProductos = [];
+        let adminArchivosSeleccionados = [];
         let adminPedidos = [];
         let pedidosSeleccionados = new Set();
         let categorias = [];
@@ -5015,6 +5016,7 @@ if (noindex) {
         }
 
         function abrirAdminForm(esEdicion = false) {
+            adminArchivosSeleccionados = [];
             if (!esEdicion) {
                 document.getElementById('admin-form-titulo').innerText = "Agregar Producto";
                 document.getElementById('form-producto').reset();
@@ -5068,17 +5070,18 @@ if (noindex) {
         =========================== */
         function procesarArchivosSeleccionados(files) {
             if (!files) return;
-            const filesArray = Array.from(files);
-            if (filesArray.length === 0) return;
-            
-            if (filesArray.length > 3) {
+            const incomingFiles = Array.from(files);
+            if (incomingFiles.length === 0) return;
+
+            if (adminArchivosSeleccionados.length + incomingFiles.length > 3) {
                 showToast("Máximo puedes subir 3 imágenes por producto.", "error");
                 document.getElementById('admin-foto').value = '';
                 return;
             }
 
-            for (let i = 0; i < filesArray.length; i++) {
-                const fileError = validarImagenParaSubir(filesArray[i]);
+            for (let i = 0; i < incomingFiles.length; i++) {
+                const file = incomingFiles[i];
+                const fileError = validarImagenParaSubir(file);
                 if (fileError) {
                     showToast(fileError, "error");
                     document.getElementById('admin-foto').value = '';
@@ -5086,26 +5089,37 @@ if (noindex) {
                 }
             }
 
-            const input = document.getElementById('admin-foto');
-            const label = document.getElementById('admin-foto-label');
-            if (input && input.files !== files) {
-                const dataTransfer = new DataTransfer();
-                filesArray.forEach(file => dataTransfer.items.add(file));
-                input.files = dataTransfer.files;
-            }
+            incomingFiles.forEach(file => {
+                const duplicate = adminArchivosSeleccionados.some(f => f.name === file.name && f.size === file.size);
+                if (!duplicate) {
+                    adminArchivosSeleccionados.push(file);
+                }
+            });
 
-            if (label) {
-                label.innerText = filesArray.length === 1 ? filesArray[0].name : `${filesArray.length} imágenes seleccionadas`;
-            }
+            document.getElementById('admin-foto').value = '';
+            dibujarPreviewsFormulario();
+        }
 
+        function dibujarPreviewsFormulario() {
             const previewsContainer = document.getElementById('admin-foto-previews-container');
+            if (!previewsContainer) return;
             previewsContainer.innerHTML = '';
 
-            filesArray.forEach((file, index) => {
+            const label = document.getElementById('admin-foto-label');
+            if (label) {
+                label.innerText = adminArchivosSeleccionados.length === 0
+                    ? 'Seleccionar o arrastrar imagen'
+                    : (adminArchivosSeleccionados.length === 1
+                        ? adminArchivosSeleccionados[0].name
+                        : `${adminArchivosSeleccionados.length} imágenes seleccionadas`);
+            }
+
+            adminArchivosSeleccionados.forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = (function(idx) {
                     return function(e) {
-                        if (idx === 0) {
+                        const isPrincipal = (idx === 0);
+                        if (isPrincipal) {
                             const preview = document.getElementById('admin-foto-preview');
                             const placeholder = document.getElementById('admin-foto-placeholder');
                             if (preview) {
@@ -5114,15 +5128,55 @@ if (noindex) {
                             }
                             if (placeholder) placeholder.classList.add('hidden');
                         }
+
+                        const containerDiv = document.createElement('div');
+                        containerDiv.className = 'relative w-14 h-14 flex-shrink-0 group';
+
                         const imgEl = document.createElement('img');
                         imgEl.src = e.target.result;
-                        imgEl.className = 'w-12 h-12 rounded-xl object-cover border-2 shadow-sm ' + (idx === 0 ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-slate-200');
-                        previewsContainer.appendChild(imgEl);
+                        imgEl.className = 'w-14 h-14 rounded-xl object-cover border-2 shadow-sm ' +
+                            (isPrincipal ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-slate-200');
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.type = 'button';
+                        deleteBtn.className = 'absolute -top-1 -right-1 bg-rose-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px] hover:bg-rose-600 transition-all font-black shadow-md cursor-pointer';
+                        deleteBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                        deleteBtn.onclick = function() {
+                            eliminarArchivoSeleccionado(idx);
+                        };
+
+                        containerDiv.appendChild(imgEl);
+                        containerDiv.appendChild(deleteBtn);
+
+                        if (isPrincipal) {
+                            const badge = document.createElement('span');
+                            badge.className = 'absolute -bottom-1 left-1 right-1 bg-primary-500 text-white text-[7px] font-black uppercase text-center rounded py-0.5 shadow-sm';
+                            badge.innerText = 'Principal';
+                            containerDiv.appendChild(badge);
+                        }
+
+                        previewsContainer.appendChild(containerDiv);
                     };
                 })(index);
                 reader.readAsDataURL(file);
             });
         }
+
+        function eliminarArchivoSeleccionado(index) {
+            adminArchivosSeleccionados.splice(index, 1);
+            if (adminArchivosSeleccionados.length === 0) {
+                const preview = document.getElementById('admin-foto-preview');
+                const placeholder = document.getElementById('admin-foto-placeholder');
+                if (preview) {
+                    preview.src = '';
+                    preview.classList.add('hidden');
+                }
+                if (placeholder) placeholder.classList.remove('hidden');
+                document.getElementById('admin-foto').value = '';
+            }
+            dibujarPreviewsFormulario();
+        }
+        window.eliminarArchivoSeleccionado = eliminarArchivoSeleccionado;
 
         function handleImagenDrag(event) {
             event.preventDefault();
@@ -5270,21 +5324,12 @@ if (noindex) {
             formData.append('activo', document.getElementById('admin-activo').checked);
             formData.append('descripcion', document.getElementById('admin-descripcion').value);
             
-            const fileInput = document.getElementById('admin-foto');
-            if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                const filesArray = Array.from(fileInput.files);
-                if (filesArray.length > 3) {
+            if (adminArchivosSeleccionados.length > 0) {
+                if (adminArchivosSeleccionados.length > 3) {
                     showToast("Máximo puedes subir 3 imágenes por producto.", "error");
                     return;
                 }
-                for (let i = 0; i < filesArray.length; i++) {
-                    const fileError = validarImagenParaSubir(filesArray[i]);
-                    if (fileError) {
-                        showToast(fileError, "error");
-                        return;
-                    }
-                }
-                filesArray.forEach((file) => {
+                adminArchivosSeleccionados.forEach((file) => {
                     formData.append('fotos', file);
                 });
             }
