@@ -1015,6 +1015,26 @@ if (noindex) {
             </div>
         </div>
     </div>
+
+    <!-- MODAL DETALLE PRODUCTO -->
+    <div id="modal-detalle-producto" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 transition-all duration-300 hidden overflow-y-auto">
+        <div class="bg-white rounded-[2.5rem] p-6 w-full max-w-md shadow-2xl my-auto transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100 max-h-[calc(100vh-2rem)] overflow-y-auto">
+            <button onclick="cerrarDetalleProducto()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors z-[61]"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div id="detalle-producto-content" class="space-y-4 text-left">
+                <!-- Carga dinámica -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ZOOM IMAGEN -->
+    <div id="modal-zoom-imagen" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[70] flex items-center justify-center p-4 transition-all duration-300 hidden cursor-zoom-out" onclick="cerrarZoomImagen()">
+        <button onclick="cerrarZoomImagen()" class="absolute top-6 right-6 text-white/70 hover:text-white transition-colors z-[71] bg-black/40 hover:bg-black/60 w-10 h-10 rounded-full flex items-center justify-center">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+        <div class="max-w-full max-h-full flex items-center justify-center relative p-2" onclick="event.stopPropagation()">
+            <img id="zoom-imagen-display" src="" alt="Zoom" class="max-w-full max-h-[90vh] md:max-h-[85vh] rounded-2xl object-contain shadow-2xl transition-transform duration-300">
+        </div>
+    </div>
     </>
     )}
 
@@ -1072,10 +1092,17 @@ if (noindex) {
                     </div>
                 </div>
 
+                <!-- Descripción del producto -->
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Descripción del producto</label>
+                    <textarea id="admin-descripcion" maxlength="500" placeholder="Ej. Camisa de algodón, disponible en varias tallas..."
+                        class="w-full resize-none p-3.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all" rows="2"></textarea>
+                </div>
+
                 <!-- Imagen drag & drop / preview -->
                 <div>
-                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Imagen del Producto (.webp automático)</label>
-                    <input type="file" id="admin-foto" accept="image/*" onchange="previewImagen(event)" class="hidden">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Imágenes del producto, máximo 3</label>
+                    <input type="file" id="admin-foto" accept="image/*" multiple onchange="previewImagen(event)" class="hidden">
                     <button type="button" onclick="document.getElementById('admin-foto')?.click()" ondragover="handleImagenDrag(event)" ondragleave="handleImagenDragLeave(event)" ondrop="handleImagenDrop(event)"
                         class="flex w-full items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-left transition hover:border-primary-200 hover:bg-primary-50/40">
                         <span class="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white text-primary-600 shadow-sm ring-1 ring-slate-100">
@@ -1084,9 +1111,11 @@ if (noindex) {
                         </span>
                         <span class="min-w-0 flex-1">
                             <span id="admin-foto-label" class="block truncate text-xs font-black uppercase tracking-wider text-slate-700">Seleccionar o arrastrar imagen</span>
-                            <span class="mt-1 block text-[10px] font-semibold text-slate-400">PNG, JPG, JPEG o WebP. El servidor la optimiza automáticamente.</span>
+                            <span class="mt-1 block text-[10px] font-semibold text-slate-400">PNG, JPG, JPEG o WebP. Máximo 3 imágenes.</span>
                         </span>
                     </button>
+                    <!-- Previews pequeñas de las imágenes seleccionadas o existentes -->
+                    <div id="admin-foto-previews-container" class="mt-2 flex gap-2 overflow-x-auto py-1"></div>
                 </div>
 
                 <!-- Activo Switch -->
@@ -2810,7 +2839,9 @@ if (noindex) {
                     p: p.precio,
                     u: p.unidadMedida || p.unidad,
                     img: (p.imagenUrl || p.imagen).startsWith('/') ? `${BACKEND_URL}${p.imagenUrl || p.imagen}` : (p.imagenUrl || p.imagen),
-                    o: p.ordenVisualizacion || p.orden
+                    o: p.ordenVisualizacion || p.orden,
+                    desc: p.descripcion || '',
+                    imgs: p.imagenes || []
                 }));
 
                 dibujar();
@@ -2885,7 +2916,7 @@ if (noindex) {
                 return `
                 <div id="card-${prod.id}" class="group flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-premium transition-all duration-300 md:rounded-[2rem] ${pedido[prod.id] > 0 ? 'card-active' : 'hover:-translate-y-1 hover:shadow-premium-hover'}">
                     
-                    <div class="relative h-36 overflow-hidden bg-slate-50 md:h-48">
+                    <div onclick="abrirDetalleProducto('${prod.id}')" class="cursor-pointer relative h-36 overflow-hidden bg-slate-50 md:h-48">
                         <span class="absolute left-3 top-3 z-10 ${badgeColor} rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-wider">
                             ${prod.cn}
                         </span>
@@ -2893,13 +2924,14 @@ if (noindex) {
                     </div>
 
                     <div class="flex flex-1 flex-col p-3 md:p-4">
-                        <h3 class="line-clamp-2 min-h-[2.25rem] text-[12px] font-extrabold uppercase tracking-tight text-slate-900 md:text-sm">
-                            ${prod.n}
-                        </h3>
-                        
-                        <p class="mt-1 mb-3 text-base font-black text-primary-600 md:text-lg">
-                            Q${prod.p.toFixed(2)} <span class="text-slate-400 font-bold text-[10px]">/ ${prod.u}</span>
-                        </p>
+                        <div onclick="abrirDetalleProducto('${prod.id}')" class="cursor-pointer flex-1 mb-3">
+                            <h3 class="line-clamp-2 min-h-[2.25rem] text-[12px] font-extrabold uppercase tracking-tight text-slate-900 md:text-sm">
+                                ${prod.n}
+                            </h3>
+                            <p class="mt-1 text-base font-black text-primary-600 md:text-lg">
+                                Q${prod.p.toFixed(2)} <span class="text-slate-400 font-bold text-[10px]">/ ${prod.u}</span>
+                            </p>
+                        </div>
 
                         <div class="mt-auto flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-1.5">
                             <button onclick="update('${prod.id}', -1)" 
@@ -3123,6 +3155,188 @@ if (noindex) {
                 ? 'rounded-full bg-primary-50 px-2.5 py-1 text-[10px] font-black text-primary-700'
                 : 'rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-black text-rose-700';
         }
+
+        let activeModalImgUrl = '';
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function abrirDetalleProducto(id) {
+            const prod = productos.find(p => p.id === id);
+            if (!prod) return;
+
+            const modal = document.getElementById("modal-detalle-producto");
+            const content = document.getElementById("detalle-producto-content");
+
+            activeModalImgUrl = prod.img;
+
+            let galleryHtml = '';
+            let listImages = [];
+            if (prod.imgs && Array.isArray(prod.imgs) && prod.imgs.length > 0) {
+                listImages = prod.imgs;
+            } else if (prod.img && prod.img !== '/uploads/placeholder.webp') {
+                listImages = [{ url: prod.img, principal: true, orden: 1 }];
+            }
+
+            if (listImages.length > 1) {
+                galleryHtml = `
+                <div class="flex gap-2 mt-2 overflow-x-auto py-1">
+                    ${listImages.map((img, idx) => {
+                        const imgUrl = img.url.startsWith('/') ? `${BACKEND_URL}${img.url}` : img.url;
+                        const isMain = imgUrl === activeModalImgUrl;
+                        return `
+                        <img src="${imgUrl}" onclick="cambiarImagenDetalle('${imgUrl}', this)" 
+                             class="w-16 h-16 rounded-xl object-cover cursor-pointer border-2 ${isMain ? 'border-primary-500' : 'border-slate-200'} hover:border-primary-400 transition-all shadow-sm">
+                        `;
+                    }).join('')}
+                </div>`;
+            }
+
+            let descHtml = '';
+            if (prod.desc && prod.desc.trim() !== '') {
+                descHtml = `
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Descripción</p>
+                    <p class="text-xs font-semibold text-slate-600 leading-relaxed whitespace-pre-line">${escapeHtml(prod.desc)}</p>
+                </div>`;
+            }
+
+            content.innerHTML = `
+                <!-- Imagen principal grande -->
+                <div class="relative h-64 w-full rounded-2xl overflow-hidden bg-slate-50 shadow-inner group">
+                    <img id="detalle-imagen-principal" src="${activeModalImgUrl}" onclick="abrirZoomImagen()" 
+                         class="h-full w-full object-cover transition-all duration-300 cursor-zoom-in" 
+                         onerror="this.src='https://via.placeholder.com/600?text=${encodeURIComponent(prod.n)}'">
+                </div>
+
+                <!-- Miniaturas de la galería -->
+                ${galleryHtml}
+
+                <div class="space-y-1 mt-4">
+                    <span class="inline-block bg-primary-50 text-primary-700 ring-1 ring-primary-100 rounded-full px-2.5 py-0.5 text-[8px] font-black uppercase tracking-wider">
+                        ${prod.cn}
+                    </span>
+                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight leading-snug">${prod.n}</h2>
+                    <p class="text-lg font-black text-primary-600">
+                        Q${prod.p.toFixed(2)} <span class="text-slate-400 font-bold text-xs">/ ${prod.u}</span>
+                    </p>
+                </div>
+
+                ${descHtml}
+
+                <div class="pt-4 flex items-center justify-between gap-4">
+                    <div class="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-1.5 w-32 shrink-0">
+                        <button onclick="update('${prod.id}', -1); actualizarDetalleCantidad('${prod.id}')" 
+                            class="flex h-8 w-8 items-center justify-center rounded-xl bg-white font-black text-slate-600 shadow-sm transition-all hover:bg-slate-100 active:scale-95">
+                            <i class="fa-solid fa-minus text-[10px]"></i>
+                        </button>
+                        <span id="cant-modal-${prod.id}" class="font-black text-slate-800 text-sm">
+                            ${pedido[prod.id] || 0}
+                        </span>
+                        <button onclick="update('${prod.id}', 1); actualizarDetalleCantidad('${prod.id}')" 
+                            class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 font-black text-white shadow-sm transition-all hover:bg-slate-800 active:scale-95">
+                            <i class="fa-solid fa-plus text-[10px]"></i>
+                        </button>
+                    </div>
+                    <button onclick="cerrarDetalleProducto()" 
+                        class="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-lg transition-all active:scale-95 uppercase tracking-wider text-xs">
+                        Seguir Comprando
+                    </button>
+                </div>
+            `;
+
+            modal.classList.remove("hidden");
+            setTimeout(() => {
+                modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        window.abrirDetalleProducto = abrirDetalleProducto;
+
+        function cambiarImagenDetalle(imgUrl, imgEl) {
+            const mainImg = document.getElementById("detalle-imagen-principal");
+            if (mainImg) {
+                mainImg.src = imgUrl;
+            }
+            activeModalImgUrl = imgUrl;
+            
+            const thumbs = imgEl.parentNode.querySelectorAll('img');
+            thumbs.forEach(t => {
+                t.classList.remove('border-primary-500');
+                t.classList.add('border-slate-200');
+            });
+            imgEl.classList.remove('border-slate-200');
+            imgEl.classList.add('border-primary-500');
+        }
+
+        window.cambiarImagenDetalle = cambiarImagenDetalle;
+
+        function actualizarDetalleCantidad(id) {
+            const cantEl = document.getElementById(`cant-modal-${id}`);
+            if (cantEl) {
+                cantEl.innerText = pedido[id] || 0;
+            }
+        }
+
+        window.actualizarDetalleCantidad = actualizarDetalleCantidad;
+
+        function cerrarDetalleProducto() {
+            const modal = document.getElementById("modal-detalle-producto");
+            if (!modal) return;
+            modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add("hidden");
+            }, 300);
+        }
+
+        window.cerrarDetalleProducto = cerrarDetalleProducto;
+
+        function abrirZoomImagen() {
+            if (!activeModalImgUrl) return;
+            const zoomModal = document.getElementById("modal-zoom-imagen");
+            const zoomImg = document.getElementById("zoom-imagen-display");
+            if (zoomModal && zoomImg) {
+                zoomImg.src = activeModalImgUrl;
+                zoomModal.classList.remove("hidden");
+                setTimeout(() => {
+                    zoomModal.classList.remove('opacity-0');
+                }, 10);
+            }
+        }
+
+        window.abrirZoomImagen = abrirZoomImagen;
+
+        function cerrarZoomImagen() {
+            const zoomModal = document.getElementById("modal-zoom-imagen");
+            if (!zoomModal) return;
+            zoomModal.classList.add('opacity-0');
+            setTimeout(() => {
+                zoomModal.classList.add("hidden");
+            }, 300);
+        }
+
+        window.cerrarZoomImagen = cerrarZoomImagen;
+
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const zoomModal = document.getElementById("modal-zoom-imagen");
+                if (zoomModal && !zoomModal.classList.contains("hidden")) {
+                    cerrarZoomImagen();
+                } else {
+                    const detailModal = document.getElementById("modal-detalle-producto");
+                    if (detailModal && !detailModal.classList.contains("hidden")) {
+                        cerrarDetalleProducto();
+                    }
+                }
+            }
+        });
 
         /* ===========================
         LOGICA DEL CARRITO (CLIENTE)
@@ -4795,6 +5009,10 @@ if (noindex) {
                 document.getElementById('admin-foto-placeholder').classList.remove('hidden');
                 document.getElementById('admin-foto-label').innerText = 'Seleccionar o arrastrar imagen';
                 document.getElementById('admin-activo').checked = true;
+                const previewsContainer = document.getElementById('admin-foto-previews-container');
+                if (previewsContainer) previewsContainer.innerHTML = '';
+                const descInput = document.getElementById('admin-descripcion');
+                if (descInput) descInput.value = '';
             }
 
             const modal = document.getElementById("modal-admin-form");
@@ -4833,28 +5051,56 @@ if (noindex) {
         /* ===========================
         OPERACIONES CRUD (ADMIN)
         =========================== */
-        function asignarArchivoImagen(file) {
-            if (!file) return false;
-            if (!file.type || !file.type.startsWith('image/')) {
-                showToast("Selecciona un archivo de imagen válido", "error");
-                return false;
+        function procesarArchivosSeleccionados(files) {
+            if (!files || files.length === 0) return;
+            
+            if (files.length > 3) {
+                showToast("Máximo puedes subir 3 imágenes por producto.", "error");
+                document.getElementById('admin-foto').value = '';
+                return;
             }
+
+            for (let i = 0; i < files.length; i++) {
+                const fileError = validarImagenParaSubir(files[i]);
+                if (fileError) {
+                    showToast(fileError, "error");
+                    document.getElementById('admin-foto').value = '';
+                    return;
+                }
+            }
+
             const input = document.getElementById('admin-foto');
             const label = document.getElementById('admin-foto-label');
             const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
+            for (let i = 0; i < files.length; i++) {
+                dataTransfer.items.add(files[i]);
+            }
             input.files = dataTransfer.files;
-            if (label) label.innerText = file.name;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('admin-foto-preview');
-                const placeholder = document.getElementById('admin-foto-placeholder');
-                preview.src = e.target.result;
-                preview.classList.remove('hidden');
-                if (placeholder) placeholder.classList.add('hidden');
-            };
-            reader.readAsDataURL(file);
-            return true;
+
+            if (label) {
+                label.innerText = files.length === 1 ? files[0].name : `${files.length} imágenes seleccionadas`;
+            }
+
+            const previewsContainer = document.getElementById('admin-foto-previews-container');
+            previewsContainer.innerHTML = '';
+
+            for (let i = 0; i < files.length; i++) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (i === 0) {
+                        const preview = document.getElementById('admin-foto-preview');
+                        const placeholder = document.getElementById('admin-foto-placeholder');
+                        preview.src = e.target.result;
+                        preview.classList.remove('hidden');
+                        if (placeholder) placeholder.classList.add('hidden');
+                    }
+                    const imgEl = document.createElement('img');
+                    imgEl.src = e.target.result;
+                    imgEl.className = 'w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm';
+                    previewsContainer.appendChild(imgEl);
+                };
+                reader.readAsDataURL(files[i]);
+            }
         }
 
         function handleImagenDrag(event) {
@@ -4870,12 +5116,11 @@ if (noindex) {
         function handleImagenDrop(event) {
             event.preventDefault();
             event.currentTarget.classList.remove('border-primary-300', 'bg-primary-50');
-            asignarArchivoImagen(event.dataTransfer?.files?.[0]);
+            procesarArchivosSeleccionados(event.dataTransfer?.files);
         }
 
         function previewImagen(event) {
-            const file = event.target.files[0];
-            asignarArchivoImagen(file);
+            procesarArchivosSeleccionados(event.target.files);
         }
 
         const productosCambiandoEstado = new Set();
@@ -4951,6 +5196,7 @@ if (noindex) {
             document.getElementById('admin-precio').value = prod.precio;
             document.getElementById('admin-orden').value = prod.orden;
             document.getElementById('admin-activo').checked = prod.activo;
+            document.getElementById('admin-descripcion').value = prod.descripcion || '';
             
             const imgUrl = prod.imagen.startsWith('/') ? `${BACKEND_URL}${prod.imagen}` : prod.imagen;
             const preview = document.getElementById('admin-foto-preview');
@@ -4958,8 +5204,27 @@ if (noindex) {
             preview.src = imgUrl;
             preview.classList.remove('hidden');
             if (placeholder) placeholder.classList.add('hidden');
+            
+            // Clear input selection and load previews of existing images
             document.getElementById('admin-foto').value = '';
             document.getElementById('admin-foto-label').innerText = 'Cambiar imagen si deseas';
+            
+            const previewsContainer = document.getElementById('admin-foto-previews-container');
+            previewsContainer.innerHTML = '';
+            if (prod.imagenes && Array.isArray(prod.imagenes) && prod.imagenes.length > 0) {
+                prod.imagenes.forEach(img => {
+                    const singleImgUrl = img.url.startsWith('/') ? `${BACKEND_URL}${img.url}` : img.url;
+                    const imgEl = document.createElement('img');
+                    imgEl.src = singleImgUrl;
+                    imgEl.className = 'w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm';
+                    previewsContainer.appendChild(imgEl);
+                });
+            } else if (prod.imagen && prod.imagen !== '/uploads/placeholder.webp') {
+                const imgEl = document.createElement('img');
+                imgEl.src = imgUrl;
+                imgEl.className = 'w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm';
+                previewsContainer.appendChild(imgEl);
+            }
 
             abrirAdminForm(true);
         }
@@ -4982,19 +5247,22 @@ if (noindex) {
             formData.append('precio', document.getElementById('admin-precio').value);
             formData.append('orden', document.getElementById('admin-orden').value);
             formData.append('activo', document.getElementById('admin-activo').checked);
+            formData.append('descripcion', document.getElementById('admin-descripcion').value);
             
             const fileInput = document.getElementById('admin-foto');
-            if (!isEdit && !fileInput.files[0]) {
-                showToast("Selecciona una imagen para el producto", "error");
-                return;
-            }
-            if (fileInput.files[0]) {
-                const fileError = validarImagenParaSubir(fileInput.files[0]);
-                if (fileError) {
-                    showToast(fileError, "error");
+            if (fileInput.files && fileInput.files.length > 0) {
+                if (fileInput.files.length > 3) {
+                    showToast("Máximo puedes subir 3 imágenes por producto.", "error");
                     return;
                 }
-                formData.append('foto', fileInput.files[0]);
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    const fileError = validarImagenParaSubir(fileInput.files[i]);
+                    if (fileError) {
+                        showToast(fileError, "error");
+                        return;
+                    }
+                    formData.append('fotos', fileInput.files[i]);
+                }
             }
 
             try {

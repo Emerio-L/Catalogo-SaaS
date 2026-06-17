@@ -300,14 +300,14 @@ async function main() {
     productForm.append('precio', '10');
     productForm.append('orden', '1');
     productForm.append('activo', 'true');
-    productForm.append('foto', new Blob([testPng], { type: 'image/png' }), 'producto-test.png');
+    productForm.append('fotos', new Blob([testPng], { type: 'image/png' }), 'producto-test.png');
     const productUpload = await frontendRequest(`/api/${tenantSlug}/admin/products`, {
         method: 'POST',
         headers: { ...currentTenantHeaders, Origin: FRONTEND },
         body: productForm
     });
     const uploadedProductId = productUpload.data.producto?.id || productUpload.data.producto?._id;
-    assert(productUpload.response.status === 201 && uploadedProductId, 'Gateway permite crear producto con foto');
+    assert(productUpload.response.status === 201 && uploadedProductId, 'Gateway permite crear producto con fotos');
     const productA = await prisma.product.findUnique({ where: { id: uploadedProductId } });
     if (String(productA.imagenUrl || '').startsWith('/uploads/')) {
         uploadedLocalFiles.push(path.join(__dirname, productA.imagenUrl.replace(/^\//, '')));

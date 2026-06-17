@@ -847,7 +847,9 @@ function productoResponse(producto, categoria) {
         imagenUrl,
         orden: ordenVisualizacion,
         ordenVisualizacion,
-        cloudinaryPublicId: doc.cloudinaryPublicId
+        cloudinaryPublicId: doc.cloudinaryPublicId,
+        descripcion: doc.descripcion || '',
+        imagenes: doc.imagenes || null
     };
 }
 
@@ -3454,12 +3456,13 @@ const productSchema = z.object({
     categoria: z.string().optional(),
     orden: z.string().or(z.number()).transform(val => parseInt(val)).optional(),
     ordenVisualizacion: z.string().or(z.number()).transform(val => parseInt(val)).optional(),
-    activo: z.string().or(z.boolean()).transform(val => val === 'true' || val === true).optional()
+    activo: z.string().or(z.boolean()).transform(val => val === 'true' || val === true).optional(),
+    descripcion: z.string().max(500).optional().default("")
 }).refine(data => data.categoriaId || data.categoria, {
     message: "Debe proporcionar una categoria"
 });
 
-app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requireTenantOperational, imageUpload.single('foto'), async (req, res) => {
+app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requireTenantOperational, imageUpload.array('fotos', 3), async (req, res) => {
     try {
         const data = productSchema.parse(req.body);
         
@@ -3478,8 +3481,30 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requ
             return res.status(400).json({ error: 'Categoria no encontrada o inválida' });
         }
 
-        const imagenGuardada = await guardarImagenProducto(req.file, req.tenant.slug);
-        const rutaImagen = imagenGuardada.url;
+        let imagenes = null;
+        let primaryImage = { url: '/uploads/placeholder.webp', publicId: '' };
+
+        if (req.files && req.files.length > 0) {
+            if (req.files.length > 3) {
+                return res.status(400).json({ error: 'Máximo puedes subir 3 imágenes por producto.' });
+            }
+            imagenes = [];
+            for (let i = 0; i < req.files.length; i++) {
+                const file = req.files[i];
+                const imagenGuardada = await guardarImagenProducto(file, req.tenant.slug);
+                const isPrincipal = (i === 0);
+                const imgObj = {
+                    url: imagenGuardada.url,
+                    publicId: imagenGuardada.publicId,
+                    orden: i + 1,
+                    principal: isPrincipal
+                };
+                imagenes.push(imgObj);
+                if (isPrincipal) {
+                    primaryImage = imagenGuardada;
+                }
+            }
+        }
 
         const nuevoProducto = new Producto({
             tenantId: req.tenantId,
@@ -3489,9 +3514,11 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requ
             precio: data.precio,
             unidad: data.unidad,
             unidadMedida: data.unidadMedida || data.unidad,
-            imagen: rutaImagen,
-            imagenUrl: rutaImagen,
-            cloudinaryPublicId: imagenGuardada.publicId,
+            imagen: primaryImage.url,
+            imagenUrl: primaryImage.url,
+            cloudinaryPublicId: primaryImage.publicId,
+            descripcion: data.descripcion || '',
+            imagenes: imagenes,
             orden: data.orden || 999,
             ordenVisualizacion: data.ordenVisualizacion || data.orden || 999,
             activo: data.activo !== undefined ? data.activo : true
@@ -3509,7 +3536,7 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requ
     }
 });
 
-app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, requireTenantOperational, imageUpload.single('foto'), async (req, res) => {
+app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, requireTenantOperational, imageUpload.array('fotos', 3), async (req, res) => {
     try {
         const productoExistente = await Producto.findOne({ _id: req.params.id, tenantId: req.tenantId });
         if (!productoExistente) {
@@ -3517,13 +3544,58 @@ app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, r
         }
 
         const categoria = await buscarCategoriaTenant(req.tenantId, req.body.categoriaId || req.body.categoria || productoExistente.categoriaId);
+        
         let rutaImagen = productoExistente.imagenUrl || productoExistente.imagen;
+        let publicId = productoExistente.cloudinaryPublicId;
+        let imagenes = productoExistente.imagenes; // Campo JSONB
+        let oldImagesToDelete = [];
 
-        if (req.file) {
-            await eliminarImagen(rutaImagen, productoExistente.cloudinaryPublicId);
-            const imagenGuardada = await guardarImagenProducto(req.file, req.tenant.slug);
-            rutaImagen = imagenGuardada.url;
-            productoExistente.cloudinaryPublicId = imagenGuardada.publicId;
+        if (req.body.descripcion !== undefined) {
+            if (req.body.descripcion.length > 500) {
+                return res.status(400).json({ error: 'La descripción no puede superar los 500 caracteres' });
+            }
+        }
+
+        if (req.files && req.files.length > 0) {
+            if (req.files.length > 3) {
+                return res.status(400).json({ error: 'Máximo puedes subir 3 imágenes por producto.' });
+            }
+
+            // Registrar imágenes anteriores para borrar después de guardar exitosamente
+            if (productoExistente.imagenes && Array.isArray(productoExistente.imagenes)) {
+                oldImagesToDelete = [...productoExistente.imagenes];
+            } else if (productoExistente.imagenUrl || productoExistente.imagen) {
+                oldImagesToDelete = [{ url: productoExistente.imagenUrl || productoExistente.imagen, publicId: productoExistente.cloudinaryPublicId }];
+            }
+
+            const nuevasImagenes = [];
+            let primaryImage = null;
+            try {
+                for (let i = 0; i < req.files.length; i++) {
+                    const file = req.files[i];
+                    const imagenGuardada = await guardarImagenProducto(file, req.tenant.slug);
+                    const isPrincipal = (i === 0);
+                    const imgObj = {
+                        url: imagenGuardada.url,
+                        publicId: imagenGuardada.publicId,
+                        orden: i + 1,
+                        principal: isPrincipal
+                    };
+                    nuevasImagenes.push(imgObj);
+                    if (isPrincipal) {
+                        primaryImage = imagenGuardada;
+                    }
+                }
+            } catch (uploadError) {
+                console.error('Error al subir nuevas imágenes:', uploadError);
+                return res.status(502).json({ error: 'Fallo al subir nuevas imágenes a la galería.' });
+            }
+
+            imagenes = nuevasImagenes;
+            if (primaryImage) {
+                rutaImagen = primaryImage.url;
+                publicId = primaryImage.publicId;
+            }
         }
 
         if (categoria) {
@@ -3536,6 +3608,8 @@ app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, r
         productoExistente.unidadMedida = req.body.unidadMedida || req.body.unidad || productoExistente.unidadMedida;
         productoExistente.imagen = rutaImagen;
         productoExistente.imagenUrl = rutaImagen;
+        productoExistente.cloudinaryPublicId = publicId;
+        productoExistente.imagenes = imagenes;
         productoExistente.orden = req.body.orden !== undefined ? parseInt(req.body.orden) : productoExistente.orden;
         productoExistente.ordenVisualizacion = req.body.ordenVisualizacion !== undefined
             ? parseInt(req.body.ordenVisualizacion)
@@ -3544,8 +3618,19 @@ app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, r
         if (req.body.activo !== undefined) {
             productoExistente.activo = req.body.activo === 'true' || req.body.activo === true;
         }
+        if (req.body.descripcion !== undefined) {
+            productoExistente.descripcion = req.body.descripcion;
+        }
 
         await productoExistente.save();
+
+        // Eliminar las imágenes antiguas únicamente después de actualizar la BD
+        if (oldImagesToDelete.length > 0) {
+            for (const img of oldImagesToDelete) {
+                await eliminarImagen(img.url, img.publicId);
+            }
+        }
+
         res.json({ mensaje: 'Producto actualizado exitosamente', producto: productoResponse(productoExistente, categoria) });
     } catch (err) {
         console.error(err);
@@ -3560,7 +3645,19 @@ app.delete('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth
             return res.status(404).json({ error: 'Producto no encontrado' });
         }
 
-        await eliminarImagen(producto.imagenUrl || producto.imagen, producto.cloudinaryPublicId);
+        let deletedPrincipal = false;
+        if (producto.imagenes && Array.isArray(producto.imagenes)) {
+            for (const img of producto.imagenes) {
+                await eliminarImagen(img.url, img.publicId);
+                if (img.publicId && img.publicId === producto.cloudinaryPublicId) {
+                    deletedPrincipal = true;
+                }
+            }
+        }
+        if (!deletedPrincipal && (producto.imagenUrl || producto.imagen)) {
+            await eliminarImagen(producto.imagenUrl || producto.imagen, producto.cloudinaryPublicId);
+        }
+
         await Producto.deleteOne({ _id: req.params.id, tenantId: req.tenantId });
         res.json({ mensaje: 'Producto eliminado exitosamente' });
     } catch (err) {
@@ -3729,6 +3826,9 @@ app.use((err, req, res, next) => {
     console.error('Error no manejado:', err);
     if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
         return res.status(413).json({ error: 'El archivo no puede superar 5 MB' });
+    }
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Máximo puedes subir 3 imágenes por producto.' });
     }
     if (err.name === 'ValidationError') {
         return res.status(400).json({ error: 'Error de validación', detalles: err.message });

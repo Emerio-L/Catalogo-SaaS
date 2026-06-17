@@ -14,6 +14,11 @@ async function ensureRuntimeSchemaCompatibility() {
         ADD COLUMN IF NOT EXISTS "paymentBankAccountType" TEXT NOT NULL DEFAULT '',
         ADD COLUMN IF NOT EXISTS "paymentBankAccountName" TEXT NOT NULL DEFAULT ''
     `);
+    await prisma.$executeRawUnsafe(`
+        ALTER TABLE "Product"
+        ADD COLUMN IF NOT EXISTS "descripcion" TEXT NOT NULL DEFAULT '',
+        ADD COLUMN IF NOT EXISTS "imagenes" JSONB
+    `);
 }
 
 module.exports = {

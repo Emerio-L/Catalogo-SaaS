@@ -157,6 +157,8 @@ model Product {
   activo             Boolean   @default(true)
   orden              Int?
   ordenVisualizacion Int       @default(999)
+  descripcion        String    @default("")
+  imagenes           Json?
   creadoEn           DateTime  @default(now())
   deletedAt          DateTime?
 
