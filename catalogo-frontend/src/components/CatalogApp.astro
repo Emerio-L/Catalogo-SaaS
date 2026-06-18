@@ -2075,20 +2075,27 @@ if (noindex) {
         }
 
         window.abrirComprobantePago = async function(paymentId) {
+            const receiptWindow = window.open('', '_blank');
+            if (receiptWindow) receiptWindow.opener = null;
             try {
-                const res = await fetch(`${TENANT_API_URL}/admin/payments/${encodeURIComponent(paymentId)}/receipt`, {
+                const res = await fetch(`${TENANT_API_URL}/admin/payments/${encodeURIComponent(paymentId)}/receipt?access=json`, {
                     credentials: 'include'
                 });
                 if (!res.ok) {
                     const data = await res.json().catch(() => ({}));
+                    receiptWindow?.close();
                     showToast(data.error || 'No tienes autorización para ver este comprobante.', 'error');
                     return;
                 }
-                const blob = await res.blob();
-                const objectUrl = URL.createObjectURL(blob);
-                window.open(objectUrl, '_blank', 'noopener');
-                setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+                const data = await res.json();
+                if (!data.url) throw new Error('missing_receipt_url');
+                if (receiptWindow) {
+                    receiptWindow.location.href = data.url;
+                } else {
+                    window.open(data.url, '_blank', 'noopener');
+                }
             } catch (err) {
+                receiptWindow?.close();
                 showToast('No se pudo abrir el comprobante.', 'error');
             }
         };

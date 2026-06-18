@@ -1295,20 +1295,32 @@ function nombreDescargaComprobante(payment) {
     return originalName.replace(/[\r\n"]/g, '').slice(0, 160) || `comprobante-${payment._id}${fallbackExt}`;
 }
 
+function urlCloudinaryComprobante(payment) {
+    return cloudinary.url(payment.receiptPublicId, {
+        resource_type: payment.receiptResourceType,
+        type: 'authenticated',
+        secure: true,
+        sign_url: true,
+        expires_at: Math.floor(Date.now() / 1000) + 5 * 60
+    });
+}
+
+function urlComprobanteSeguro(req, payment) {
+    if (payment.receiptPublicId && payment.receiptResourceType && payment.receiptResourceType !== 'local' && cloudinaryEnabled) {
+        return urlCloudinaryComprobante(payment);
+    }
+
+    const cleanPath = String(req.originalUrl || '').split('?')[0];
+    return `${req.protocol}://${req.get('host')}${cleanPath}`;
+}
+
 async function servirComprobantePago(payment, res) {
     if (!payment?.receiptUrl && !payment?.receiptPublicId) {
         return res.status(404).json({ error: 'Comprobante no encontrado' });
     }
 
     if (payment.receiptPublicId && payment.receiptResourceType && payment.receiptResourceType !== 'local' && cloudinaryEnabled) {
-        const signedUrl = cloudinary.url(payment.receiptPublicId, {
-            resource_type: payment.receiptResourceType,
-            type: 'authenticated',
-            secure: true,
-            sign_url: true,
-            expires_at: Math.floor(Date.now() / 1000) + 5 * 60
-        });
-        return res.redirect(signedUrl);
+        return res.redirect(urlCloudinaryComprobante(payment));
     }
 
     const filename = localReceiptFilename(payment);
@@ -2721,38 +2733,22 @@ app.post('/api/:tenant/admin/payments/receipt', tenantMiddleware, requireAdminAu
         const paymentMonth = String(req.body.paymentMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`).trim();
         const paymentMethod = String(req.body.paymentMethod || 'Transferencia').trim() || 'Transferencia';
         const receipt = await guardarReciboPrivado(req.file, req.tenant.slug);
-        let payment = await Payment.findOne({ tenantId: req.tenantId, paymentMonth, status: 'pendiente' }).sort({ createdAt: -1 });
-        if (payment) {
-            const previousReceipt = payment.toObject ? payment.toObject() : { ...payment };
-            payment.amount = amount;
-            payment.paymentMethod = paymentMethod;
-            payment.paidAt = now;
-            payment.receiptPublicId = receipt.publicId;
-            payment.receiptResourceType = receipt.resourceType;
-            payment.receiptOriginalName = receipt.originalName;
-            payment.receiptMimeType = receipt.mimeType;
-            payment.receiptSizeBytes = receipt.sizeBytes;
-            payment.receiptUrl = `/api/${req.tenant.slug}/admin/payments/${payment._id}/receipt`;
-            await payment.save();
-            await eliminarArchivoComprobante(previousReceipt);
-        } else {
-            payment = await Payment.create({
-                tenantId: req.tenantId,
-                amount,
-                paymentMonth,
-                paymentMethod,
-                receiptUrl: '',
-                receiptPublicId: receipt.publicId,
-                receiptResourceType: receipt.resourceType,
-                receiptOriginalName: receipt.originalName,
-                receiptMimeType: receipt.mimeType,
-                receiptSizeBytes: receipt.sizeBytes,
-                status: 'pendiente',
-                paidAt: now
-            });
-            payment.receiptUrl = `/api/${req.tenant.slug}/admin/payments/${payment._id}/receipt`;
-            await payment.save();
-        }
+        const payment = await Payment.create({
+            tenantId: req.tenantId,
+            amount,
+            paymentMonth,
+            paymentMethod,
+            receiptUrl: '',
+            receiptPublicId: receipt.publicId,
+            receiptResourceType: receipt.resourceType,
+            receiptOriginalName: receipt.originalName,
+            receiptMimeType: receipt.mimeType,
+            receiptSizeBytes: receipt.sizeBytes,
+            status: 'pendiente',
+            paidAt: now
+        });
+        payment.receiptUrl = `/api/${req.tenant.slug}/admin/payments/${payment._id}/receipt`;
+        await payment.save();
         await auditLog(req, 'payment_receipt_submitted', {
             tenantId: req.tenantId,
             paymentId: payment._id,
@@ -2769,6 +2765,9 @@ app.get('/api/:tenant/admin/payments/:paymentId/receipt', tenantMiddleware, requ
     try {
         const payment = await Payment.findOne({ _id: req.params.paymentId, tenantId: req.tenantId });
         if (!payment) return res.status(404).json({ error: 'Comprobante no encontrado' });
+        if (req.query.access === 'json') {
+            return res.json({ success: true, url: urlComprobanteSeguro(req, payment) });
+        }
         return servirComprobantePago(payment, res);
     } catch (err) {
         console.error('Error al servir comprobante del tenant:', err);
@@ -2780,6 +2779,9 @@ app.get('/api/super-admin/payments/:paymentId/receipt', requireSuperAdminAuth, a
     try {
         const payment = await Payment.findById(req.params.paymentId);
         if (!payment) return res.status(404).json({ error: 'Comprobante no encontrado' });
+        if (req.query.access === 'json') {
+            return res.json({ success: true, url: urlComprobanteSeguro(req, payment) });
+        }
         return servirComprobantePago(payment, res);
     } catch (err) {
         console.error('Error al servir comprobante para super admin:', err);
@@ -2839,6 +2841,9 @@ app.get('/api/payments/receipt-file/:filename', async (req, res) => {
             return res.status(403).json({ error: 'No tienes autorización para ver este comprobante.' });
         }
 
+        if (req.query.access === 'json') {
+            return res.json({ success: true, url: urlComprobanteSeguro(req, payment) });
+        }
         return servirComprobantePago(payment, res);
     } catch (err) {
         console.error('Error al servir comprobante privado:', err);
