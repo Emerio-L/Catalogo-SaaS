@@ -254,7 +254,7 @@ async function main() {
         headers: { Authorization: `Bearer ${temporaryLogin.data.devSessionToken}` },
         body: JSON.stringify({ newUsername: recoveredUsername, newPassword: recoveredPassword })
     });
-    assert(forceCredentials.response.ok, 'Reemplazar credenciales temporales por credenciales definitivas');
+    assert(forceCredentials.response.ok, `Reemplazar credenciales temporales por credenciales definitivas: ${JSON.stringify(forceCredentials.data)}`);
 
     const relogin = await login(`/api/${tenantSlug}/auth/login`, tenantEmail, recoveredPassword);
     assert(relogin.response.ok, 'Login funciona despues de cambiar credenciales temporales');

@@ -3484,7 +3484,40 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requ
         let imagenes = null;
         let primaryImage = { url: '/uploads/placeholder.webp', publicId: '' };
 
-        if (req.files && req.files.length > 0) {
+        if (req.body.galeriaLayout) {
+            const layout = JSON.parse(req.body.galeriaLayout);
+            const uploadedFiles = [];
+            if (req.files && req.files.length > 0) {
+                for (const file of req.files) {
+                    const uploaded = await guardarImagenProducto(file, req.tenant.slug);
+                    uploadedFiles.push(uploaded);
+                }
+            }
+
+            const nuevasImagenes = [];
+            for (const item of layout) {
+                if (item.type === 'new') {
+                    const uploaded = uploadedFiles[item.index];
+                    if (uploaded) {
+                        const imgObj = {
+                            url: uploaded.url,
+                            publicId: uploaded.publicId || '',
+                            orden: item.orden,
+                            principal: item.principal
+                        };
+                        nuevasImagenes.push(imgObj);
+                        if (item.principal) {
+                            primaryImage = uploaded;
+                        }
+                    }
+                }
+            }
+            if (!primaryImage && nuevasImagenes.length > 0) {
+                primaryImage = { url: nuevasImagenes[0].url, publicId: nuevasImagenes[0].publicId || '' };
+                nuevasImagenes[0].principal = true;
+            }
+            imagenes = nuevasImagenes.length > 0 ? nuevasImagenes : null;
+        } else if (req.files && req.files.length > 0) {
             if (req.files.length > 3) {
                 return res.status(400).json({ error: 'Máximo puedes subir 3 imágenes por producto.' });
             }
@@ -3556,7 +3589,77 @@ app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, r
             }
         }
 
-        if (req.files && req.files.length > 0) {
+        if (req.body.galeriaLayout) {
+            const layout = JSON.parse(req.body.galeriaLayout);
+            const uploadedFiles = [];
+            if (req.files && req.files.length > 0) {
+                for (const file of req.files) {
+                    const uploaded = await guardarImagenProducto(file, req.tenant.slug);
+                    uploadedFiles.push(uploaded);
+                }
+            }
+
+            const nuevasImagenes = [];
+            let primaryImage = null;
+            for (const item of layout) {
+                if (item.type === 'existing') {
+                    const imgObj = {
+                        url: item.url,
+                        publicId: item.publicId || '',
+                        orden: item.orden,
+                        principal: item.principal
+                    };
+                    nuevasImagenes.push(imgObj);
+                    if (item.principal) {
+                        primaryImage = { url: item.url, publicId: item.publicId || '' };
+                    }
+                } else if (item.type === 'new') {
+                    const uploaded = uploadedFiles[item.index];
+                    if (uploaded) {
+                        const imgObj = {
+                            url: uploaded.url,
+                            publicId: uploaded.publicId || '',
+                            orden: item.orden,
+                            principal: item.principal
+                        };
+                        nuevasImagenes.push(imgObj);
+                        if (item.principal) {
+                            primaryImage = uploaded;
+                        }
+                    }
+                }
+            }
+
+            if (!primaryImage && nuevasImagenes.length > 0) {
+                primaryImage = { url: nuevasImagenes[0].url, publicId: nuevasImagenes[0].publicId || '' };
+                nuevasImagenes[0].principal = true;
+            }
+
+            // Registrar imágenes que estaban antes pero ya no están para borrarlas de Cloudinary/local
+            const newUrls = new Set(nuevasImagenes.map(img => img.url));
+            const currentImages = productoExistente.imagenes || [];
+            if (Array.isArray(currentImages)) {
+                for (const img of currentImages) {
+                    if (!newUrls.has(img.url)) {
+                        oldImagesToDelete.push(img);
+                    }
+                }
+            }
+            if (productoExistente.imagenUrl && productoExistente.imagenUrl !== '/uploads/placeholder.webp' && !newUrls.has(productoExistente.imagenUrl)) {
+                if (!oldImagesToDelete.some(img => img.url === productoExistente.imagenUrl)) {
+                    oldImagesToDelete.push({ url: productoExistente.imagenUrl, publicId: productoExistente.cloudinaryPublicId });
+                }
+            }
+
+            imagenes = nuevasImagenes.length > 0 ? nuevasImagenes : null;
+            if (primaryImage) {
+                rutaImagen = primaryImage.url;
+                publicId = primaryImage.publicId;
+            } else {
+                rutaImagen = '/uploads/placeholder.webp';
+                publicId = '';
+            }
+        } else if (req.files && req.files.length > 0) {
             if (req.files.length > 3) {
                 return res.status(400).json({ error: 'Máximo puedes subir 3 imágenes por producto.' });
             }
