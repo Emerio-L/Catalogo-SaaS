@@ -1295,7 +1295,33 @@ function nombreDescargaComprobante(payment) {
     return originalName.replace(/[\r\n"]/g, '').slice(0, 160) || `comprobante-${payment._id}${fallbackExt}`;
 }
 
+function formatoComprobante(payment) {
+    const mime = String(payment.receiptMimeType || '').toLowerCase();
+    if (mime === 'application/pdf') return 'pdf';
+    if (mime === 'image/jpeg') return 'jpg';
+    if (mime === 'image/png') return 'png';
+    if (mime === 'image/webp') return 'webp';
+    if (mime === 'image/gif') return 'gif';
+    if (mime === 'image/avif') return 'avif';
+
+    const ext = path.extname(payment.receiptOriginalName || '').replace('.', '').toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'pdf'].includes(ext)) {
+        return ext === 'jpeg' ? 'jpg' : ext;
+    }
+    return '';
+}
+
 function urlCloudinaryComprobante(payment) {
+    const format = formatoComprobante(payment);
+    if (format) {
+        return cloudinary.utils.private_download_url(payment.receiptPublicId, format, {
+            resource_type: payment.receiptResourceType,
+            type: 'authenticated',
+            attachment: false,
+            expires_at: Math.floor(Date.now() / 1000) + 5 * 60
+        });
+    }
+
     return cloudinary.url(payment.receiptPublicId, {
         resource_type: payment.receiptResourceType,
         type: 'authenticated',
