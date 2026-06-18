@@ -1043,7 +1043,7 @@ if (noindex) {
     <>
     <!-- MODAL FORMULARIO ADMIN (CREAR / EDITAR) -->
     <div id="modal-admin-form" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 transition-all duration-300 hidden overflow-y-auto">
-        <div class="bg-white rounded-[2.5rem] p-6 w-full max-w-md shadow-2xl my-auto transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100">
+        <div class="bg-white rounded-[2.5rem] p-6 w-full max-w-md shadow-2xl my-auto transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100 max-h-[90vh] overflow-y-auto">
             <button onclick="cerrarAdminForm()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
             
             <div class="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100">
@@ -5039,8 +5039,8 @@ if (noindex) {
         }
 
         function abrirAdminForm(esEdicion = false) {
-            adminArchivosSeleccionados = [];
             if (!esEdicion) {
+                adminArchivosSeleccionados = [];
                 document.getElementById('admin-form-titulo').innerText = "Agregar Producto";
                 document.getElementById('form-producto').reset();
                 document.getElementById('admin-id').value = '';
