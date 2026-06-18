@@ -1232,6 +1232,17 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }, 4000);
         }
         window.showToast = showToast;
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button?.querySelector('i');
+            if (!input || !icon) return;
+            const visible = input.type === 'text';
+            input.type = visible ? 'password' : 'text';
+            icon.classList.toggle('fa-eye', visible);
+            icon.classList.toggle('fa-eye-slash', !visible);
+            button.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+        }
+        window.togglePasswordVisibility = togglePasswordVisibility;
 
         /* ===========================
         LANDING PAGE & SUPPORT HANDLERS
@@ -1246,6 +1257,33 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 if (modal) {
                     modal.classList.add('hidden');
                     modal.classList.remove('flex');
+
+                    // Reset all inputs/forms
+                    const loginForm = login?.querySelector('form');
+                    if (loginForm) loginForm.reset();
+                    const registerForm = register?.querySelector('form');
+                    if (registerForm) registerForm.reset();
+                    const recoveryForm = document.getElementById('landing-recovery-form');
+                    if (recoveryForm) recoveryForm.reset();
+
+                    // Reset error and success alerts
+                    mostrarErrorLoginLanding('');
+                    mostrarErrorRegistroLanding('');
+                    mostrarErrorRecoveryLanding('');
+
+                    // Reset password visibility toggler back to password type and eye icon
+                    const passInput = document.getElementById('landing-login-password');
+                    if (passInput) passInput.type = 'password';
+                    const passBtn = document.querySelector('[onclick*="landing-login-password"]');
+                    if (passBtn) {
+                        const icon = passBtn.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fa-solid fa-eye';
+                        }
+                    }
+
+                    // Reset back to initial login step
+                    mostrarLandingStep('login');
                 }
                 return;
             }

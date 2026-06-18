@@ -417,10 +417,16 @@ if (noindex) {
                             </div>
                             <p id="account-warning" class="mt-4 hidden items-center gap-2 text-xs font-bold text-amber-700"><i class="fa-solid fa-triangle-exclamation"></i> <span></span></p>
                             <div class="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
-                                <p class="text-xs font-black uppercase tracking-wider text-slate-700">Quiero pagar mi suscripción</p>
-                                <!-- Step 1: Button to show intent -->
-                                <div id="payment-intent-initial" class="mt-3">
-                                    <button type="button" onclick="showPaymentIntentSelector()" class="w-full rounded-2xl bg-primary-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white transition hover:bg-primary-500"><i class="fa-solid fa-credit-card mr-2"></i>Quiero pagar mi suscripción</button>
+                                <!-- Duplicated title removed, buttons grouped -->
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2" id="payment-actions-container">
+                                    <!-- Step 1: Button to show intent -->
+                                    <div id="payment-intent-initial">
+                                        <button type="button" onclick="showPaymentIntentSelector()" class="w-full rounded-2xl bg-primary-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white transition hover:bg-primary-500"><i class="fa-solid fa-credit-card mr-2"></i>Quiero pagar mi suscripción</button>
+                                    </div>
+                                    <!-- Step 1b: Button to report payment directly -->
+                                    <div>
+                                        <button type="button" onclick="toggleReportarPago()" class="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white transition hover:bg-emerald-500"><i class="fa-solid fa-upload mr-2"></i>Reportar pago</button>
+                                    </div>
                                 </div>
                                 <!-- Step 2: Select method -->
                                 <div id="payment-intent-selector" class="mt-3 hidden space-y-3">
@@ -1592,6 +1598,29 @@ if (noindex) {
             theme: DEFAULT_TENANT_THEME
         };
 
+        function obtenerSimboloMoneda(monedaCode = configuracionNegocio?.monedaVisible) {
+            const symbols = {
+                'GTQ': 'Q',
+                'USD': '$',
+                'EUR': '€',
+                'MXN': '$',
+                'COP': '$',
+                'PEN': 'S/',
+                'ARS': '$',
+                'CLP': '$',
+                'UYU': '$',
+                'CRC': '₡',
+                'DOP': 'RD$',
+                'NIO': 'C$',
+                'HNL': 'L',
+                'PYG': '₲',
+                'BOB': 'Bs',
+                'VES': 'Bs.S'
+            };
+            return symbols[monedaCode] || symbols['GTQ'] || 'Q';
+        }
+        window.obtenerSimboloMoneda = obtenerSimboloMoneda;
+
         function formatAccountDate(value) {
             if (!value) return 'Sin fecha';
             return new Intl.DateTimeFormat('es-GT', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(value));
@@ -1682,6 +1711,16 @@ if (noindex) {
         window.showPaymentIntentSelector = function() {
             document.getElementById('payment-intent-initial')?.classList.add('hidden');
             document.getElementById('payment-intent-selector')?.classList.remove('hidden');
+        };
+
+        window.toggleReportarPago = function() {
+            const form = document.getElementById('payment-receipt-form');
+            if (form) {
+                const isHidden = form.classList.toggle('hidden');
+                if (!isHidden) {
+                    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
         };
 
         window.confirmPaymentIntent = async function() {
@@ -2968,7 +3007,7 @@ if (noindex) {
                             </p>
                             ` : ''}
                             <p class="mt-1 text-base font-black text-primary-600 md:text-lg">
-                                Q${prod.p.toFixed(2)} <span class="text-slate-400 font-bold text-[10px]">/ ${prod.u}</span>
+                                ${obtenerSimboloMoneda()}${prod.p.toFixed(2)} <span class="text-slate-400 font-bold text-[10px]">/ ${prod.u}</span>
                             </p>
                         </div>
 
@@ -3063,7 +3102,7 @@ if (noindex) {
                         <span class="text-xs uppercase font-extrabold px-3 py-1 rounded-full bg-slate-100 text-slate-700">${prod.categoria || 'Sin categoría'}</span>
                     </td>
                     <td class="px-4 py-4">
-                        <div class="font-black text-primary-600">Q${prod.precio.toFixed(2)}</div>
+                        <div class="font-black text-primary-600">${obtenerSimboloMoneda()}${prod.precio.toFixed(2)}</div>
                         <div class="text-[10px] text-slate-400">Por ${prod.unidad}</div>
                     </td>
                     <td class="px-4 py-4 text-center">
@@ -3098,7 +3137,7 @@ if (noindex) {
                             <h4 class="font-extrabold text-xs text-slate-800 uppercase truncate">${prod.nombre}</h4>
                             <span class="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-slate-200/60 text-slate-600">${prod.categoria}</span>
                         </div>
-                        <div class="text-[10px] text-primary-600 font-extrabold mt-0.5">Q${prod.precio.toFixed(2)} / ${prod.unidad}</div>
+                        <div class="text-[10px] text-primary-600 font-extrabold mt-0.5">${obtenerSimboloMoneda()}${prod.precio.toFixed(2)} / ${prod.unidad}</div>
                         
                         <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-200/40">
                             <button onclick="toggleProductStatus('${productId}', ${!prod.activo})" class="text-[9px] font-black uppercase text-slate-500">
@@ -3264,7 +3303,7 @@ if (noindex) {
                     </span>
                     <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight leading-snug">${prod.n}</h2>
                     <p class="text-lg font-black text-primary-600">
-                        Q${prod.p.toFixed(2)} <span class="text-slate-400 font-bold text-xs">/ ${prod.u}</span>
+                        ${obtenerSimboloMoneda()}${prod.p.toFixed(2)} <span class="text-slate-400 font-bold text-xs">/ ${prod.u}</span>
                     </p>
                 </div>
 
@@ -3406,7 +3445,7 @@ if (noindex) {
                 }
             });
             const totalEl = document.getElementById("total-val");
-            if (totalEl) totalEl.innerText = "Q" + total.toFixed(2);
+            if (totalEl) totalEl.innerText = obtenerSimboloMoneda() + total.toFixed(2);
             actualizarMiniCarrito();
         }
 
@@ -3581,10 +3620,38 @@ if (noindex) {
                 return;
             }
             const modal = document.getElementById("modal-admin-auth-v2");
-            modal.querySelector('div').classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add("hidden");
-            }, 300);
+            if (modal) {
+                modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    modal.classList.add("hidden");
+                    
+                    // Reset all inputs/forms
+                    const loginForm = document.getElementById('auth2-login-form');
+                    if (loginForm) loginForm.reset();
+                    const registerForm = document.getElementById('auth2-register-form');
+                    if (registerForm) registerForm.reset();
+                    const recoveryForm = document.getElementById('auth2-recovery-form');
+                    if (recoveryForm) recoveryForm.reset();
+                    
+                    // Reset error and success alerts
+                    mostrarErrorLogin('');
+                    mostrarErrorRegistro('');
+                    
+                    // Reset password visibility toggler back to password type and eye icon
+                    const passInput = document.getElementById('auth2-password');
+                    if (passInput) passInput.type = 'password';
+                    const passBtn = document.querySelector('[onclick*="auth2-password"]');
+                    if (passBtn) {
+                        const icon = passBtn.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fa-solid fa-eye';
+                        }
+                    }
+                    
+                    // Reset back to initial login step
+                    mostrarAuthStep('login');
+                }, 300);
+            }
         }
 
         function ocultarAuthModalInmediato() {
@@ -3904,6 +3971,10 @@ if (noindex) {
             }
         }
         window.verificarPassword = verificarPassword;
+        window.togglePasswordVisibility = togglePasswordVisibility;
+        window.cerrarAuthModal = cerrarAuthModal;
+        window.mostrarAuthStep = mostrarAuthStep;
+        window.mostrarRegistroSaas = mostrarRegistroSaas;
 
         async function registrarCuentaSaas(e) {
             if (e) e.preventDefault();
@@ -4623,6 +4694,10 @@ if (noindex) {
                 actualizarCheckoutOpciones();
                 cargarAjustesCatalogo();
                 renderCategorias();
+                recalcular();
+                actualizarMiniCarrito();
+                dibujar();
+                dibujarAdmin();
             } catch (err) {
                 console.error(err);
                 showToast(err.message || "Error al guardar ajustes", "error");
@@ -4659,7 +4734,7 @@ if (noindex) {
 
         function actualizarMiniCarrito() {
             const { cantidad, total } = obtenerTotalesPedido();
-            const totalText = `Q${total.toFixed(2)}`;
+            const totalText = `${obtenerSimboloMoneda()}${total.toFixed(2)}`;
             const totalEl = document.getElementById("total-val");
             const badgeEl = document.getElementById("floating-cart-badge");
             const countEl = document.getElementById("mini-cart-count");
@@ -4844,13 +4919,13 @@ if (noindex) {
                                 <div class="truncate pr-2">
                                     <span class="font-extrabold text-slate-800">${pedido[p.id]}x</span> ${p.n}
                                 </div>
-                                <div class="font-black text-slate-900 shrink-0">Q${sub.toFixed(2)}</div>
+                                <div class="font-black text-slate-900 shrink-0">${obtenerSimboloMoneda()}${sub.toFixed(2)}</div>
                             </div>
                         `;
                     }
                 });
                 resumenContenedor.innerHTML = resumenHtml;
-                totalContenedor.innerText = `Q${total.toFixed(2)}`;
+                totalContenedor.innerText = `${obtenerSimboloMoneda()}${total.toFixed(2)}`;
             }
 
             renderCheckoutResumen();
@@ -4874,27 +4949,27 @@ if (noindex) {
             const totalHeader = document.getElementById("checkout-total-header");
             const countEl = document.getElementById("checkout-item-count");
             const { items, cantidad, subtotal, total } = obtenerTotalesPedido();
-            const totalText = `Q${total.toFixed(2)}`;
+            const totalText = `${obtenerSimboloMoneda()}${total.toFixed(2)}`;
             if (resumenContenedor) {
                 resumenContenedor.innerHTML = items.map(item => `
                     <div class="grid min-h-[70px] grid-cols-[52px_1fr_auto] items-center gap-3 border-b border-[#E2E8F0] px-3 py-2 last:border-b-0 md:grid-cols-[58px_1fr_132px_88px_36px] md:px-0">
                         <img src="${item.img}" alt="${item.n}" class="h-12 w-12 rounded-xl border border-[#E2E8F0] object-cover md:ml-2" onerror="this.src='https://via.placeholder.com/120?text=${encodeURIComponent(item.n)}'">
                         <div class="min-w-0">
                             <p class="truncate text-sm font-black text-[#0F172A]">${item.n}</p>
-                            <p class="mt-1 text-xs font-bold text-[#64748B]">Q${item.p.toFixed(2)} / ${item.u}</p>
+                            <p class="mt-1 text-xs font-bold text-[#64748B]">${obtenerSimboloMoneda()}${item.p.toFixed(2)} / ${item.u}</p>
                         </div>
                         <div class="col-span-2 ml-[64px] inline-flex h-9 w-fit items-center rounded-2xl md:col-span-1 md:ml-0 md:justify-self-center">
                             <button onclick="updateCheckoutItem('${item.id}', -1)" class="flex h-8 w-8 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#64748B] hover:text-[#0F172A]" aria-label="Restar"><i class="fa-solid fa-minus text-[10px]"></i></button>
                             <span class="w-10 text-center text-sm font-black text-[#0F172A]">${item.cantidad}</span>
                             <button onclick="updateCheckoutItem('${item.id}', 1)" class="flex h-8 w-8 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#64748B] hover:text-[#0F172A]" aria-label="Sumar"><i class="fa-solid fa-plus text-[10px]"></i></button>
                         </div>
-                        <p class="hidden text-right text-sm font-black text-[#0F172A] md:block">Q${item.subtotal.toFixed(2)}</p>
+                        <p class="hidden text-right text-sm font-black text-[#0F172A] md:block">${obtenerSimboloMoneda()}${item.subtotal.toFixed(2)}</p>
                         <button onclick="removeCheckoutItem('${item.id}')" class="hidden h-8 w-8 items-center justify-center rounded-xl bg-[#F8FAFC] text-[#64748B] hover:text-[#EF4444] md:flex" aria-label="Eliminar"><i class="fa-solid fa-trash-can text-xs"></i></button>
                     </div>
                 `).join('');
             }
             if (totalContenedor) totalContenedor.innerText = totalText;
-            if (subtotalContenedor) subtotalContenedor.innerText = `Q${subtotal.toFixed(2)}`;
+            if (subtotalContenedor) subtotalContenedor.innerText = `${obtenerSimboloMoneda()}${subtotal.toFixed(2)}`;
             if (totalHeader) totalHeader.innerText = totalText;
             if (countEl) countEl.innerText = textoArticulos(cantidad);
         }
@@ -5629,7 +5704,7 @@ if (noindex) {
             productos.forEach(p => {
                 if (pedido[p.id] > 0) {
                     const sub = p.p * pedido[p.id];
-                    msg += `• *${p.n}* (${pedido[p.id]} ${p.u}) -> _Q${sub.toFixed(2)}_%0A`;
+                    msg += `• *${p.n}* (${pedido[p.id]} ${p.u}) -> _${obtenerSimboloMoneda()}${sub.toFixed(2)}_%0A`;
                     items.push({
                         productId: p.id,
                         nombre: p.n,
@@ -5642,7 +5717,7 @@ if (noindex) {
             });
 
             msg += `%0A---------------------------%0A`;
-            msg += `*TOTAL DE LA ORDEN: Q${total.toFixed(2)}*%0A`;
+            msg += `*TOTAL DE LA ORDEN: ${obtenerSimboloMoneda()}${total.toFixed(2)}*%0A`;
             msg += `---------------------------%0A`;
             msg += `_¡Muchas gracias por su preferencia!_`;
 
@@ -5898,7 +5973,7 @@ if (noindex) {
             // Calcular suma total de recibos
             const totalSuma = lista.reduce((acc, p) => acc + p.total, 0);
             if (sumaEl) {
-                sumaEl.innerText = "Q" + totalSuma.toFixed(2);
+                sumaEl.innerText = obtenerSimboloMoneda() + totalSuma.toFixed(2);
             }
 
             if (lista.length === 0) {
@@ -5947,7 +6022,7 @@ if (noindex) {
                         ${detalleCliente}
                     </td>
                     <td class="p-4 text-xs text-slate-600 max-w-xs truncate" title="${detalleProductos}">${detalleProductos}</td>
-                    <td class="p-4 text-center font-bold text-primary-600">Q${ped.total.toFixed(2)}</td>
+                    <td class="p-4 text-center font-bold text-primary-600">${obtenerSimboloMoneda()}${ped.total.toFixed(2)}</td>
                     <td class="p-4 pr-6 text-right">
                         <div class="flex justify-end gap-1.5">
                             <button onclick="descargarPDFPedido('${ped._id}')" class="w-8 h-8 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all flex items-center justify-center" title="Descargar Recibo PDF">
@@ -5990,7 +6065,7 @@ if (noindex) {
                         <p class="text-[11px] text-slate-600 mt-1 italic line-clamp-2">${detalleProductos}</p>
                     </div>
                     <div class="flex justify-between items-center pt-2 border-t border-slate-200/40">
-                        <div class="text-xs font-black text-primary-600">Q${ped.total.toFixed(2)}</div>
+                        <div class="text-xs font-black text-primary-600">${obtenerSimboloMoneda()}${ped.total.toFixed(2)}</div>
                         <div class="flex gap-2">
                             <button onclick="descargarPDFPedido('${ped._id}')" class="text-xs bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
                                 <i class="fa-solid fa-file-pdf"></i> Recibo
@@ -6060,8 +6135,8 @@ if (noindex) {
             const tableRows = items.map(item => [
                 item.nombre.toUpperCase(),
                 `${item.cantidad} ${item.unidad}`,
-                `Q${item.precio.toFixed(2)}`,
-                `Q${(item.cantidad * item.precio).toFixed(2)}`
+                `${obtenerSimboloMoneda()}${item.precio.toFixed(2)}`,
+                `${obtenerSimboloMoneda()}${(item.cantidad * item.precio).toFixed(2)}`
             ]);
 
             // Dibujar tabla con jsPDF-AutoTable
@@ -6095,7 +6170,7 @@ if (noindex) {
             doc.setTextColor(30, 41, 59);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(12);
-            doc.text(`TOTAL A PAGAR: Q${total.toFixed(2)}`, 140, finalY);
+            doc.text(`TOTAL A PAGAR: ${obtenerSimboloMoneda()}${total.toFixed(2)}`, 140, finalY);
 
             // Message
             doc.setTextColor(148, 163, 184); // slate-400
@@ -6268,8 +6343,8 @@ if (noindex) {
                     item.nombre.toUpperCase(),
                     item.cantidad.toFixed(item.cantidad % 1 === 0 ? 0 : 2),
                     item.unidad,
-                    `Q${item.precio.toFixed(2)}`,
-                    `Q${item.subtotal.toFixed(2)}`,
+                    `${obtenerSimboloMoneda()}${item.precio.toFixed(2)}`,
+                    `${obtenerSimboloMoneda()}${item.subtotal.toFixed(2)}`,
                     `${item.pedidos}`,
                     `${clientes}${clientesExtra}`
                 ];
@@ -6324,7 +6399,7 @@ if (noindex) {
             doc.text(`Total de pedidos: ${lista.length}`, 20, resumenY + 8);
             doc.text(`Productos consolidados: ${resumen.length}`, 20, resumenY + 15);
             doc.text(`Cantidad total: ${totalUnidades.toFixed(totalUnidades % 1 === 0 ? 0 : 2)}`, 95, resumenY + 8);
-            doc.text(`Total acumulado: Q${totalGeneral.toFixed(2)}`, 95, resumenY + 15);
+            doc.text(`Total acumulado: ${obtenerSimboloMoneda()}${totalGeneral.toFixed(2)}`, 95, resumenY + 15);
 
             const fechaArchivo = fechaGeneracion.toISOString().slice(0, 10);
             const cleanTenant = (tenantSlug || "catalogo").replace(/[^a-z0-9-]/gi, "_").toLowerCase();
