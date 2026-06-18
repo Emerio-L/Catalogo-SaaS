@@ -212,25 +212,7 @@ async function limpiarPedidosExpirados(tenantId) {
     // 2. Eliminar comprobantes de pago expirados de Cloudinary y DB
     const pagosExpirados = await Payment.find({ tenantId, createdAt: { $lt: limite } });
     for (const pago of pagosExpirados) {
-        if (pago.receiptUrl) {
-            await eliminarArchivoComprobante(pago.receiptUrl);
-        }
-        if (pago.receiptUrl && cloudinaryEnabled) {
-            // El publicId no lo guardabamos, así que extraerlo de la URL o intentar borrar
-            // Como no tenemos el publicId exacto, usaremos delete_resources de Cloudinary
-            // o lo ignoramos por ahora. Sin embargo, recibos usan `receipt-${req.tenant.slug}`.
-            // Para simplificar, extraeremos el publicId basico asumiendo estructura Cloudinary
-            const urlParts = pago.receiptUrl.split('/');
-            const filename = urlParts.pop();
-            const folder = urlParts.pop();
-            if (filename && folder) {
-                const publicIdBase = filename.split('.')[0];
-                const publicId = `catalogo-productos/${folder}/${publicIdBase}`;
-                try {
-                    await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
-                } catch(e) {}
-            }
-        }
+        await eliminarArchivoComprobante(pago);
     }
     await Payment.deleteMany({ tenantId, createdAt: { $lt: limite } });
 }
@@ -1222,17 +1204,79 @@ async function guardarArchivoGeneral(file, folder, prefix) {
 }
 
 async function guardarReciboPrivado(file, prefix) {
-    if (!file) return { url: '', filename: '' };
+    if (!file) {
+        return {
+            url: '',
+            publicId: '',
+            resourceType: '',
+            originalName: '',
+            mimeType: '',
+            sizeBytes: 0
+        };
+    }
+    const originalName = path.basename(file.originalname || 'comprobante');
+    const mimeType = file.mimetype || 'application/octet-stream';
+    const sizeBytes = Number(file.size || file.buffer?.length || 0);
+
+    if (cloudinaryEnabled) {
+        const dataUri = `data:${mimeType};base64,${file.buffer.toString('base64')}`;
+        const result = await cloudinary.uploader.upload(dataUri, {
+            folder: `catalogo-productos/private-receipts/${prefix}`,
+            resource_type: 'auto',
+            type: 'authenticated',
+            access_mode: 'authenticated'
+        });
+        return {
+            url: '',
+            publicId: result.public_id,
+            resourceType: result.resource_type || 'image',
+            originalName,
+            mimeType,
+            sizeBytes
+        };
+    }
+
     const safeExt = path.extname(file.originalname || '').replace(/[^a-zA-Z0-9.]/g, '').slice(0, 12) || '.bin';
     const nombreArchivo = `receipt-${prefix}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}${safeExt}`;
     const rutaDestino = path.join(privateReceiptsDir, nombreArchivo);
     await fs.promises.writeFile(rutaDestino, file.buffer);
-    return { url: `/api/payments/receipt-file/${nombreArchivo}`, filename: nombreArchivo };
+    return {
+        url: `/api/payments/receipt-file/${nombreArchivo}`,
+        publicId: nombreArchivo,
+        resourceType: 'local',
+        originalName,
+        mimeType,
+        sizeBytes
+    };
 }
 
-async function eliminarArchivoComprobante(receiptUrl) {
-    if (!receiptUrl || !receiptUrl.includes('/receipt-file/')) return;
-    const filename = receiptUrl.split('/').pop();
+function localReceiptFilename(paymentOrUrl) {
+    if (!paymentOrUrl) return '';
+    if (typeof paymentOrUrl === 'object') {
+        if (paymentOrUrl.receiptResourceType === 'local' && paymentOrUrl.receiptPublicId) {
+            return paymentOrUrl.receiptPublicId;
+        }
+        const receiptUrl = paymentOrUrl.receiptUrl || '';
+        return receiptUrl.includes('/receipt-file/') ? receiptUrl.split('/').pop() : '';
+    }
+    const receiptUrl = String(paymentOrUrl || '');
+    return receiptUrl.includes('/receipt-file/') ? receiptUrl.split('/').pop() : '';
+}
+
+async function eliminarArchivoComprobante(paymentOrUrl) {
+    if (paymentOrUrl && typeof paymentOrUrl === 'object' && paymentOrUrl.receiptPublicId && paymentOrUrl.receiptResourceType && paymentOrUrl.receiptResourceType !== 'local' && cloudinaryEnabled) {
+        try {
+            await cloudinary.uploader.destroy(paymentOrUrl.receiptPublicId, {
+                resource_type: paymentOrUrl.receiptResourceType,
+                type: 'authenticated'
+            });
+        } catch (err) {
+            console.error('Error al eliminar comprobante privado de Cloudinary:', err);
+        }
+        return;
+    }
+
+    const filename = localReceiptFilename(paymentOrUrl);
     if (filename) {
         const filePath = path.join(privateReceiptsDir, filename);
         try {
@@ -1243,6 +1287,43 @@ async function eliminarArchivoComprobante(receiptUrl) {
             console.error('Error al eliminar archivo de comprobante privado:', err);
         }
     }
+}
+
+function nombreDescargaComprobante(payment) {
+    const fallbackExt = payment.receiptMimeType === 'application/pdf' ? '.pdf' : '';
+    const originalName = path.basename(payment.receiptOriginalName || `comprobante-${payment._id}${fallbackExt}`);
+    return originalName.replace(/[\r\n"]/g, '').slice(0, 160) || `comprobante-${payment._id}${fallbackExt}`;
+}
+
+async function servirComprobantePago(payment, res) {
+    if (!payment?.receiptUrl && !payment?.receiptPublicId) {
+        return res.status(404).json({ error: 'Comprobante no encontrado' });
+    }
+
+    if (payment.receiptPublicId && payment.receiptResourceType && payment.receiptResourceType !== 'local' && cloudinaryEnabled) {
+        const signedUrl = cloudinary.url(payment.receiptPublicId, {
+            resource_type: payment.receiptResourceType,
+            type: 'authenticated',
+            secure: true,
+            sign_url: true,
+            expires_at: Math.floor(Date.now() / 1000) + 5 * 60
+        });
+        return res.redirect(signedUrl);
+    }
+
+    const filename = localReceiptFilename(payment);
+    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+        return res.status(404).json({ error: 'Comprobante no encontrado' });
+    }
+
+    const receiptsRoot = path.resolve(privateReceiptsDir);
+    const filePath = path.resolve(receiptsRoot, filename);
+    if (!filePath.startsWith(`${receiptsRoot}${path.sep}`) || !fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Comprobante no encontrado' });
+    }
+    if (payment.receiptMimeType) res.type(payment.receiptMimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${nombreDescargaComprobante(payment)}"`);
+    return res.sendFile(filePath);
 }
 
 async function guardarLogoSaas(file) {
@@ -2377,9 +2458,7 @@ app.delete('/api/super-admin/payments/:id', requireSuperAdminAuth, async (req, r
             status: payment.status
         });
 
-        if (payment.receiptUrl) {
-            await eliminarArchivoComprobante(payment.receiptUrl);
-        }
+        await eliminarArchivoComprobante(payment);
 
         await Payment.deleteOne({ _id: payment._id });
         res.json({ success: true, message: 'Registro de pago eliminado correctamente' });
@@ -2634,30 +2713,45 @@ app.post('/api/:tenant/admin/payments/receipt', tenantMiddleware, requireAdminAu
         if (!req.file) {
             return res.status(400).json({ error: 'Selecciona un comprobante en imagen o PDF' });
         }
-        const amount = money(req.body.amount || req.tenant.monthlyPrice || 0);
+        const amount = money(String(req.body.amount || '').replace(',', '.'));
+        if (amount <= 0) {
+            return res.status(400).json({ error: 'Ingresa un monto mayor que 0' });
+        }
         const now = new Date();
         const paymentMonth = String(req.body.paymentMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`).trim();
         const paymentMethod = String(req.body.paymentMethod || 'Transferencia').trim() || 'Transferencia';
-        const receipt = req.file
-            ? await guardarReciboPrivado(req.file, req.tenant.slug)
-            : { url: '', filename: '' };
+        const receipt = await guardarReciboPrivado(req.file, req.tenant.slug);
         let payment = await Payment.findOne({ tenantId: req.tenantId, paymentMonth, status: 'pendiente' }).sort({ createdAt: -1 });
         if (payment) {
+            const previousReceipt = payment.toObject ? payment.toObject() : { ...payment };
             payment.amount = amount;
             payment.paymentMethod = paymentMethod;
             payment.paidAt = now;
-            if (receipt.url) payment.receiptUrl = receipt.url;
+            payment.receiptPublicId = receipt.publicId;
+            payment.receiptResourceType = receipt.resourceType;
+            payment.receiptOriginalName = receipt.originalName;
+            payment.receiptMimeType = receipt.mimeType;
+            payment.receiptSizeBytes = receipt.sizeBytes;
+            payment.receiptUrl = `/api/${req.tenant.slug}/admin/payments/${payment._id}/receipt`;
             await payment.save();
+            await eliminarArchivoComprobante(previousReceipt);
         } else {
             payment = await Payment.create({
                 tenantId: req.tenantId,
                 amount,
                 paymentMonth,
                 paymentMethod,
-                receiptUrl: receipt.url,
+                receiptUrl: '',
+                receiptPublicId: receipt.publicId,
+                receiptResourceType: receipt.resourceType,
+                receiptOriginalName: receipt.originalName,
+                receiptMimeType: receipt.mimeType,
+                receiptSizeBytes: receipt.sizeBytes,
                 status: 'pendiente',
                 paidAt: now
             });
+            payment.receiptUrl = `/api/${req.tenant.slug}/admin/payments/${payment._id}/receipt`;
+            await payment.save();
         }
         await auditLog(req, 'payment_receipt_submitted', {
             tenantId: req.tenantId,
@@ -2671,6 +2765,28 @@ app.post('/api/:tenant/admin/payments/receipt', tenantMiddleware, requireAdminAu
     }
 });
 
+app.get('/api/:tenant/admin/payments/:paymentId/receipt', tenantMiddleware, requireAdminAuth, async (req, res) => {
+    try {
+        const payment = await Payment.findOne({ _id: req.params.paymentId, tenantId: req.tenantId });
+        if (!payment) return res.status(404).json({ error: 'Comprobante no encontrado' });
+        return servirComprobantePago(payment, res);
+    } catch (err) {
+        console.error('Error al servir comprobante del tenant:', err);
+        res.status(500).json({ error: 'Error al obtener comprobante' });
+    }
+});
+
+app.get('/api/super-admin/payments/:paymentId/receipt', requireSuperAdminAuth, async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.paymentId);
+        if (!payment) return res.status(404).json({ error: 'Comprobante no encontrado' });
+        return servirComprobantePago(payment, res);
+    } catch (err) {
+        console.error('Error al servir comprobante para super admin:', err);
+        res.status(500).json({ error: 'Error al obtener comprobante' });
+    }
+});
+
 app.get('/api/payments/receipt-file/:filename', async (req, res) => {
     try {
         const { filename } = req.params;
@@ -2678,10 +2794,18 @@ app.get('/api/payments/receipt-file/:filename', async (req, res) => {
             return res.status(400).json({ error: 'Nombre de archivo inválido' });
         }
 
-        // Verify authorization
+        const payment = await Payment.findOne({
+            $or: [
+                { receiptPublicId: filename },
+                { receiptUrl: `/api/payments/receipt-file/${filename}` }
+            ]
+        });
+        if (!payment) {
+            return res.status(404).json({ error: 'Comprobante no encontrado' });
+        }
+
         let isAuthorized = false;
 
-        // 1. Check Super Admin Auth
         const superToken = req.cookies[SUPER_ADMIN_COOKIE] || (String(req.headers.authorization || '').startsWith('Bearer ') ? String(req.headers.authorization).slice(7).trim() : '');
         if (superToken) {
             const session = await Session.findOne({ tokenHash: sha256(superToken) });
@@ -2694,23 +2818,17 @@ app.get('/api/payments/receipt-file/:filename', async (req, res) => {
             }
         }
 
-        // 2. Check Tenant Admin Auth
         if (!isAuthorized) {
-            // Filename format: receipt-tenantSlug-timestamp-hex.ext
-            const parts = filename.split('-');
-            if (parts.length >= 2) {
-                const fileTenantSlug = parts[1];
-                const tenantCookie = req.cookies[cookieName(fileTenantSlug)] || (String(req.headers.authorization || '').startsWith('Bearer ') ? String(req.headers.authorization).slice(7).trim() : '');
+            const tenant = await Tenant.findById(payment.tenantId);
+            if (tenant) {
+                const tenantCookie = req.cookies[cookieName(tenant.slug)] || (String(req.headers.authorization || '').startsWith('Bearer ') ? String(req.headers.authorization).slice(7).trim() : '');
                 if (tenantCookie) {
-                    const tenant = await Tenant.findOne({ slug: fileTenantSlug });
-                    if (tenant) {
-                        const session = await Session.findOne({ tokenHash: sha256(tenantCookie), tenantId: tenant._id });
-                        const ahora = new Date();
-                        if (session && session.expiresAt > ahora) {
-                            const adminUser = await User.findOne({ _id: session.userId, tenantId: tenant._id, activo: true });
-                            if (adminUser) {
-                                isAuthorized = true;
-                            }
+                    const session = await Session.findOne({ tokenHash: sha256(tenantCookie), tenantId: tenant._id });
+                    const ahora = new Date();
+                    if (session && session.expiresAt > ahora) {
+                        const adminUser = await User.findOne({ _id: session.userId, tenantId: tenant._id, activo: true });
+                        if (adminUser) {
+                            isAuthorized = true;
                         }
                     }
                 }
@@ -2718,14 +2836,10 @@ app.get('/api/payments/receipt-file/:filename', async (req, res) => {
         }
 
         if (!isAuthorized) {
-            return res.status(401).json({ error: 'No autorizado para ver este comprobante' });
+            return res.status(403).json({ error: 'No tienes autorización para ver este comprobante.' });
         }
 
-        const filePath = path.join(privateReceiptsDir, filename);
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: 'Comprobante no encontrado' });
-        }
-        res.sendFile(filePath);
+        return servirComprobantePago(payment, res);
     } catch (err) {
         console.error('Error al servir comprobante privado:', err);
         res.status(500).json({ error: 'Error al obtener comprobante' });

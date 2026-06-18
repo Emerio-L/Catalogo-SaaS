@@ -202,6 +202,11 @@ model Payment {
   paymentMonth    String
   paymentMethod   String    @default("")
   receiptUrl      String    @default("")
+  receiptPublicId     String    @default("")
+  receiptResourceType String    @default("")
+  receiptOriginalName String    @default("")
+  receiptMimeType     String    @default("")
+  receiptSizeBytes    Int       @default(0)
   status          String    @default("pendiente") // pendiente, aprobado, rechazado
   paidAt          DateTime?
   approvedAt      DateTime?

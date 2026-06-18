@@ -866,6 +866,31 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             return res;
         }
 
+        async function openSuperPaymentReceipt(paymentId) {
+            try {
+                const headers = new Headers(authHeaders());
+                const res = await fetch(`${SUPER_API}/payments/${encodeURIComponent(paymentId)}/receipt`, {
+                    credentials: 'include',
+                    headers
+                });
+                if (res.status === 401) {
+                    showSuperLogin();
+                    return;
+                }
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    showSuperToast(data.error || 'No tienes autorización para ver este comprobante.', 'error');
+                    return;
+                }
+                const blob = await res.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                window.open(objectUrl, '_blank', 'noopener');
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+            } catch (err) {
+                showSuperToast('No se pudo abrir el comprobante.', 'error');
+            }
+        }
+
         function fmtDate(value) {
             if (!value) return 'Sin fecha';
             return new Intl.DateTimeFormat('es-GT', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value));
@@ -1472,7 +1497,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 ? data.receipts.map(p => `
                     <div class="flex items-center justify-between border-b border-white/5 pb-1 mb-1">
                         <span class="font-bold text-slate-300 text-[11px]">${p.paymentMonth}</span>
-                        <a class="text-blue-400 hover:text-blue-300 underline text-[11px] font-bold" href="${assetUrl(p.receiptUrl)}" target="_blank">Ver PDF/Imagen &nearr;</a>
+                        <button type="button" onclick="openSuperPaymentReceipt('${p.id || p._id}')" class="text-blue-400 hover:text-blue-300 underline text-[11px] font-bold">Ver PDF/Imagen &nearr;</button>
                     </div>
                 `).join('')
                 : '<p class="text-slate-500 italic text-[11px]">Sin comprobantes subidos</p>';
@@ -1521,7 +1546,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                     <div>
                         <p class="font-black text-white">${payment.tenant?.nombre || 'Cliente'} · ${fmtMoney(payment.amount)}</p>
                         <p class="text-sm font-semibold text-slate-400">${payment.paymentMonth} · ${payment.paymentMethod || 'Sin método'} · ${fmtDate(payment.paidAt || payment.createdAt)}</p>
-                        ${payment.receiptUrl ? `<a href="${assetUrl(payment.receiptUrl)}" target="_blank" class="text-sm font-black text-blue-300 underline">Ver comprobante</a>` : '<p class="text-sm font-semibold text-slate-500">Sin comprobante</p>'}
+                        ${payment.receiptUrl ? `<button type="button" onclick="openSuperPaymentReceipt('${payment.id}')" class="text-sm font-black text-blue-300 underline">Ver comprobante</button>` : '<p class="text-sm font-semibold text-slate-500">Sin comprobante</p>'}
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="status-badge ${payment.status === 'aprobado' ? 'status-active' : payment.status === 'rechazado' ? 'status-suspended' : 'status-pending_payment'}">${payment.status}</span>

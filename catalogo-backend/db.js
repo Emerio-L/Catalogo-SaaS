@@ -19,6 +19,14 @@ async function ensureRuntimeSchemaCompatibility() {
         ADD COLUMN IF NOT EXISTS "descripcion" TEXT NOT NULL DEFAULT '',
         ADD COLUMN IF NOT EXISTS "imagenes" JSONB
     `);
+    await prisma.$executeRawUnsafe(`
+        ALTER TABLE "Payment"
+        ADD COLUMN IF NOT EXISTS "receiptPublicId" TEXT NOT NULL DEFAULT '',
+        ADD COLUMN IF NOT EXISTS "receiptResourceType" TEXT NOT NULL DEFAULT '',
+        ADD COLUMN IF NOT EXISTS "receiptOriginalName" TEXT NOT NULL DEFAULT '',
+        ADD COLUMN IF NOT EXISTS "receiptMimeType" TEXT NOT NULL DEFAULT '',
+        ADD COLUMN IF NOT EXISTS "receiptSizeBytes" INTEGER NOT NULL DEFAULT 0
+    `);
 }
 
 module.exports = {
