@@ -2,14 +2,50 @@ function formatAccountNumber(sequence) {
     return `CT-${String(sequence).padStart(6, '0')}`;
 }
 
+async function ensureAccountNumberSequence(prisma) {
+    await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "AccountNumberSequence" (
+            "id" TEXT NOT NULL PRIMARY KEY,
+            "value" INTEGER NOT NULL DEFAULT 0,
+            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+    await prisma.$executeRawUnsafe(`
+        INSERT INTO "AccountNumberSequence" ("id", "value", "updatedAt")
+        SELECT
+            'tenant',
+            COALESCE(MAX(SUBSTRING("accountNumber" FROM '^CT-([0-9]+)$')::INTEGER), 0),
+            CURRENT_TIMESTAMP
+        FROM "Tenant"
+        WHERE "accountNumber" ~ '^CT-[0-9]+$'
+        ON CONFLICT ("id") DO NOTHING
+    `);
+}
+
 async function nextAccountNumber(prisma) {
-    const latest = await prisma.tenant.findFirst({
-        where: { accountNumber: { startsWith: 'CT-' } },
-        orderBy: { accountNumber: 'desc' },
-        select: { accountNumber: true }
-    });
-    const current = Number(/^CT-(\d{6})$/.exec(latest?.accountNumber || '')?.[1] || 0);
-    return formatAccountNumber(current + 1);
+    await ensureAccountNumberSequence(prisma);
+    const rows = await prisma.$queryRawUnsafe(`
+        WITH existing_max AS (
+            SELECT COALESCE(MAX(SUBSTRING("accountNumber" FROM '^CT-([0-9]+)$')::INTEGER), 0) AS max_value
+            FROM "Tenant"
+            WHERE "accountNumber" ~ '^CT-[0-9]+$'
+        ),
+        updated AS (
+            INSERT INTO "AccountNumberSequence" ("id", "value", "updatedAt")
+            SELECT 'tenant', max_value + 1, CURRENT_TIMESTAMP
+            FROM existing_max
+            ON CONFLICT ("id") DO UPDATE SET
+                "value" = GREATEST("AccountNumberSequence"."value", (SELECT max_value FROM existing_max)) + 1,
+                "updatedAt" = CURRENT_TIMESTAMP
+            RETURNING "value"
+        )
+        SELECT "value" FROM updated
+    `);
+    const nextSequence = Number(rows?.[0]?.value || 0);
+    if (!Number.isInteger(nextSequence) || nextSequence <= 0) {
+        throw new Error('No se pudo generar un numero de cuenta unico.');
+    }
+    return formatAccountNumber(nextSequence);
 }
 
 async function createTenantWithAccountNumber(prisma, data) {
@@ -32,6 +68,7 @@ async function createTenantWithAccountNumber(prisma, data) {
 
 module.exports = {
     createTenantWithAccountNumber,
+    ensureAccountNumberSequence,
     formatAccountNumber,
     nextAccountNumber
 };

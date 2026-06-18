@@ -322,6 +322,12 @@ model AccountStatusLog {
   @@index([tenantId])
 }
 
+model AccountNumberSequence {
+  id        String   @id
+  value     Int      @default(0)
+  updatedAt DateTime @default(now())
+}
+
 model SaasSettings {
   id                               String   @id @default("global")
   key                              String   @unique @default("global")
