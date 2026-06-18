@@ -913,7 +913,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             {/* LANDING AUTH MODAL (Formularios Unificados) */}
             <div id="landing-auth-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                 <div class="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white p-6 md:p-8 shadow-2xl animate-slide-up relative max-h-[calc(100vh-2rem)] overflow-y-auto">
-                    <button onclick="mostrarLandingStep('close')" class="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Cerrar modal">
+                    <button type="button" onclick="closeLandingAuthModal()" class="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Cerrar modal">
                         <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                     
@@ -1247,6 +1247,45 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         /* ===========================
         LANDING PAGE & SUPPORT HANDLERS
         =========================== */
+        function closeLandingAuthModal() {
+            const modal = document.getElementById('landing-auth-modal');
+            const login = document.getElementById('landing-login-step');
+            const recovery = document.getElementById('landing-recovery-step');
+            const register = document.getElementById('landing-register-step');
+            if (!modal) return;
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            login?.classList.remove('hidden');
+            recovery?.classList.add('hidden');
+            register?.classList.add('hidden');
+
+            login?.querySelector('form')?.reset();
+            register?.querySelector('form')?.reset();
+            document.getElementById('landing-recovery-form')?.reset();
+
+            mostrarErrorLoginLanding('');
+            mostrarErrorRegistroLanding('');
+            mostrarErrorRecoveryLanding('');
+            mostrarEstadoRecoveryLanding('');
+
+            const recoveryForm = document.getElementById('landing-recovery-form');
+            const recoverySuccess = document.getElementById('landing-recovery-success');
+            const devLinkEl = document.getElementById('landing-dev-reset-link');
+            recoveryForm?.classList.remove('hidden');
+            recoverySuccess?.classList.add('hidden');
+            devLinkEl?.classList.add('hidden');
+            if (devLinkEl) devLinkEl.innerHTML = '';
+
+            const passInput = document.getElementById('landing-login-password');
+            if (passInput) passInput.type = 'password';
+            const passBtn = document.querySelector('[onclick*="landing-login-password"]');
+            const icon = passBtn?.querySelector('i');
+            if (icon) icon.className = 'fa-solid fa-eye';
+        }
+        window.closeLandingAuthModal = closeLandingAuthModal;
+
         function mostrarLandingStep(step) {
             const modal = document.getElementById('landing-auth-modal');
             const login = document.getElementById('landing-login-step');
@@ -1254,37 +1293,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             const register = document.getElementById('landing-register-step');
             
             if (step === 'close' || step === 'portal') {
-                if (modal) {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-
-                    // Reset all inputs/forms
-                    const loginForm = login?.querySelector('form');
-                    if (loginForm) loginForm.reset();
-                    const registerForm = register?.querySelector('form');
-                    if (registerForm) registerForm.reset();
-                    const recoveryForm = document.getElementById('landing-recovery-form');
-                    if (recoveryForm) recoveryForm.reset();
-
-                    // Reset error and success alerts
-                    mostrarErrorLoginLanding('');
-                    mostrarErrorRegistroLanding('');
-                    mostrarErrorRecoveryLanding('');
-
-                    // Reset password visibility toggler back to password type and eye icon
-                    const passInput = document.getElementById('landing-login-password');
-                    if (passInput) passInput.type = 'password';
-                    const passBtn = document.querySelector('[onclick*="landing-login-password"]');
-                    if (passBtn) {
-                        const icon = passBtn.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fa-solid fa-eye';
-                        }
-                    }
-
-                    // Reset back to initial login step
-                    mostrarLandingStep('login');
-                }
+                closeLandingAuthModal();
                 return;
             }
 
@@ -1921,14 +1930,14 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             if (modal) {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) {
-                        mostrarLandingStep('close');
+                        closeLandingAuthModal();
                     }
                 });
             }
             
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
-                    mostrarLandingStep('close');
+                    closeLandingAuthModal();
                 }
             });
         });

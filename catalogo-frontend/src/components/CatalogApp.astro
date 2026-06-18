@@ -4734,6 +4734,7 @@ if (noindex) {
                 showToast('Activa al menos una forma de recibir pedidos.', 'warning');
                 return;
             }
+            let savedSettings = null;
             try {
                 const res = await fetch(`${TENANT_API_URL}/admin/settings`, {
                     method: 'PUT',
@@ -4743,9 +4744,17 @@ if (noindex) {
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || 'Error al guardar preferencias');
-                const savedSettings = data.settings || payload;
-                configuracionNegocio = { ...configuracionNegocio, ...savedSettings };
-                showToast("Ajustes del catálogo guardados", "success");
+                savedSettings = data.settings || payload;
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || "Error al guardar ajustes", "error");
+                return;
+            }
+
+            configuracionNegocio = { ...configuracionNegocio, ...savedSettings };
+            showToast("Ajustes del catálogo guardados", "success");
+
+            try {
                 actualizarCheckoutOpciones();
                 cargarAjustesCatalogo();
                 renderCategorias();
@@ -4754,8 +4763,7 @@ if (noindex) {
                 dibujar();
                 dibujarAdmin();
             } catch (err) {
-                console.error(err);
-                showToast(err.message || "Error al guardar ajustes", "error");
+                console.warn('No se pudo refrescar la vista después de guardar ajustes:', err);
             }
         }
 

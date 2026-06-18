@@ -2108,7 +2108,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             });
             if (res.ok) {
                 superSettings = await res.json();
-                await loadSaasSettings();
+                try {
+                    await loadSaasSettings();
+                } catch (err) {
+                    console.warn('No se pudo refrescar la configuración después de guardar:', err);
+                }
                 return true;
             } else {
                 const data = await res.json().catch(() => ({}));
