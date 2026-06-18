@@ -379,6 +379,9 @@ async function main() {
     assert(tenantAfterTrialReceipt.status === 'trial', 'Reportar pago conserva el periodo de prueba');
     if (String(receiptUpload.data.payment.receiptUrl).startsWith('/uploads/')) {
         uploadedLocalFiles.push(path.join(__dirname, receiptUpload.data.payment.receiptUrl.replace(/^\//, '')));
+    } else if (String(receiptUpload.data.payment.receiptUrl).startsWith('/api/payments/receipt-file/')) {
+        const filename = receiptUpload.data.payment.receiptUrl.split('/').pop();
+        uploadedLocalFiles.push(path.join(__dirname, 'private_receipts', filename));
     }
     await prisma.tenant.update({
         where: { id: tenant.id },
@@ -399,6 +402,9 @@ async function main() {
     assert(tenantAfterActiveReceipt.status === 'active', 'Reportar pago conserva la cuenta activa');
     if (String(activeReceipt.data.payment.receiptUrl).startsWith('/uploads/')) {
         uploadedLocalFiles.push(path.join(__dirname, activeReceipt.data.payment.receiptUrl.replace(/^\//, '')));
+    } else if (String(activeReceipt.data.payment.receiptUrl).startsWith('/api/payments/receipt-file/')) {
+        const filename = activeReceipt.data.payment.receiptUrl.split('/').pop();
+        uploadedLocalFiles.push(path.join(__dirname, 'private_receipts', filename));
     }
 
     const support = await frontendRequest('/api/support/tickets', {
