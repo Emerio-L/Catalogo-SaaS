@@ -1,71 +1,91 @@
-# Guía de Uso y Administración: Catálogo de Productos Premium
+# Guía de Uso y Administración: Catálogo de Productos Premium (Sedelynk)
 
-Esta guía detalla el funcionamiento del catálogo digital y proporciona las instrucciones paso a paso para administrar los productos, pedidos, apariencia y configuraciones de seguridad.
-
----
-
-## 1. Vista del Cliente (Catálogo Público)
-
-El catálogo es una aplicación web responsive adaptada para teléfonos móviles, tablets y computadoras de escritorio.
-
-*   **Buscador en tiempo real:** Los clientes pueden buscar productos por nombre escribiendo en la barra superior.
-*   **Filtros por Categoría:** Filtros rápidos en la cabecera (Verduras, Frutas, Otros).
-*   **Carrito de Compras:**
-    1.  El usuario agrega productos usando los botones **`+`** e **`-`**.
-    2.  Al seleccionar al menos un producto, se despliega una barra flotante inferior indicando el **Monto de tu Orden**.
-    3.  Al hacer clic en **Confirmar Orden**, se abre un formulario para ingresar el Nombre y Teléfono del cliente.
-    4.  El cliente tiene la opción de:
-        *   **Descargar Recibo PDF:** Genera un comprobante digital limpio con el color del tema activo.
-        *   **Enviar por WhatsApp:** Envía el pedido formateado con el detalle, cantidades, subtotales y total directamente al número del negocio.
+Esta guía detalla exhaustivamente el funcionamiento de la plataforma de catálogo digital, el portal de clientes y el panel de administración multi-tenant. Úsala para comprender, configurar y mantener el sistema de forma local o en producción.
 
 ---
 
-## 2. Acceso al Panel de Administración
+## 1. Portal del Cliente (Catálogo Público)
 
-El panel de administración permite gestionar todo el sistema de forma protegida.
+El catálogo público es la interfaz responsive donde los visitantes consultan el inventario de la tienda y estructuran sus pedidos.
 
-*   **Cómo ingresar:**
-    1.  Abre la URL privada del panel entregada al crear la cuenta.
-    2.  Ingresa tu usuario, correo o número de cuenta.
-    3.  Ingresa la contraseña configurada para tu cuenta. No existe una contraseña universal incluida en el código.
-*   **Recuperación de Acceso:**
-    *   Si olvidas la contraseña, usa **"¿Olvidaste tu contraseña?"**.
-    *   La recuperación puede realizarse mediante un enlace enviado al correo configurado o mediante un código temporal generado por el Super Admin.
-    *   Los códigos son de un solo uso, tienen vencimiento y bloquean intentos repetidos.
+### 1.1. Búsqueda y Navegación
+*   **Buscador en tiempo real (`#buscar-producto`):** Permite a los clientes buscar productos ingresando texto en el campo de búsqueda superior. La consulta filtra instantáneamente los nombres de los productos sin recargar la página.
+*   **Filtros de Categorías (`#category-buttons`):** Botones horizontales deslizables que agrupan los productos por su sección correspondiente (ej: Verduras, Frutas, Bebidas). El botón "Todos" (`#cat-todos`) limpia los filtros activos.
+*   **Diseño Adaptativo:** La rejilla de productos (`#grid-productos`) cambia automáticamente entre 2 columnas en teléfonos móviles, 3 en tablets y 4 en pantallas de escritorio para una navegación óptima.
+
+### 1.2. Carrito de Compras e Interactividad
+*   **Control de Cantidades:** Los clientes pueden añadir o remover productos usando los controles de cantidad `+` y `-` en cada tarjeta.
+*   **Barra de Pedido Flotante (`#catalog-cart-entry`):** Se despliega en la parte inferior de la pantalla al seleccionar al menos un producto, mostrando:
+    *   Cantidad de artículos seleccionados (`#mini-cart-count`).
+    *   Monto total de la compra en quetzales (`#total-val`).
+*   **Formulario de Confirmación:** Al hacer clic en "Confirmar Orden", se abre un panel emergente (`#modal-validacion`) que solicita:
+    *   **Nombre del Cliente** (Obligatorio).
+    *   **Teléfono de Contacto** (Obligatorio).
+    *   **Dirección de Entrega** y **Comentarios** (Opcionales o requeridos según la configuración de ajustes).
+
+### 1.3. Envío y Generación de Comprobantes
+*   **Descarga de Recibo PDF:** Genera un archivo PDF limpio y estructurado con el desglose de productos, cantidades, precios unitarios, subtotal y total general. El diseño del PDF se adapta automáticamente al color de tema seleccionado por la tienda.
+*   **Enviar por WhatsApp:** Redirige al cliente a la aplicación de WhatsApp con un mensaje pre-formateado que contiene el detalle completo de la orden, permitiendo al administrador recibir y procesar el pedido de forma organizada.
 
 ---
 
-## 3. Pestañas de Administración
+## 2. Acceso y Seguridad del Administrador
 
-Una vez autenticado, tendrás acceso a tres pestañas principales en la parte superior:
+El panel de control permite a los dueños de negocios gestionar su catálogo de manera segura.
 
-### 3.1. Inventario (Gestión de Productos)
-Permite tener control total sobre el catálogo de productos expuestos a los clientes:
-*   **Agregar Producto:** Haz clic en el botón superior **`+ Agregar Producto`**. Rellena el formulario (Nombre, Categoría, Precio, Unidad de Medida) y sube una foto.
-*   **Conversión a WebP:** Cualquier imagen que subas (PNG, JPG, JPEG) será convertida automáticamente en el servidor a formato `.webp` optimizado, lo que garantiza que la página cargue ultra rápido para tus clientes y consuma pocos datos móviles.
-*   **Editar Producto:** Haz clic en el ícono de **Lápiz** en la fila del producto para editar sus datos o reemplazar su fotografía.
-*   **Activar/Desactivar:** Haz clic en el interruptor de estado (Ojo visible / Ojo tachado). Desactivar un producto lo oculta temporalmente del catálogo sin necesidad de borrarlo.
-*   **Organizar Orden de Visualización:** Usa las flechas de ordenación para definir qué productos aparecen primero en la lista.
-*   **Eliminar Producto:** Haz clic en el ícono de la **Papelera** roja para borrar el producto del catálogo permanentemente.
+### 2.1. Rutas de Acceso
+*   **Acceso Privado por URL:** Cada negocio tiene una ruta única estructurada como `/c/[tenant]/p/[adminAccessKey]`, donde `[tenant]` es el identificador del negocio y `[adminAccessKey]` es la llave de seguridad generada automáticamente al crear la cuenta.
+*   **Acceso por Formulario:** También es posible iniciar sesión desde el portal principal ingresando el usuario, correo o número de cuenta de la tienda y la contraseña correspondiente.
+
+### 2.2. Recuperación y Gestión de Credenciales
+*   **Recuperación por Correo:** Si el administrador olvida sus datos, puede solicitar un enlace de restauración de contraseña que se envía a su correo registrado.
+*   **Código de Recuperación Temporal:** En caso de emergencia, el Super Admin de la plataforma puede generar un código numérico temporal de un solo uso con expiración programada para desbloquear la cuenta.
+*   **Bloqueo de Seguridad:** El sistema bloquea temporalmente los intentos de acceso tras ingresar credenciales erróneas consecutivamente para evitar ataques de fuerza bruta.
+
+---
+
+## 3. Módulos del Panel de Administración (Dashboard)
+
+El panel administrativo se organiza en tres secciones operativas accesibles desde la barra de navegación lateral.
+
+### 3.1. Módulo de Inventario (Gestión de Productos y Categorías)
+Este módulo es el corazón del control de la tienda:
+
+*   **Crear Categoría (`button[onclick*="abrirModalCategoria"]`):**
+    *   Abre el modal `#modal-admin-categoria`.
+    *   Requiere ingresar el **Nombre de la categoría** (`#admin-categoria-nombre-input`).
+    *   Permite agrupar los artículos y estructurar el catálogo público.
+*   **Agregar Producto (`button[onclick="abrirAdminForm()"]`):**
+    *   Despliega el formulario modal `#modal-admin-form`.
+    *   **Campos Requeridos:**
+        *   **Nombre del Producto** (`#admin-nombre`): Nombre claro y comercial.
+        *   **Categoría** (`#admin-categoria`): Menú desplegable para vincularlo a una categoría existente.
+        *   **Unidad de Medida** (`#admin-unidad`): Especificación de venta (ej: lb, unidad, manojo).
+        *   **Precio (Q)** (`#admin-precio`): Valor numérico decimal para el costo de venta.
+        *   **Orden Visual** (`#admin-orden`): Número entero que determina la prioridad de visualización del producto en la tienda (se muestra en la columna "Stock").
+    *   **Campos Opcionales:**
+        *   **Descripción del producto** (`#admin-descripcion`): Detalles técnicos o comerciales.
+        *   **Imágenes del producto** (`#admin-foto`): Permite cargar hasta 3 imágenes mediante explorador o arrastrar (`drag & drop`). La primera se define como imagen de portada.
+        *   **Estado Activo** (`#admin-activo`): Controla la visibilidad inmediata en el catálogo público.
+*   **Acciones Secundarias en la Lista:**
+    *   **Editar (`button[onclick*="editarProducto"]`):** Abre el modal del producto con toda la información cargada para su modificación rápida.
+    *   **Pausar Visibilidad (`button[onclick*="toggleProductStatus"]`):** Cambia el interruptor de estado (Activo/Inactivo) para ocultar o mostrar el producto del catálogo público en tiempo real sin eliminarlo.
+    *   **Eliminar (`button[onclick*="abrirConfirmDelete"]`):** Abre la confirmación `#modal-confirm-delete` para remover permanentemente el artículo y borrar sus archivos de imagen asociados del servidor.
 
 ### 3.2. Historial de Pedidos
-Registra automáticamente cada orden confirmada por los clientes:
-*   **Resumen de Ventas:** En la parte superior verás un banner destacando la **Suma Total de Facturas** acumulada en tiempo real.
-*   **Buscador de Pedidos:** Puedes buscar en el historial por el nombre del cliente o el número de factura.
-*   **Recibos PDF:** El administrador puede volver a descargar el PDF original de cualquier pedido del historial haciendo clic en el botón de PDF.
-*   **Borrar Pedido Individual:** Haz clic en el botón de la papelera roja al lado del pedido para eliminarlo del historial tras confirmar la acción.
-*   **Limpiar Historial Completo:** El botón **`Limpiar Historial`** permite restablecer a cero toda la base de datos de pedidos tras confirmar el PIN de seguridad.
+*   **Reportes en tiempo real:** Muestra la suma total de facturación acumulada y la cantidad de pedidos recibidos durante el día actual.
+*   **Historial de Recibos:** Lista los pedidos ordenados cronológicamente, permitiendo volver a descargar el PDF original del recibo de cualquier cliente.
+*   **Limpieza de Historial:** El administrador puede vaciar la lista de pedidos antiguos ingresando un PIN de confirmación.
 
-### 3.3. Configuración
-Esta sección de ancho completo te permite configurar el comportamiento operativo del catálogo:
-*   **WhatsApp para Pedidos:** Introduce el número de celular al cual deseas recibir los mensajes de WhatsApp de tus clientes (ej: formato internacional sin signos como `502XXXXXXXX`). Al hacer clic en **Actualizar Credenciales o WhatsApp**, el cambio se aplica de inmediato a todos los visitantes.
-*   **Seguridad:** Actualiza tu contraseña y mantén vigente el correo asociado a la cuenta para recuperación.
-*   **Temas Visuales (Personalización de Color):** Elige entre **15 colores de diseño premium** para cambiar instantáneamente la apariencia visual de la web del cliente y la administración (Verde, Azul, Rojo, Morado, Pizarra, etc.). El cambio se refleja al instante y se almacena de forma permanente.
+### 3.3. Configuración y Ajustes
+*   **WhatsApp de Pedidos:** Permite actualizar el número receptor de pedidos. Debe ingresarse en formato internacional sin espacios ni símbolos (ej: `502XXXXXXXX` para Guatemala).
+*   **Temas de Apariencia:** Selector interactivo con **15 paletas de colores premium** (Verde, Violeta, Azul, etc.) que personalizan instantáneamente tanto el panel administrativo como el catálogo público del cliente.
+*   **Seguridad:** Formulario para la actualización de la contraseña actual de administración.
 
 ---
 
-## 4. Recomendaciones de Seguridad y Mantenimiento
+## 4. Buenas Prácticas y Mantenimiento
 
-1.  **Credenciales únicas:** Define contraseñas largas y diferentes para el Super Admin y el administrador del tenant. Guárdalas fuera del repositorio.
-2.  **Imágenes de los productos:** Para que tu catálogo luzca estético y profesional, te recomendamos subir imágenes cuadradas (relación de aspecto 1:1) y con fondo claro o transparente.
-3.  **Formato de Teléfono de WhatsApp:** Asegúrate de escribir el número de WhatsApp de destino con el código de tu país (ej. `502` para Guatemala) sin espacios ni símbolos adicionales (ej: `50239462142` en lugar de `+502 3946-2142`).
+1.  **Optimización de Imágenes:** Se recomienda utilizar imágenes con relación de aspecto cuadrada (1:1) y fondos limpios. El backend convertirá automáticamente las imágenes a formato WebP optimizado para acelerar la carga en redes móviles.
+2.  **Formato de WhatsApp:** El número ingresado en los ajustes debe llevar obligatoriamente el código del país sin el símbolo `+` (ej: `502` para Guatemala) para que el enlace de mensajería funcione correctamente.
+3.  **Seguridad de Acceso:** No compartas tu URL de acceso privado con terceros. Cambia la contraseña periódicamente y mantén configurado un correo electrónico válido para recuperación.

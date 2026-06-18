@@ -171,9 +171,9 @@ if (noindex) {
                                 <button id="admin-support-whatsapp-btn" type="button" onclick="abrirSoporteWhatsapp()" class="rounded-2xl bg-primary-500 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-50">
                                     Abrir soporte
                                 </button>
-                                <button id="admin-support-emulator-btn" type="button" onclick="abrirEmuladorSoporte()" class="rounded-2xl bg-white/8 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-200 ring-1 ring-white/10 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-45">
-                                    Ver emulador
-                                </button>
+                                <a href="/guia" target="_blank" rel="noopener" id="admin-support-guide-btn" class="flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-violet-600/30 to-pink-500/20 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-violet-200 ring-1 ring-violet-500/30 transition hover:from-violet-600/50 hover:to-pink-500/30 hover:text-white">
+                                    <i class="fa-solid fa-graduation-cap"></i> Ver guía interactiva
+                                </a>
                             </div>
                         </div>
                         <button class="flex w-full items-center gap-3 rounded-3xl bg-white/8 p-3 text-left ring-1 ring-white/10 transition hover:bg-white/12">
@@ -1775,10 +1775,7 @@ if (noindex) {
             const emulatorBtn = document.getElementById('admin-support-emulator-btn');
             if (display) display.innerText = whatsapp ? `+${whatsapp}` : 'Soporte no configurado';
             if (whatsappBtn) whatsappBtn.disabled = !whatsapp;
-            if (emulatorBtn) {
-                emulatorBtn.disabled = !(saasSupportSettings.emulatorEnabled && saasSupportSettings.emulatorUrl);
-                emulatorBtn.title = emulatorBtn.disabled ? 'Emulador pendiente de configurar' : 'Abrir emulador';
-            }
+            // Guide button (admin-support-guide-btn) is always enabled — it's a static link to /guia
             const logoUrl = normalizarAssetUrl(saasSupportSettings.logoUrl || '');
             ['tenant-saas-logo-sidebar', 'tenant-saas-logo-mobile'].forEach((id) => {
                 const img = document.getElementById(id);

@@ -1,0 +1,617 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+    title="Guía de Uso e Interactividad - Sedelynk"
+    description="Tour interactivo con avatar virtual para pruebas locales."
+    noindex={true}
+>
+    <!-- MAIN CONTAINER -->
+    <div class="w-full min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
+        <!-- HEADER -->
+        <header class="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md px-6 py-4 flex items-center justify-between z-10 shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow-md">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </span>
+                <div>
+                    <h1 class="text-md font-heading font-black tracking-tight uppercase">Soporte y Guía de Uso</h1>
+                    <p class="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider">Tour Interactivo y Autoplay local</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center gap-2 bg-slate-900 px-3.5 py-1.5 rounded-full text-[10px] font-black text-slate-400">
+                    <i class="fa-solid fa-circle-check text-emerald-500 animate-pulse"></i> MODO INTERACTIVO
+                </span>
+                <a href="/" class="text-xs font-black uppercase text-slate-400 hover:text-slate-200 transition-colors">
+                    <i class="fa-solid fa-arrow-left mr-1.5"></i> Salir
+                </a>
+            </div>
+        </header>
+
+        <!-- CONTENT PANEL GRID -->
+        <div class="flex-grow flex flex-col md:flex-row overflow-hidden relative">
+            
+            <!-- LEFT PANEL: AVATAR PRESENTER -->
+            <section class="w-full md:w-[420px] border-r border-slate-900 bg-slate-950 flex flex-col z-20 shrink-0 overflow-y-auto">
+                <!-- Avatar Visual Box -->
+                <div class="p-6 flex flex-col items-center justify-center border-b border-slate-900 bg-slate-900/10 shrink-0">
+                    <div class="relative w-44 h-44 rounded-full bg-slate-900/80 border border-violet-500/20 flex items-center justify-center overflow-hidden shadow-2xl group">
+                        <!-- Hologram Lines & Glow -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-violet-600/10 via-transparent to-pink-500/5 pointer-events-none"></div>
+                        <div class="absolute w-full h-[2px] bg-violet-500/30 blur-[2px] animate-pulse top-1/2 left-0"></div>
+                        
+                        <!-- Simulated Digital Avatar Icon -->
+                        <div id="avatar-container" class="relative z-10 flex flex-col items-center">
+                            <svg class="w-28 h-28 text-violet-400 transition-transform duration-300 transform group-hover:scale-105" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="100" cy="80" r="45" stroke="currentColor" stroke-width="4" fill="rgba(139, 92, 246, 0.15)"/>
+                                <path d="M40 160C40 126.863 66.8629 100 100 100C133.137 100 160 126.863 160 160" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="rgba(139, 92, 246, 0.1)"/>
+                                <circle cx="85" cy="75" r="5" fill="currentColor" class="avatar-eye"/>
+                                <circle cx="115" cy="75" r="5" fill="currentColor" class="avatar-eye"/>
+                                <path d="M90 95C95 98 105 98 110 95" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/>
+                            </svg>
+                            <div class="absolute bottom-1 right-8 h-4.5 w-4.5 rounded-full bg-emerald-500 border-2 border-slate-950"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Voice Waveform Animation -->
+                    <div class="mt-4 flex items-center justify-center gap-1 w-full h-8 px-8">
+                        <div class="w-1 bg-violet-500 rounded-full voice-bar h-3"></div>
+                        <div class="w-1 bg-violet-400 rounded-full voice-bar h-6"></div>
+                        <div class="w-1 bg-pink-500 rounded-full voice-bar h-4"></div>
+                        <div class="w-1 bg-pink-400 rounded-full voice-bar h-7"></div>
+                        <div class="w-1 bg-purple-500 rounded-full voice-bar h-5"></div>
+                        <div class="w-1 bg-violet-500 rounded-full voice-bar h-2"></div>
+                        <div class="w-1 bg-pink-500 rounded-full voice-bar h-6"></div>
+                        <div class="w-1 bg-violet-400 rounded-full voice-bar h-8"></div>
+                        <div class="w-1 bg-purple-500 rounded-full voice-bar h-4"></div>
+                        <div class="w-1 bg-pink-400 rounded-full voice-bar h-7"></div>
+                        <div class="w-1 bg-violet-500 rounded-full voice-bar h-2"></div>
+                    </div>
+                </div>
+
+                <!-- Active Step Script Details -->
+                <div class="flex-grow p-6 flex flex-col justify-between">
+                    <div>
+                        <!-- Active Step Header info -->
+                        <div class="flex items-center justify-between mb-4">
+                            <span id="step-badge" class="bg-violet-950 text-violet-300 border border-violet-800/50 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider">
+                                Paso 1 / 46
+                            </span>
+                            <span id="section-badge" class="bg-slate-900 text-slate-400 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-wider">
+                                LANDING PAGE
+                            </span>
+                        </div>
+
+                        <!-- Current Script Speech Box -->
+                        <div class="bg-slate-900/60 border border-slate-800/50 rounded-3xl p-5 mb-5 min-h-[120px] flex flex-col justify-between relative overflow-hidden text-left">
+                            <div class="absolute top-2 left-2 text-[20px] text-violet-500/20 font-black"><i class="fa-solid fa-quote-left"></i></div>
+                            <p id="script-text" class="text-sm font-extrabold text-slate-200 leading-relaxed pl-3 pt-2 relative z-10">
+                                Presiona reproducir para iniciar el tour explicativo de la plataforma.
+                            </p>
+                            <!-- Progress Bar for the active Step -->
+                            <div class="mt-4 w-full bg-slate-950 rounded-full h-1 overflow-hidden">
+                                <div id="step-progress-fill" class="bg-gradient-to-r from-violet-600 to-pink-500 h-full w-[0%]" style="transition: width 0.1s linear;"></div>
+                            </div>
+                        </div>
+
+                        <!-- CSS Selector details (for debug/testing) -->
+                        <div class="bg-slate-950 border border-slate-900 rounded-2xl p-4 text-left">
+                            <p class="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-1.5"><i class="fa-solid fa-magnifying-glass-chart mr-1"></i> Selector CSS Activo</p>
+                            <code id="selector-display" class="block text-xs font-bold text-violet-400 font-mono break-all bg-slate-900/60 p-2 rounded-xl border border-slate-900">
+                                header button[onclick*="register"]
+                            </code>
+                        </div>
+                    </div>
+
+                    <!-- Player Interface Controls -->
+                    <div class="mt-6 pt-6 border-t border-slate-900 space-y-4">
+                        <!-- Controls Row -->
+                        <div class="flex items-center justify-center gap-3">
+                            <button id="btn-prev" class="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 transition hover:text-white active:scale-95" title="Anterior">
+                                <i class="fa-solid fa-backward-step"></i>
+                            </button>
+                            <button id="btn-play" class="h-14 w-14 flex items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-pink-500 text-white text-lg font-black transition-all shadow-lg shadow-violet-600/20 hover:scale-105 active:scale-95" title="Reproducir">
+                                <i class="fa-solid fa-play" id="play-icon"></i>
+                            </button>
+                            <button id="btn-next" class="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 transition hover:text-white active:scale-95" title="Siguiente">
+                                <i class="fa-solid fa-forward-step"></i>
+                            </button>
+                            <button id="btn-reset" class="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 transition hover:text-white active:scale-95" title="Reiniciar">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+
+                        <!-- Auto-Advance Switch -->
+                        <div class="flex items-center justify-between px-3 py-2 bg-slate-900/30 rounded-xl border border-slate-900 text-xs">
+                            <span class="font-extrabold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                                <i class="fa-solid fa-forward text-slate-500"></i> Autoplay Continuo
+                            </span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="autoplay-toggle" checked class="sr-only">
+                                <div class="w-9 h-5 bg-slate-800 rounded-full border border-slate-700 toggle-bg"></div>
+                                <div class="absolute left-0.5 top-0.5 bg-slate-400 w-4 h-4 rounded-full shadow-md toggle-dot transition-transform"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: HIGH-FIDELITY INTERFACE SIMULATOR -->
+            <section class="flex-1 bg-slate-900 p-6 md:p-8 flex items-center justify-center overflow-hidden relative">
+                <!-- Grid background -->
+                <div class="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(#7c3aed_1.5px,transparent_1.5px)] bg-[size:24px_24px]"></div>
+
+                <!-- WEB DEVICE FRAME -->
+                <div id="browser-device-frame" class="w-full max-w-4xl h-full bg-[#070b19] border border-slate-800 rounded-[2rem] shadow-2xl flex flex-col overflow-hidden relative z-10">
+                    <!-- Browser Address bar -->
+                    <div class="bg-[#0b1026] border-b border-slate-900 px-6 py-3 flex items-center gap-3 shrink-0 select-none">
+                        <div class="flex gap-1.5 shrink-0">
+                            <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
+                            <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+                            <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+                        </div>
+                        <div class="flex gap-2 text-xs text-slate-500 shrink-0">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <i class="fa-solid fa-arrow-right"></i>
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </div>
+                        <div class="flex-grow bg-[#131b3c] border border-slate-800 rounded-xl px-4 py-1 flex items-center gap-2">
+                            <i class="fa-solid fa-lock text-[10px] text-emerald-500"></i>
+                            <span id="browser-url" class="text-slate-400 text-xs font-semibold font-mono">http://127.0.0.1:4322/</span>
+                        </div>
+                    </div>
+
+                    <!-- MOCKUP CONTENT CONTAINER (SCREENSHOTS FLOW WITH PERCENTAGE HOTSPOTS) -->
+                    <div id="mockup-content-scroll" class="flex-grow bg-[#070b19] relative overflow-hidden select-none h-full w-full">
+                        <!-- Real Screenshot Image -->
+                        <img id="mockup-screenshot-img" src="/assets/tour/landing.png" class="w-full h-full object-fill pointer-events-none" />
+                        
+                        <!-- HOTSPOTS FOR SPOTLIGHT ENFOQUE (Absolute positions matching visual elements in screenshots) -->
+                        
+                        <!-- Landing Hotspots -->
+                        <!-- Botón COMENZAR GRATIS en el header (medido: x≈1370/1536=89.2%, y≈76/747=10.2%, w≈165/1536=10.7%, h≈42/747=5.6%) -->
+                        <div id="landing-register-trigger" class="absolute pointer-events-none" style="top: 9%; left: 83.5%; width: 13.5%; height: 6%;"></div>
+                        
+                        <!-- Register Hotspots (medidos en register.png 1536x1468px) -->
+                        <!-- Campo Nombre del negocio: y≈420/1468=28.6%, x≈510/1536=33.2%, w≈516/1536=33.6% -->
+                        <div id="landing-register-name" class="absolute pointer-events-none" style="top: 27%; left: 33%; width: 34%; height: 4.5%;"></div>
+                        <!-- Campo WhatsApp: y≈570/1468=38.8% -->
+                        <div id="landing-register-whatsapp" class="absolute pointer-events-none" style="top: 38%; left: 33%; width: 34%; height: 4.5%;"></div>
+                        <!-- Campo Usuario: y≈720/1468=49%, x≈510 w≈248 -->
+                        <div id="landing-register-user" class="absolute pointer-events-none" style="top: 48%; left: 33%; width: 16.5%; height: 4.5%;"></div>
+                        <!-- Campo Email: x≈762/1536=49.6%, w≈264 -->
+                        <div id="landing-register-email" class="absolute pointer-events-none" style="top: 48%; left: 49.5%; width: 16.5%; height: 4.5%;"></div>
+                        <!-- Campo Contraseña: y≈870/1468=59.3% -->
+                        <div id="landing-register-password" class="absolute pointer-events-none" style="top: 58.5%; left: 33%; width: 34%; height: 4.5%;"></div>
+                        <!-- Botón Guardar y crear catálogo: y≈1120/1468=76.3% -->
+                        <div id="landing-register-submit" class="absolute pointer-events-none" style="top: 75%; left: 33%; width: 34%; height: 5.5%;"></div>
+                        
+                        <!-- Sidebar Hotspots — medidos en inventory.png (sidebar ~290px de 1536) -->
+                        <!-- Inventario: y≈167/747=22.4% -->
+                        <div id="admin-tab-inventario" class="absolute pointer-events-none" style="top: 20.5%; left: 1%; width: 18%; height: 6%;"></div>
+                        <!-- Historial de pedidos: y≈225/747=30.1% -->
+                        <div id="admin-tab-pedidos" class="absolute pointer-events-none" style="top: 28.5%; left: 1%; width: 18%; height: 6%;"></div>
+                        <!-- Perfil: y≈283/747=37.9% -->
+                        <div id="admin-tab-perfil" class="absolute pointer-events-none" style="top: 36.5%; left: 1%; width: 18%; height: 6%;"></div>
+                        <!-- Ajustes: y≈342/747=45.8% -->
+                        <div id="admin-tab-config" class="absolute pointer-events-none" style="top: 43.5%; left: 1%; width: 18%; height: 6%;"></div>
+                        
+                        <!-- Inventory Hotspots — medidos en inventory.png -->
+                        <!-- CREAR CATEGORÍA: x≈1420/1536=92.4%, y≈540/747=72.3%, w≈116/1536=7.5%, h≈45/747=6% -->
+                        <div id="btn-crear-categoria-trigger" class="absolute pointer-events-none" style="top: 70%; left: 91%; width: 8%; height: 6%;"></div>
+                        <!-- + AGREGAR PRODUCTO: x≈1228/1536=79.9%, y≈540/747=72.3%, w≈155/1536=10.1% -->
+                        <div id="btn-agregar-producto-trigger" class="absolute pointer-events-none" style="top: 70%; left: 78%; width: 11.5%; height: 6%;"></div>
+                        <!-- Acciones en la lista de productos (fila producto debajo del header de tabla) -->
+                        <div class="btn-edit-product-mock absolute pointer-events-none" style="top: 90%; left: 90%; width: 3%; height: 4%;"></div>
+                        <div class="btn-toggle-status-mock absolute pointer-events-none" style="top: 90%; left: 78%; width: 10%; height: 4%;"></div>
+                        <div class="btn-delete-product-mock absolute pointer-events-none" style="top: 90%; left: 93%; width: 3%; height: 4%;"></div>
+                        
+                        <!-- Category Modal Hotspots — medidos en category_modal.png -->
+                        <!-- Campo nombre categoría: y≈440/747=58.9%, x≈565/1536=36.8%, w≈406/1536=26.4% -->
+                        <div id="admin-categoria-nombre-input" class="absolute pointer-events-none" style="top: 57%; left: 36.5%; width: 27%; height: 5%;"></div>
+                        <!-- Botón GUARDAR modal categoría: y≈525/747=70.3%, x≈820/1536=53.4%, w≈82/1536=5.3% -->
+                        <div id="admin-categoria-submit" class="absolute pointer-events-none" style="top: 68.5%; left: 53%; width: 8%; height: 5%;"></div>
+                        
+                        <!-- Product Modal Hotspots — medidos en product_modal.png (modal visible arriba) -->
+                        <!-- Nombre producto: y≈140/747=18.7%, x≈610/1536=39.7%, w≈450/1536=29.3% -->
+                        <div id="admin-nombre" class="absolute pointer-events-none" style="top: 17%; left: 39.5%; width: 29.5%; height: 4.5%;"></div>
+                        <!-- Categoría select: y≈200/747=26.8% -->
+                        <div id="admin-categoria" class="absolute pointer-events-none" style="top: 25.5%; left: 39.5%; width: 29.5%; height: 4.5%;"></div>
+                        <!-- Unidad: y≈260/747=34.8%, w≈210/1536=13.7% -->
+                        <div id="admin-unidad" class="absolute pointer-events-none" style="top: 33.5%; left: 39.5%; width: 13.5%; height: 4.5%;"></div>
+                        <!-- Precio: x≈825/1536=53.7%, w≈235/1536=15.3% -->
+                        <div id="admin-precio" class="absolute pointer-events-none" style="top: 33.5%; left: 53.5%; width: 15.5%; height: 4.5%;"></div>
+                        <!-- Orden/Stock: y≈322/747=43.1% -->
+                        <div id="admin-orden" class="absolute pointer-events-none" style="top: 41.5%; left: 39.5%; width: 29.5%; height: 4.5%;"></div>
+                        <!-- Descripción: y≈384/747=51.4%, h≈78/747=10.4% -->
+                        <div id="admin-descripcion" class="absolute pointer-events-none" style="top: 50%; left: 39.5%; width: 29.5%; height: 8%;"></div>
+                        <!-- Foto botón: y≈475/747=63.6% -->
+                        <div id="admin-foto-btn" class="absolute pointer-events-none" style="top: 62%; left: 39.5%; width: 29.5%; height: 5%;"></div>
+                        <!-- Estado Activo toggle: y≈535/747=71.6% -->
+                        <div id="admin-activo" class="absolute pointer-events-none" style="top: 70%; left: 39.5%; width: 29.5%; height: 4.5%;"></div>
+                        <!-- Botón GUARDAR PRODUCTO: y≈594/747=79.5% -->
+                        <div id="admin-form-submit" class="absolute pointer-events-none" style="top: 78%; left: 39.5%; width: 29.5%; height: 5%;"></div>
+                        
+                        <!-- Pedidos Hotspots — medidos en pedidos.png -->
+                        <!-- Buscador: y≈348/747=46.6%, x≈746/1536=48.6%, w≈780/1536=50.8% -->
+                        <div id="pedidos-buscar" class="absolute pointer-events-none" style="top: 44.5%; left: 19%; width: 76%; height: 6%;"></div>
+                        <!-- SELECCIONADOS (modo agrupación): y≈441/747=59%, x≈910/1536=59.2% -->
+                        <div id="pedidos-agrupar-modo" class="absolute pointer-events-none" style="top: 57%; left: 58.5%; width: 8%; height: 5.5%;"></div>
+                        <!-- AGRUPAR PEDIDOS EN PDF: x≈1010/1536=65.7%, w≈168/1536=10.9% -->
+                        <div id="pedidos-agrupar-pdf" class="absolute pointer-events-none" style="top: 57%; left: 65%; width: 12%; height: 5.5%;"></div>
+                        <!-- DESCARGAR TODOS LOS RECIBOS: x≈1185/1536=77.1%, w≈165/1536=10.7% -->
+                        <div id="pedidos-download" class="absolute pointer-events-none" style="top: 57%; left: 76.5%; width: 12%; height: 5.5%;"></div>
+                        <!-- LIMPIAR HISTORIAL: x≈1355/1536=88.2%, w≈134/1536=8.7% -->
+                        <div id="pedidos-clean" class="absolute pointer-events-none" style="top: 57%; left: 87.5%; width: 10%; height: 5.5%;"></div>
+                        
+                        <!-- Perfil Hotspots — medidos en perfil.png -->
+                        <!-- Campo WhatsApp input: y≈555/747=74.3%, x≈357/1536=23.2%, w≈760/1536=49.5% -->
+                        <div id="perfil-whatsapp-input" class="absolute pointer-events-none" style="top: 72%; left: 23%; width: 50%; height: 6%;"></div>
+                        <!-- EDITAR logo: y≈490/747=65.6%, x≈1435/1536=93.4%, w≈95/1536=6.2% -->
+                        <div id="btn-perfil-logo-edit" class="absolute pointer-events-none" style="top: 47%; left: 90%; width: 7%; height: 4.5%;"></div>
+                        <!-- EDITAR nombre: y≈596/747=79.8% -->
+                        <div id="btn-perfil-name-edit" class="absolute pointer-events-none" style="top: 57%; left: 90%; width: 7%; height: 4.5%;"></div>
+                        <!-- EDITAR título catálogo: y≈665/747=89% -->
+                        <div id="btn-perfil-title-edit" class="absolute pointer-events-none" style="top: 67%; left: 90%; width: 7%; height: 4.5%;"></div>
+                        <!-- Estado suscripción (perfil_bottom.png): fila 'Estado - En prueba gratis': top≈65%, left≈20% -->
+                        <div id="account-status" class="absolute pointer-events-none" style="top: 65%; left: 20%; width: 72%; height: 5.5%;"></div>
+                        <!-- Cambiar contraseña (perfil_bottom.png): card derecho, top≈50% -->
+                        <div id="btn-perfil-password-toggle" class="absolute pointer-events-none" style="top: 50%; left: 62%; width: 36%; height: 7%;"></div>
+                        
+                        <!-- Ajustes Hotspots — medidos en ajustes.png -->
+                        <!-- Tab COLOR ACTUAL: y≈80/747=10.7%, x≈360/1536=23.4%, w≈122/1536=7.9% -->
+                        <div id="palette-tab-current" class="absolute pointer-events-none" style="top: 9%; left: 22.5%; width: 10%; height: 5.5%;"></div>
+                        <!-- Checkbox Mostrar buscador: y≈578/747=77.4%, x≈860/1536=56%, checkbox x≈868px/1536=56.5%, w=32px -->
+                        <div id="setting-mostrar-buscador" class="absolute pointer-events-none" style="top: 57%; left: 55%; width: 40%; height: 5.5%;"></div>
+                        <!-- Checkbox Mostrar categorías: y≈656/747=87.8% -->
+                        <div id="setting-mostrar-categorias" class="absolute pointer-events-none" style="top: 63%; left: 55%; width: 40%; height: 5.5%;"></div>
+                        <!-- Ajustes BOTTOM (ajustes_bottom.png) - Sección 'Confirmación de pedidos' (columna derecha) -->
+                        <!-- Checkbox Enviar por carrito: top≈27.5%, left≈62% -->
+                        <div id="setting-order-cart-enabled" class="absolute pointer-events-none" style="top: 26%; left: 62%; width: 36%; height: 6%;"></div>
+                        <!-- Checkbox Enviar por WhatsApp: top≈38% -->
+                        <div id="setting-order-whatsapp-enabled" class="absolute pointer-events-none" style="top: 38%; left: 62%; width: 36%; height: 6%;"></div>
+                        <!-- DIRECCIÓN DEL CLIENTE dropdown 'Opcional': top≈52% -->
+                        <div id="setting-address-requirement" class="absolute pointer-events-none" style="top: 51%; left: 62%; width: 36%; height: 6%;"></div>
+                        <!-- COMENTARIO DEL CLIENTE dropdown 'Opcional': top≈61% -->
+                        <div id="setting-comment-requirement" class="absolute pointer-events-none" style="top: 61%; left: 62%; width: 36%; height: 6%;"></div>
+                        <!-- MONEDA VISIBLE 'Quetzal guatemalteco (GTQ)': en sección abajo, top≈90% -->
+                        <div id="setting-moneda-visible" class="absolute pointer-events-none" style="top: 88%; left: 22.5%; width: 55%; height: 6%;"></div>
+                    </div>
+
+                    <!-- NESTED SPOTLIGHT RING OVERLAY -->
+                    <div id="selector-glow-overlay" class="pointer-events-none border-[3px] border-pink-500 rounded-2xl shadow-[0_0_25px_rgba(236,72,153,0.7),_inset_0_0_15px_rgba(236,72,153,0.4)] opacity-0 z-[9999] transition-all duration-300 ease-out absolute" style="display: none;">
+                        <span class="absolute -top-7 left-0 bg-pink-500 text-white font-black text-[9px] uppercase px-2 py-0.5 rounded shadow-md tracking-wider animate-bounce flex items-center gap-1">
+                            <i class="fa-solid fa-circle-play"></i> Enfoque
+                        </span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- ON-PAGE SCRIPTS FOR TOUR AND MOCKUP INTERACTION LOGIC -->
+    <script is:inline>
+        // Tour Steps Data matching the analyzed DOM Selectors in logical sequential order
+        const tourSteps = [
+          { "step": 1, "section": "landing", "selector": "#landing-register-trigger", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 1: Iniciamos en la Landing Page. Haz clic en el botón principal 'Comenzar gratis' para abrir el modal de registro del negocio." },
+          { "step": 2, "section": "register", "selector": "#landing-register-name", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 2: Escribe el nombre de tu tienda o negocio. Se reflejará automáticamente en la cabecera de tu catálogo público." },
+          { "step": 3, "section": "register", "selector": "#landing-register-whatsapp", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 3: Introduce tu número receptor de WhatsApp con tu código internacional de país para recibir las órdenes de tus clientes." },
+          { "step": 4, "section": "register", "selector": "#landing-register-user", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 4: Define tu nombre de usuario administrador. Con él iniciarás sesión para administrar tu catálogo." },
+          { "step": 5, "section": "register", "selector": "#landing-register-email", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 5: Proporciona una cuenta de correo electrónico de administración válida para notificaciones o recuperación." },
+          { "step": 6, "section": "register", "selector": "#landing-register-password", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 6: Asigna una contraseña segura de al menos 8 caracteres para proteger el panel." },
+          { "step": 7, "section": "register", "selector": "#landing-register-submit", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 7: Presiona 'Guardar y crear catálogo' para registrar tu cuenta e ingresar al panel de control automáticamente." },
+          { "step": 8, "section": "admin_inventory", "selector": "#admin-tab-inventario", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 8: Te encuentras en la sección de Inventario, la pestaña principal por defecto donde se controlan los productos." },
+          { "step": 9, "section": "admin_inventory", "selector": "#btn-crear-categoria-trigger", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 9: Antes de agregar un producto, debes crear al menos una categoría de catálogo. Haz clic en 'Crear categoría'." },
+          { "step": 10, "section": "admin_inventory", "selector": "#admin-categoria-nombre-input", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 10: En el campo de texto del modal emergente, ingresa el nombre de la sección correspondiente (ej: Frutas, Verduras)." },
+          { "step": 11, "section": "admin_inventory", "selector": "#admin-categoria-submit", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 11: Haz clic en el botón de guardar del modal para consolidar la categoría en tu listado." },
+          { "step": 12, "section": "admin_inventory", "selector": "#btn-agregar-producto-trigger", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 12: Con la categoría lista, haz clic en el botón 'Agregar producto' para desplegar el formulario detallado." },
+          { "step": 13, "section": "admin_inventory", "selector": "#admin-nombre", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 13: Escribe el nombre del artículo comercial que se presentará en la tarjeta del catálogo público." },
+          { "step": 14, "section": "admin_inventory", "selector": "#admin-categoria", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 14: Selecciona del menú desplegable la categoría correspondiente creada anteriormente para agruparlo." },
+          { "step": 15, "section": "admin_inventory", "selector": "#admin-unidad", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 15: Define la unidad de medida o especificación del precio de venta (ej: lb, docena, unidad, bolsa)." },
+          { "step": 16, "section": "admin_inventory", "selector": "#admin-precio", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 16: Asigna el precio decimal de venta en quetzales para que se calcule el total del pedido al cliente." },
+          { "step": 17, "section": "admin_inventory", "selector": "#admin-orden", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 17: Establece el Orden Visual (mostrado en Stock), el cual define el número de orden de visualización de este producto." },
+          { "step": 18, "section": "admin_inventory", "selector": "#admin-descripcion", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 18: Ingresa una descripción comercial opcional aportando información útil como sabor, color o ingredientes." },
+          { "step": 19, "section": "admin_inventory", "selector": "#admin-foto-btn", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 19: Puedes arrastrar o subir hasta 3 fotos del producto. La primera imagen actuará como portada del catálogo." },
+          { "step": 20, "section": "admin_inventory", "selector": "#admin-activo", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 20: El interruptor 'Activo' define si el producto se publica de forma inmediata y visible para tus compradores." },
+          { "step": 21, "section": "admin_inventory", "selector": "#admin-form-submit", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 21: Presiona el botón 'Guardar Producto' para confirmar los datos y cargarlo al listado de productos de la base de datos." },
+          { "step": 22, "section": "admin_inventory", "selector": ".btn-edit-product-mock", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 22: En las tarjetas de productos, puedes editar cualquier información o imagen del artículo usando el botón de edición (Lápiz)." },
+          { "step": 23, "section": "admin_inventory", "selector": ".btn-toggle-status-mock", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 23: Pausa la visibilidad pública de un producto en tiempo real sin borrarlo, alternando el botón de estado Activo/Inactivo." },
+          { "step": 24, "section": "admin_inventory", "selector": ".btn-delete-product-mock", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 24: Si deseas remover un producto permanentemente, haz clic en el botón de eliminación para desplegar el modal de confirmación." },
+          { "step": 25, "section": "admin_pedidos", "selector": "#admin-tab-pedidos", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 25: Navegamos a la pestaña 'Pedidos' para revisar el listado completo de órdenes y descargas de recibos PDF." },
+          { "step": 26, "section": "admin_pedidos", "selector": "#pedidos-buscar", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 26: El buscador en vivo te permite localizar órdenes escribiendo el nombre del cliente o el número correlativo del pedido." },
+          { "step": 27, "section": "admin_pedidos", "selector": "#pedidos-agrupar-modo", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 27: Elige el modo de agrupación para consolidar pedidos, ya sea los seleccionados manualmente o los recibidos hoy." },
+          { "step": 28, "section": "admin_pedidos", "selector": "#pedidos-agrupar-pdf", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 28: Presiona 'Agrupar pedidos en PDF' para generar un resumen total acumulado de productos a preparar." },
+          { "step": 29, "section": "admin_pedidos", "selector": "#pedidos-download", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 29: Haz clic en el botón negro para descargar el historial completo de comprobantes PDF en un solo archivo." },
+          { "step": 30, "section": "admin_pedidos", "selector": "#pedidos-clean", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 30: Para vaciar tu base de datos y reiniciar el historial, haz clic en 'Limpiar Historial' e introduce tu PIN de seguridad." },
+          { "step": 31, "section": "admin_perfil", "selector": "#admin-tab-perfil", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 31: Entramos al módulo 'Perfil' para gestionar la información de marca, logo y facturación del tenant." },
+          { "step": 32, "section": "admin_perfil", "selector": "#perfil-whatsapp-input", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 32: Actualiza el número de WhatsApp receptor de pedidos desde aquí de forma directa si lo requieres." },
+          { "step": 33, "section": "admin_perfil", "selector": "#btn-perfil-logo-edit", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 33: Haz clic en 'Editar' para cargar un nuevo logo de negocio, seleccionar si deseas que sea redondo o cuadrado, y rotarlo." },
+          { "step": 34, "section": "admin_perfil", "selector": "#btn-perfil-name-edit", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 34: Haz clic en 'Editar' al lado del nombre de tu negocio para re-escribir el nombre comercial visible en el portal." },
+          { "step": 35, "section": "admin_perfil", "selector": "#btn-perfil-title-edit", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 35: Modifica el título de bienvenida del catálogo público (ej: 'Catálogo de Verduras', 'Nuestros Productos')." },
+          { "step": 36, "section": "admin_perfil", "selector": "#account-status", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 36: Aquí consultas el estado de tu cuenta SaaS. Si requieres reportar tu transferencia, tienes las opciones de pago a la mano." },
+          { "step": 37, "section": "admin_perfil", "selector": "#btn-perfil-password-toggle", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 37: En el pie de seguridad, puedes desplegar el formulario para actualizar tu contraseña de acceso administrativo." },
+          { "step": 38, "section": "admin_config", "selector": "#admin-tab-config", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 38: Finalmente, ingresamos al panel de 'Ajustes' para regular la apariencia estética global y la interactividad del carro." },
+          { "step": 39, "section": "admin_config", "selector": "#palette-tab-current", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 39: Personaliza la paleta de colores. Cuentas con 15 tonos premium que cambian el tema del catálogo y la administración al instante." },
+          { "step": 40, "section": "admin_config", "selector": "#setting-mostrar-buscador", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 40: Activa o desactiva la visibilidad de la barra superior de búsqueda rápida en el catálogo de clientes." },
+          { "step": 41, "section": "admin_config", "selector": "#setting-mostrar-categorias", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 41: Define si se despliegan los botones horizontales de categorías en el portal del visitante." },
+          { "step": 42, "section": "admin_config", "selector": "#setting-order-cart-enabled", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 42: Activa el guardado de carritos de compras dentro del panel administrativo local." },
+          { "step": 43, "section": "admin_config", "selector": "#setting-order-whatsapp-enabled", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 43: Habilita el envío del pedido directo a WhatsApp formateado con subtotales y datos de contacto." },
+          { "step": 44, "section": "admin_config", "selector": "#setting-address-requirement", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 44: Establece si la dirección de entrega del cliente en el checkout es opcional, requerida o deshabilitada." },
+          { "step": 45, "section": "admin_config", "selector": "#setting-comment-requirement", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 45: Configura si los clientes deben dejar un comentario o aclaración de forma obligatoria u opcional en el checkout." },
+          { "step": 46, "section": "admin_config", "selector": "#setting-moneda-visible", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 46: Define la moneda base para todo tu catálogo (ej: GTQ en Quetzal guatemalteco o USD en Dólares)." }
+        ];
+
+        // Global states
+        let currentStepIndex = 0;
+        let isPlaying = false;
+        let playInterval = null;
+        let stepProgress = 0;
+        const STEP_DURATION = 7500; // 7.5 seconds per step for comfortable reading
+        const PROGRESS_INTERVAL = 100;
+        let currentTargetSelector = null;
+
+        // Mockup HTML views and containers
+        const glowOverlay = document.getElementById("selector-glow-overlay");
+        const browserUrl = document.getElementById("browser-url");
+        const deviceFrame = document.getElementById("browser-device-frame");
+
+        // Player Controls DOM
+        const stepBadge = document.getElementById("step-badge");
+        const sectionBadge = document.getElementById("section-badge");
+        const scriptText = document.getElementById("script-text");
+        const selectorDisplay = document.getElementById("selector-display");
+        const progressFill = document.getElementById("step-progress-fill");
+        
+        const btnPlay = document.getElementById("btn-play");
+        const playIcon = document.getElementById("play-icon");
+        const btnPrev = document.getElementById("btn-prev");
+        const btnNext = document.getElementById("btn-next");
+        const btnReset = document.getElementById("btn-reset");
+        const autoplayToggle = document.getElementById("autoplay-toggle");
+
+        function switchMockupView(section) {
+            const currentStep = tourSteps[currentStepIndex];
+            const stepNum = currentStep.step;
+            const img = document.getElementById("mockup-screenshot-img");
+
+            if (section === "landing") {
+                img.src = "/assets/tour/landing.png";
+                browserUrl.innerText = "http://127.0.0.1:4322/";
+            } else if (section === "register") {
+                img.src = "/assets/tour/register.png";
+                browserUrl.innerText = "http://127.0.0.1:4322/#register";
+            } else {
+                // Admin views
+                if (section === "admin_inventory") {
+                    if (stepNum >= 9 && stepNum <= 11) {
+                        img.src = "/assets/tour/category_modal.png";
+                    } else if (stepNum >= 13 && stepNum <= 21) {
+                        img.src = "/assets/tour/product_modal.png";
+                    } else {
+                        img.src = "/assets/tour/inventory.png";
+                    }
+                    browserUrl.innerText = "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin";
+                } else if (section === "admin_pedidos") {
+                    img.src = "/assets/tour/pedidos.png";
+                    browserUrl.innerText = "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin#pedidos";
+                } else if (section === "admin_perfil") {
+                    // Steps 31-35: top view. Steps 36-37: bottom view (suscripción y contraseña)
+                    if (stepNum >= 36) {
+                        img.src = "/assets/tour/perfil_bottom.png";
+                    } else {
+                        img.src = "/assets/tour/perfil.png";
+                    }
+                    browserUrl.innerText = "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin#perfil";
+                } else if (section === "admin_config") {
+                    // Steps 38-41: ajustes top (paleta + buscador + categorías). Steps 42-46: ajustes bottom (pedidos + moneda)
+                    if (stepNum >= 42) {
+                        img.src = "/assets/tour/ajustes_bottom.png";
+                    } else {
+                        img.src = "/assets/tour/ajustes.png";
+                    }
+                    browserUrl.innerText = "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin#ajustes";
+                }
+            }
+        }
+
+        function highlightElement(selector) {
+            // Map legacy and dynamic selectors to static hotspots
+            if (selector === 'button[onclick*="ResumenPreparacion"]') selector = '#pedidos-agrupar-pdf';
+            if (selector === 'button[onclick*="TodosPDFPedidos"]') selector = '#pedidos-download';
+            if (selector === 'button[onclick*="ConfirmLimpiarPedidos"]') selector = '#pedidos-clean';
+            if (selector === '#setting-mostrar-categories') selector = '#setting-mostrar-categorias';
+
+            currentTargetSelector = selector;
+            recalculateHighlight();
+        }
+
+        function recalculateHighlight() {
+            if (!currentTargetSelector) {
+                glowOverlay.style.opacity = "0";
+                glowOverlay.style.display = "none";
+                return;
+            }
+
+            let target = null;
+            try {
+                target = deviceFrame.querySelector(currentTargetSelector);
+            } catch (e) {
+                console.error("Invalid selector:", currentTargetSelector);
+            }
+
+            if (target) {
+                glowOverlay.style.display = "block";
+
+                const rect = target.getBoundingClientRect();
+                const containerRect = deviceFrame.getBoundingClientRect();
+
+                // Calculate relative position within the device frame
+                const top = rect.top - containerRect.top;
+                const left = rect.left - containerRect.left;
+                const width = rect.width;
+                const height = rect.height;
+
+                glowOverlay.style.top = `${top - 4}px`;
+                glowOverlay.style.left = `${left - 4}px`;
+                glowOverlay.style.width = `${width + 8}px`;
+                glowOverlay.style.height = `${height + 8}px`;
+                glowOverlay.style.opacity = "1";
+            } else {
+                glowOverlay.style.opacity = "0";
+                glowOverlay.style.display = "none";
+            }
+        }
+
+        function updateStepUI() {
+            const currentStep = tourSteps[currentStepIndex];
+
+            stepBadge.innerText = `Paso ${currentStep.step} / ${tourSteps.length}`;
+            sectionBadge.innerText = currentStep.section.replace("admin_", "").toUpperCase();
+            scriptText.innerText = currentStep.script;
+            selectorDisplay.innerText = currentStep.selector;
+
+            switchMockupView(currentStep.section);
+            highlightElement(currentStep.selector);
+
+            // Re-run alignment calculations multiple times as the image loads and settles
+            let count = 0;
+            const interval = setInterval(() => {
+                recalculateHighlight();
+                count++;
+                if (count > 15) clearInterval(interval); // 750ms total
+            }, 50);
+
+            stepProgress = 0;
+            progressFill.style.width = "0%";
+        }
+
+        function startTimer() {
+            if (playInterval) clearInterval(playInterval);
+            
+            playInterval = setInterval(() => {
+                if (!isPlaying) return;
+
+                stepProgress += (PROGRESS_INTERVAL / STEP_DURATION) * 100;
+                progressFill.style.width = `${Math.min(stepProgress, 100)}%`;
+
+                if (stepProgress >= 100) {
+                    if (currentStepIndex < tourSteps.length - 1) {
+                        currentStepIndex++;
+                        updateStepUI();
+                    } else {
+                        if (autoplayToggle.checked) {
+                            currentStepIndex = 0;
+                            updateStepUI();
+                        } else {
+                            pauseTour();
+                        }
+                    }
+                }
+            }, PROGRESS_INTERVAL);
+        }
+
+        function playTour() {
+            isPlaying = true;
+            playIcon.className = "fa-solid fa-pause";
+            btnPlay.classList.add("from-pink-600", "to-violet-500", "pulse-glow");
+            
+            document.querySelectorAll(".voice-bar").forEach(b => b.classList.add("active"));
+            startTimer();
+        }
+
+        function pauseTour() {
+            isPlaying = false;
+            playIcon.className = "fa-solid fa-play";
+            btnPlay.classList.remove("from-pink-600", "to-violet-500", "pulse-glow");
+            
+            document.querySelectorAll(".voice-bar").forEach(b => b.classList.remove("active"));
+            
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+            }
+        }
+
+        btnPlay.addEventListener("click", () => {
+            if (isPlaying) {
+                pauseTour();
+            } else {
+                playTour();
+            }
+        });
+
+        btnPrev.addEventListener("click", () => {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                updateStepUI();
+                if (isPlaying) startTimer();
+            }
+        });
+
+        btnNext.addEventListener("click", () => {
+            if (currentStepIndex < tourSteps.length - 1) {
+                currentStepIndex++;
+                updateStepUI();
+                if (isPlaying) startTimer();
+            }
+        });
+
+        btnReset.addEventListener("click", () => {
+            currentStepIndex = 0;
+            updateStepUI();
+            if (isPlaying) {
+                startTimer();
+            } else {
+                progressFill.style.width = "0%";
+            }
+        });
+
+        // Listeners for resizing and scrolling to keep the focus box positioned correctly
+        window.addEventListener("resize", recalculateHighlight);
+        const mockupScroll = document.getElementById("mockup-content-scroll");
+        if (mockupScroll) {
+            mockupScroll.addEventListener("scroll", recalculateHighlight);
+        }
+
+        // Initial setup on page load
+        updateStepUI();
+    </script>
+
+    <!-- Custom CSS styles -->
+    <style is:inline>
+        /* Waveform voice animation delay */
+        .voice-bar {
+            transition: height 0.1s ease-in-out;
+        }
+        .voice-bar.active {
+            animation: pulse-height 0.8s ease-in-out infinite alternate;
+        }
+        .voice-bar:nth-child(2) { animation-delay: 0.1s; }
+        .voice-bar:nth-child(3) { animation-delay: 0.2s; }
+        .voice-bar:nth-child(4) { animation-delay: 0.3s; }
+        .voice-bar:nth-child(5) { animation-delay: 0.4s; }
+        .voice-bar:nth-child(6) { animation-delay: 0.25s; }
+        .voice-bar:nth-child(7) { animation-delay: 0.15s; }
+        .voice-bar:nth-child(8) { animation-delay: 0.35s; }
+        .voice-bar:nth-child(9) { animation-delay: 0.45s; }
+        .voice-bar:nth-child(10) { animation-delay: 0.05s; }
+
+        @keyframes pulse-height {
+            from { height: 4px; }
+            to { height: 28px; }
+        }
+
+        .pulse-glow {
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.6);
+            animation: neon-glow 1.5s infinite alternate;
+        }
+
+        @keyframes neon-glow {
+            from { box-shadow: 0 0 8px rgba(124, 58, 237, 0.4); }
+            to { box-shadow: 0 0 20px rgba(236, 72, 153, 0.8); }
+        }
+    </style>
+</Layout>
