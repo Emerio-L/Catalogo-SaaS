@@ -1703,7 +1703,10 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 const data = await res.json().catch(() => ({}));
                 if (res.ok) {
                     if (form) form.classList.add('hidden');
-                    mostrarEstadoRecoveryLanding(data.message || "Hemos enviado un correo de recuperación.", true);
+                    const recoveryMessage = data.emailRecoveryConfigured === false
+                        ? "La solicitud fue recibida, pero el envío de correos no está configurado en este entorno. Configura RESEND_API_KEY y AUTH_EMAIL_FROM o contacta a soporte para restablecer la contraseña."
+                        : (data.mensaje || data.message || "Hemos enviado un correo de recuperación.");
+                    mostrarEstadoRecoveryLanding(recoveryMessage, true);
                     
                     if (data.devResetUrl) {
                         if (devLinkEl) {

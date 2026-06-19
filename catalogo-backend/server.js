@@ -3230,6 +3230,7 @@ app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
         const identifier = normalizeIdentifier(req.body.identifier);
         const genericResponse = {
             success: true,
+            emailRecoveryConfigured: Boolean(process.env.RESEND_API_KEY && process.env.AUTH_EMAIL_FROM),
             mensaje: 'Solicitud recibida. Si la cuenta existe y tiene un correo válido, recibirás un enlace en los próximos minutos.'
         };
         if (!identifier) return res.json(genericResponse);
@@ -3512,6 +3513,7 @@ app.post('/api/:tenant/auth/forgot-password', tenantMiddleware, authLimiter, asy
         const identifier = normalizeIdentifier(req.body.identifier);
         const genericResponse = {
             success: true,
+            emailRecoveryConfigured: Boolean(process.env.RESEND_API_KEY && process.env.AUTH_EMAIL_FROM),
             mensaje: 'Solicitud recibida. Si la cuenta existe y tiene un correo válido, recibirás un enlace en los próximos minutos.'
         };
         if (!identifier) return res.json(genericResponse);

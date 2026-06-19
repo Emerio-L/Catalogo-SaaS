@@ -6903,9 +6903,10 @@ if (noindex) {
                     mostrarErrorRecoveryLanding(data.error || 'No se pudo solicitar la recuperación.');
                     return;
                 }
-                mostrarEstadoRecoveryLanding(
-                    `${data.mensaje || 'Solicitud recibida.'} Revisa también la carpeta de spam. Si no llega, contacta a soporte para verificar el correo asociado a la cuenta.`
-                );
+                const recoveryMessage = data.emailRecoveryConfigured === false
+                    ? 'La solicitud fue recibida, pero el envío de correos no está configurado en este entorno. Configura RESEND_API_KEY y AUTH_EMAIL_FROM o contacta a soporte para restablecer la contraseña.'
+                    : `${data.mensaje || data.message || 'Solicitud recibida.'} Revisa también la carpeta de spam. Si no llega, contacta a soporte para verificar el correo asociado a la cuenta.`;
+                mostrarEstadoRecoveryLanding(recoveryMessage);
                 document.getElementById('landing-recovery-form')?.classList.add('hidden');
                 document.getElementById('landing-recovery-success')?.classList.remove('hidden');
                 if (data.devResetUrl && devLinkEl) {

@@ -37,7 +37,7 @@ import Layout from '../layouts/Layout.astro';
             <!-- LEFT PANEL: AVATAR PRESENTER -->
             <section class="w-full md:w-[420px] border-r border-slate-900 bg-slate-950 flex flex-col z-20 shrink-0 overflow-y-auto">
                 <!-- Avatar Visual Box -->
-                <div class="p-6 flex flex-col items-center justify-center border-b border-slate-900 bg-slate-900/10 shrink-0">
+                <div class="order-2 p-6 flex flex-col items-center justify-center border-b border-slate-900 bg-slate-900/10 shrink-0">
                     <div class="relative w-44 h-44 rounded-full bg-slate-900/80 border border-violet-500/20 flex items-center justify-center overflow-hidden shadow-2xl group">
                         <!-- Hologram Lines & Glow -->
                         <div class="absolute inset-0 bg-gradient-to-t from-violet-600/10 via-transparent to-pink-500/5 pointer-events-none"></div>
@@ -73,7 +73,7 @@ import Layout from '../layouts/Layout.astro';
                 </div>
 
                 <!-- Active Step Script Details -->
-                <div class="flex-grow p-6 flex flex-col justify-between">
+                <div class="order-1 flex-grow p-6 flex flex-col justify-between">
                     <div>
                         <!-- Active Step Header info -->
                         <div class="flex items-center justify-between mb-4">
@@ -107,7 +107,7 @@ import Layout from '../layouts/Layout.astro';
                     </div>
 
                     <!-- Player Interface Controls -->
-                    <div class="mt-6 pt-6 border-t border-slate-900 space-y-4">
+                    <div class="order-first mb-6 pb-6 border-b border-slate-900 space-y-4">
                         <!-- Controls Row -->
                         <div class="flex items-center justify-center gap-3">
                             <button id="btn-prev" class="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 transition hover:text-white active:scale-95" title="Anterior">
@@ -140,12 +140,12 @@ import Layout from '../layouts/Layout.astro';
             </section>
 
             <!-- RIGHT PANEL: HIGH-FIDELITY INTERFACE SIMULATOR -->
-            <section class="flex-1 bg-slate-900 p-6 md:p-8 flex items-center justify-center overflow-hidden relative">
+            <section class="flex-1 bg-slate-900 p-2 md:p-3 flex items-center justify-center overflow-hidden relative">
                 <!-- Grid background -->
                 <div class="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(#7c3aed_1.5px,transparent_1.5px)] bg-[size:24px_24px]"></div>
 
                 <!-- WEB DEVICE FRAME -->
-                <div id="browser-device-frame" class="w-full max-w-4xl h-full bg-[#070b19] border border-slate-800 rounded-[2rem] shadow-2xl flex flex-col overflow-hidden relative z-10">
+                <div id="browser-device-frame" class="w-full max-w-none h-full bg-[#070b19] border border-slate-800 rounded-[1.5rem] shadow-2xl flex flex-col overflow-hidden relative z-10">
                     <!-- Browser Address bar -->
                     <div class="bg-[#0b1026] border-b border-slate-900 px-6 py-3 flex items-center gap-3 shrink-0 select-none">
                         <div class="flex gap-1.5 shrink-0">
@@ -177,6 +177,7 @@ import Layout from '../layouts/Layout.astro';
                         
                         <!-- Register Hotspots (medidos en register.png 1536x1468px) -->
                         <!-- Campo Nombre del negocio: y≈420/1468=28.6%, x≈510/1536=33.2%, w≈516/1536=33.6% -->
+                        <div id="landing-register-modal" class="absolute pointer-events-none" style="top: 3%; left: 33%; width: 34%; height: 81%;"></div>
                         <div id="landing-register-name" class="absolute pointer-events-none" style="top: 27%; left: 33%; width: 34%; height: 4.5%;"></div>
                         <!-- Campo WhatsApp: y≈570/1468=38.8% -->
                         <div id="landing-register-whatsapp" class="absolute pointer-events-none" style="top: 38%; left: 33%; width: 34%; height: 4.5%;"></div>
@@ -201,9 +202,9 @@ import Layout from '../layouts/Layout.astro';
                         
                         <!-- Inventory Hotspots — medidos en inventory.png -->
                         <!-- CREAR CATEGORÍA: x≈1420/1536=92.4%, y≈540/747=72.3%, w≈116/1536=7.5%, h≈45/747=6% -->
-                        <div id="btn-crear-categoria-trigger" class="absolute pointer-events-none" style="top: 70%; left: 91%; width: 8%; height: 6%;"></div>
+                        <div id="btn-crear-categoria-trigger" class="absolute pointer-events-none" style="top: 55%; left: 85.5%; width: 11.5%; height: 6.5%;"></div>
                         <!-- + AGREGAR PRODUCTO: x≈1228/1536=79.9%, y≈540/747=72.3%, w≈155/1536=10.1% -->
-                        <div id="btn-agregar-producto-trigger" class="absolute pointer-events-none" style="top: 70%; left: 78%; width: 11.5%; height: 6%;"></div>
+                        <div id="btn-agregar-producto-trigger" class="absolute pointer-events-none" style="top: 55%; left: 72%; width: 13.5%; height: 6.5%;"></div>
                         <!-- Acciones en la lista de productos (fila producto debajo del header de tabla) -->
                         <div class="btn-edit-product-mock absolute pointer-events-none" style="top: 90%; left: 90%; width: 3%; height: 4%;"></div>
                         <div class="btn-toggle-status-mock absolute pointer-events-none" style="top: 90%; left: 78%; width: 10%; height: 4%;"></div>
@@ -217,6 +218,7 @@ import Layout from '../layouts/Layout.astro';
                         
                         <!-- Product Modal Hotspots — medidos en product_modal.png (modal visible arriba) -->
                         <!-- Nombre producto: y≈140/747=18.7%, x≈610/1536=39.7%, w≈450/1536=29.3% -->
+                        <div id="admin-product-modal" class="absolute pointer-events-none" style="top: 5%; left: 35%; width: 30%; height: 90%;"></div>
                         <div id="admin-nombre" class="absolute pointer-events-none" style="top: 17%; left: 39.5%; width: 29.5%; height: 4.5%;"></div>
                         <!-- Categoría select: y≈200/747=26.8% -->
                         <div id="admin-categoria" class="absolute pointer-events-none" style="top: 25.5%; left: 39.5%; width: 29.5%; height: 4.5%;"></div>
@@ -251,34 +253,37 @@ import Layout from '../layouts/Layout.astro';
                         <!-- Campo WhatsApp input: y≈555/747=74.3%, x≈357/1536=23.2%, w≈760/1536=49.5% -->
                         <div id="perfil-whatsapp-input" class="absolute pointer-events-none" style="top: 72%; left: 23%; width: 50%; height: 6%;"></div>
                         <!-- EDITAR logo: y≈490/747=65.6%, x≈1435/1536=93.4%, w≈95/1536=6.2% -->
-                        <div id="btn-perfil-logo-edit" class="absolute pointer-events-none" style="top: 47%; left: 90%; width: 7%; height: 4.5%;"></div>
+                        <div id="btn-perfil-logo-edit" class="absolute pointer-events-none" style="top: 63%; left: 90%; width: 6%; height: 5%;"></div>
                         <!-- EDITAR nombre: y≈596/747=79.8% -->
-                        <div id="btn-perfil-name-edit" class="absolute pointer-events-none" style="top: 57%; left: 90%; width: 7%; height: 4.5%;"></div>
+                        <div id="btn-perfil-name-edit" class="absolute pointer-events-none" style="top: 76%; left: 90%; width: 6%; height: 5%;"></div>
                         <!-- EDITAR título catálogo: y≈665/747=89% -->
-                        <div id="btn-perfil-title-edit" class="absolute pointer-events-none" style="top: 67%; left: 90%; width: 7%; height: 4.5%;"></div>
+                        <div id="btn-perfil-title-edit" class="absolute pointer-events-none" style="top: 88.5%; left: 90%; width: 6%; height: 5%;"></div>
                         <!-- Estado suscripción (perfil_bottom.png): fila 'Estado - En prueba gratis': top≈65%, left≈20% -->
-                        <div id="account-status" class="absolute pointer-events-none" style="top: 65%; left: 20%; width: 72%; height: 5.5%;"></div>
+                        <div id="account-status" class="absolute pointer-events-none" style="top: 48%; left: 20.5%; width: 37%; height: 50%;"></div>
                         <!-- Cambiar contraseña (perfil_bottom.png): card derecho, top≈50% -->
-                        <div id="btn-perfil-password-toggle" class="absolute pointer-events-none" style="top: 50%; left: 62%; width: 36%; height: 7%;"></div>
+                        <div id="btn-perfil-password-toggle" class="absolute pointer-events-none" style="top: 57%; left: 61.5%; width: 36%; height: 11%;"></div>
                         
                         <!-- Ajustes Hotspots — medidos en ajustes.png -->
                         <!-- Tab COLOR ACTUAL: y≈80/747=10.7%, x≈360/1536=23.4%, w≈122/1536=7.9% -->
-                        <div id="palette-tab-current" class="absolute pointer-events-none" style="top: 9%; left: 22.5%; width: 10%; height: 5.5%;"></div>
+                        <div id="palette-tab-current" class="absolute pointer-events-none" style="top: 62.5%; left: 22%; width: 10%; height: 6%;"></div>
                         <!-- Checkbox Mostrar buscador: y≈578/747=77.4%, x≈860/1536=56%, checkbox x≈868px/1536=56.5%, w=32px -->
                         <div id="setting-mostrar-buscador" class="absolute pointer-events-none" style="top: 57%; left: 55%; width: 40%; height: 5.5%;"></div>
                         <!-- Checkbox Mostrar categorías: y≈656/747=87.8% -->
                         <div id="setting-mostrar-categorias" class="absolute pointer-events-none" style="top: 63%; left: 55%; width: 40%; height: 5.5%;"></div>
                         <!-- Ajustes BOTTOM (ajustes_bottom.png) - Sección 'Confirmación de pedidos' (columna derecha) -->
                         <!-- Checkbox Enviar por carrito: top≈27.5%, left≈62% -->
+                        <div id="setting-order-options" class="absolute pointer-events-none" style="top: 24%; left: 61%; width: 36%; height: 22%;"></div>
                         <div id="setting-order-cart-enabled" class="absolute pointer-events-none" style="top: 26%; left: 62%; width: 36%; height: 6%;"></div>
                         <!-- Checkbox Enviar por WhatsApp: top≈38% -->
                         <div id="setting-order-whatsapp-enabled" class="absolute pointer-events-none" style="top: 38%; left: 62%; width: 36%; height: 6%;"></div>
                         <!-- DIRECCIÓN DEL CLIENTE dropdown 'Opcional': top≈52% -->
+                        <div id="setting-customer-fields" class="absolute pointer-events-none" style="top: 47%; left: 61%; width: 36%; height: 22%;"></div>
                         <div id="setting-address-requirement" class="absolute pointer-events-none" style="top: 51%; left: 62%; width: 36%; height: 6%;"></div>
                         <!-- COMENTARIO DEL CLIENTE dropdown 'Opcional': top≈61% -->
                         <div id="setting-comment-requirement" class="absolute pointer-events-none" style="top: 61%; left: 62%; width: 36%; height: 6%;"></div>
                         <!-- MONEDA VISIBLE 'Quetzal guatemalteco (GTQ)': en sección abajo, top≈90% -->
                         <div id="setting-moneda-visible" class="absolute pointer-events-none" style="top: 88%; left: 22.5%; width: 55%; height: 6%;"></div>
+                        <div id="sidebar-support" class="absolute pointer-events-none" style="top: 52%; left: 1%; width: 17%; height: 31%;"></div>
                     </div>
 
                     <!-- NESTED SPOTLIGHT RING OVERLAY -->
@@ -295,7 +300,7 @@ import Layout from '../layouts/Layout.astro';
     <!-- ON-PAGE SCRIPTS FOR TOUR AND MOCKUP INTERACTION LOGIC -->
     <script is:inline>
         // Tour Steps Data matching the analyzed DOM Selectors in logical sequential order
-        const tourSteps = [
+        const legacyTourSteps = [
           { "step": 1, "section": "landing", "selector": "#landing-register-trigger", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 1: Iniciamos en la Landing Page. Haz clic en el botón principal 'Comenzar gratis' para abrir el modal de registro del negocio." },
           { "step": 2, "section": "register", "selector": "#landing-register-name", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 2: Escribe el nombre de tu tienda o negocio. Se reflejará automáticamente en la cabecera de tu catálogo público." },
           { "step": 3, "section": "register", "selector": "#landing-register-whatsapp", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 3: Introduce tu número receptor de WhatsApp con tu código internacional de país para recibir las órdenes de tus clientes." },
@@ -344,12 +349,42 @@ import Layout from '../layouts/Layout.astro';
           { "step": 46, "section": "admin_config", "selector": "#setting-moneda-visible", "action": "highlight_and_speak", "avatar_gesture": "point_right", "script": "Paso 46: Define la moneda base para todo tu catálogo (ej: GTQ en Quetzal guatemalteco o USD en Dólares)." }
         ];
 
+        // Tour Steps Data: reduced to a faster 26-step guided video.
+        const tourSteps = [
+          { step: 1, section: "landing", selector: "#landing-register-trigger", script: "Paso 1: En la landing page, haz clic en el boton principal 'Comenzar gratis' para iniciar el registro." },
+          { step: 2, section: "register", selector: "#landing-register-modal", script: "Paso 2: Llena todos los espacios para registrar tu negocio." },
+          { step: 3, section: "admin_inventory", selector: "#admin-tab-inventario", script: "Paso 3: En Inventario administras las categorias y productos de tu catalogo." },
+          { step: 4, section: "admin_inventory", selector: "#btn-crear-categoria-trigger", script: "Paso 4: Haz clic en 'Crear categoria' para preparar las secciones de tu catalogo." },
+          { step: 5, section: "admin_inventory", selector: "#btn-agregar-producto-trigger", script: "Paso 5: Haz clic en 'Agregar producto' para crear un nuevo articulo." },
+          { step: 6, section: "admin_inventory", view: "product_modal", selector: "#admin-product-modal", script: "Paso 6: Llena todos los espacios requeridos y guarda cambios." },
+          { step: 7, section: "admin_inventory", selector: ".btn-edit-product-mock", script: "Paso 7: Usa editar para actualizar la informacion o imagenes de un producto." },
+          { step: 8, section: "admin_inventory", selector: ".btn-toggle-status-mock", script: "Paso 8: Activa o pausa la visibilidad publica de un producto sin eliminarlo." },
+          { step: 9, section: "admin_inventory", selector: ".btn-delete-product-mock", script: "Paso 9: Usa eliminar cuando necesites retirar un producto definitivamente." },
+          { step: 10, section: "admin_pedidos", selector: "#admin-tab-pedidos", script: "Paso 10: En Historial de pedidos revisas las ordenes y recibos generados." },
+          { step: 11, section: "admin_pedidos", selector: "#pedidos-buscar", script: "Paso 11: Busca pedidos por nombre de cliente o numero de pedido." },
+          { step: 12, section: "admin_pedidos", selector: "#pedidos-agrupar-modo", script: "Paso 12: Elige si quieres trabajar con pedidos seleccionados o pedidos del dia." },
+          { step: 13, section: "admin_pedidos", selector: "#pedidos-agrupar-pdf", script: "Paso 13: Agrupa pedidos en PDF para preparar un resumen de productos." },
+          { step: 14, section: "admin_pedidos", selector: "#pedidos-download", script: "Paso 14: Descarga todos los recibos cuando necesites guardar el historial completo." },
+          { step: 15, section: "admin_pedidos", selector: "#pedidos-clean", script: "Paso 15: Para vaciar tu base de datos y reiniciar el historial, haz clic en 'Limpiar Historial'." },
+          { step: 16, section: "admin_perfil", selector: "#admin-tab-perfil", script: "Paso 16: En Perfil administras los datos principales de tu negocio." },
+          { step: 17, section: "admin_perfil", selector: "#perfil-whatsapp-input", script: "Paso 17: Actualiza el numero de WhatsApp donde recibiras los pedidos." },
+          { step: 18, section: "admin_perfil", selector: "#btn-perfil-logo-edit", script: "Paso 18: Edita el logo o imagen principal de tu catalogo." },
+          { step: 19, section: "admin_perfil", selector: "#btn-perfil-name-edit", script: "Paso 19: Cambia el nombre visible de tu negocio cuando lo necesites." },
+          { step: 20, section: "admin_perfil", selector: "#btn-perfil-title-edit", script: "Paso 20: Ajusta el titulo de bienvenida que veran tus clientes." },
+          { step: 21, section: "admin_perfil", view: "perfil_bottom", selector: "#account-status", script: "Paso 21: Aca puedes ver la informacion de inscripcion y pago de inscripcion." },
+          { step: 22, section: "admin_perfil", view: "perfil_bottom", selector: "#btn-perfil-password-toggle", script: "Paso 22: Cambia tu contrasena administrativa desde la seccion de seguridad." },
+          { step: 23, section: "admin_config", selector: "#palette-tab-current", script: "Paso 23: En Ajustes puedes personalizar la paleta de colores de tu catalogo." },
+          { step: 24, section: "admin_config", view: "ajustes_bottom", selector: "#setting-order-options", script: "Paso 24: Define como tus clientes enviaran sus pedidos." },
+          { step: 25, section: "admin_config", view: "ajustes_bottom", selector: "#setting-customer-fields", script: "Paso 25: Define si tus clientes agregan direccion y comentario obligatorio u opcional." },
+          { step: 26, section: "admin_config", view: "ajustes_bottom", selector: "#sidebar-support", script: "Paso 26: Aca puedes pedir asistencia cuando lo necesites." }
+        ];
+
         // Global states
         let currentStepIndex = 0;
         let isPlaying = false;
         let playInterval = null;
         let stepProgress = 0;
-        const STEP_DURATION = 7500; // 7.5 seconds per step for comfortable reading
+        const STEP_DURATION = 5600; // Slightly faster autoplay while keeping each step readable
         const PROGRESS_INTERVAL = 100;
         let currentTargetSelector = null;
 
@@ -376,6 +411,25 @@ import Layout from '../layouts/Layout.astro';
             const currentStep = tourSteps[currentStepIndex];
             const stepNum = currentStep.step;
             const img = document.getElementById("mockup-screenshot-img");
+            const view = currentStep.view || section;
+            const viewConfig = {
+                landing: ["/assets/tour/landing.png", "http://127.0.0.1:4322/"],
+                register: ["/assets/tour/register.png", "http://127.0.0.1:4322/#register"],
+                admin_inventory: ["/assets/tour/inventory.png", "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin"],
+                category_modal: ["/assets/tour/category_modal.png", "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin"],
+                product_modal: ["/assets/tour/product_modal.png", "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin"],
+                admin_pedidos: ["/assets/tour/pedidos.png", "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin#pedidos"],
+                admin_perfil: ["/assets/tour/perfil.png", "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin#perfil"],
+                perfil_bottom: ["/assets/tour/perfil_bottom.png", "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin#perfil"],
+                admin_config: ["/assets/tour/ajustes.png", "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin#ajustes"],
+                ajustes_bottom: ["/assets/tour/ajustes_bottom.png", "http://127.0.0.1:4322/c/tienda-tour/p/panel-admin#ajustes"]
+            };
+
+            if (viewConfig[view]) {
+                img.src = viewConfig[view][0];
+                browserUrl.innerText = viewConfig[view][1];
+                return;
+            }
 
             if (section === "landing") {
                 img.src = "/assets/tour/landing.png";
@@ -454,10 +508,11 @@ import Layout from '../layouts/Layout.astro';
                 const width = rect.width;
                 const height = rect.height;
 
-                glowOverlay.style.top = `${top - 4}px`;
-                glowOverlay.style.left = `${left - 4}px`;
-                glowOverlay.style.width = `${width + 8}px`;
-                glowOverlay.style.height = `${height + 8}px`;
+                const highlightPadding = 12;
+                glowOverlay.style.top = `${top - highlightPadding}px`;
+                glowOverlay.style.left = `${left - highlightPadding}px`;
+                glowOverlay.style.width = `${width + highlightPadding * 2}px`;
+                glowOverlay.style.height = `${height + highlightPadding * 2}px`;
                 glowOverlay.style.opacity = "1";
             } else {
                 glowOverlay.style.opacity = "0";
