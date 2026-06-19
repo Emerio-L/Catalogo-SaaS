@@ -5392,7 +5392,11 @@ if (noindex) {
                     ));
                     dibujarAdmin();
                     showToast(data.activo ? 'Producto activado' : 'Producto desactivado', 'success');
-                    await cargarDesdeAPI();
+                    try {
+                        await cargarDesdeAPI();
+                    } catch (refreshError) {
+                        console.warn('Estado actualizado, pero no se pudo refrescar la lista automaticamente:', refreshError);
+                    }
                 } else {
                     throw new Error('Error al cambiar el estado');
                 }
