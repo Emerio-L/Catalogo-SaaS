@@ -256,6 +256,10 @@ function normalizeAccountNumber(value) {
     return String(value || '').trim().toUpperCase();
 }
 
+function tenantActivoParaLogin(tenant) {
+    return Boolean(tenant && tenant.activo && tenant.status !== 'deleted');
+}
+
 async function createTenantWithAccountNumber(data) {
     for (let attempt = 0; attempt < 5; attempt += 1) {
         try {
@@ -281,15 +285,20 @@ async function findUserByIdentifier(identifier, options = {}) {
         ...(options.role ? { rol: options.role } : {})
     };
 
-    let user = await User.findOne({
+    const users = await User.find({
         ...baseQuery,
         $or: [{ email: normalized }, { usuario: normalized }]
-    });
-    if (user) return user;
+    }).sort({ creadoEn: -1 });
+    for (const candidate of users) {
+        if (options.tenantId || options.role === 'super_admin') return candidate;
+        const candidateTenant = await Tenant.findById(candidate.tenantId);
+        if (tenantActivoParaLogin(candidateTenant)) return candidate;
+    }
 
     const tenant = await Tenant.findOne({
         accountNumber,
         ...(options.tenantId ? { _id: options.tenantId } : {}),
+        activo: true,
         status: { $ne: 'deleted' }
     });
     if (!tenant) return null;
@@ -301,6 +310,50 @@ async function findUserByIdentifier(identifier, options = {}) {
             ? { rol: options.role }
             : { $or: [{ rol: 'owner' }, { rol: 'tenant_admin' }, { rol: 'admin' }] })
     }).sort({ creadoEn: 1 });
+}
+
+async function findLoginCandidatesByIdentifier(identifier) {
+    const normalized = normalizeIdentifier(identifier);
+    const accountNumber = normalizeAccountNumber(identifier);
+    const candidates = [];
+    const seen = new Set();
+
+    const addCandidate = async (user, tenantInput = null) => {
+        if (!user || seen.has(user._id)) return;
+        const tenant = tenantInput || await Tenant.findById(user.tenantId);
+        if (!tenantActivoParaLogin(tenant)) return;
+        seen.add(user._id);
+        candidates.push({ user, tenant });
+    };
+
+    const matchingUsers = await User.find({
+        activo: true,
+        $or: [{ email: normalized }, { usuario: normalized }]
+    }).sort({ creadoEn: -1 });
+
+    for (const user of matchingUsers) {
+        await addCandidate(user);
+    }
+
+    const accountTenant = await Tenant.findOne({
+        accountNumber,
+        activo: true,
+        status: { $ne: 'deleted' }
+    });
+
+    if (accountTenant) {
+        const accountUsers = await User.find({
+            tenantId: accountTenant._id,
+            activo: true,
+            $or: [{ rol: 'owner' }, { rol: 'tenant_admin' }, { rol: 'admin' }]
+        }).sort({ creadoEn: 1 });
+
+        for (const user of accountUsers) {
+            await addCandidate(user, accountTenant);
+        }
+    }
+
+    return candidates;
 }
 
 async function invalidateActiveResetTokens(userId, tenantId) {
@@ -3146,29 +3199,39 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     try {
         const { identifier, password } = loginSchema.parse(req.body);
         const normalized = normalizeIdentifier(identifier);
-        const user = await findUserByIdentifier(normalized);
+        const loginCandidates = await findLoginCandidatesByIdentifier(normalized);
 
         const genericError = { error: 'Credenciales inválidas' };
-        if (!user) {
+        if (loginCandidates.length === 0) {
             return res.status(401).json(genericError);
         }
 
-        const tenant = await Tenant.findById(user.tenantId);
-        if (!tenant || !tenant.activo || tenant.status === 'deleted') {
-            return res.status(401).json({ error: 'Catálogo no encontrado o inactivo' });
-        }
+        let user = null;
+        let tenant = null;
+        let firstAvailableCandidate = null;
 
-        if (user.lockedUntil && user.lockedUntil > new Date()) {
-            return res.status(423).json({ error: 'Cuenta bloqueada temporalmente. Intenta más tarde.' });
-        }
-
-        const validPassword = await bcrypt.compare(password, user.passwordHash);
-        if (!validPassword) {
-            user.failedLoginAttempts += 1;
-            if (user.failedLoginAttempts >= 5) {
-                user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+        for (const candidate of loginCandidates) {
+            if (candidate.user.lockedUntil && candidate.user.lockedUntil > new Date()) {
+                continue;
             }
-            await user.save();
+            if (!firstAvailableCandidate) firstAvailableCandidate = candidate;
+            const validPassword = await bcrypt.compare(password, candidate.user.passwordHash);
+            if (validPassword) {
+                user = candidate.user;
+                tenant = candidate.tenant;
+                break;
+            }
+        }
+
+        if (!user) {
+            if (!firstAvailableCandidate) {
+                return res.status(423).json({ error: 'Cuenta bloqueada temporalmente. Intenta más tarde.' });
+            }
+            firstAvailableCandidate.user.failedLoginAttempts += 1;
+            if (firstAvailableCandidate.user.failedLoginAttempts >= 5) {
+                firstAvailableCandidate.user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+            }
+            await firstAvailableCandidate.user.save();
             return res.status(401).json(genericError);
         }
 

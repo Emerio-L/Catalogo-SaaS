@@ -13,6 +13,7 @@ const tenantUsername = `tenantreg${runId}`;
 const superUsername = `superreg${runId}`;
 
 let tenantId = '';
+let duplicateTenantId = '';
 let superUserId = '';
 let supportTicketId = '';
 let auditLogId = '';
@@ -47,6 +48,9 @@ async function cleanup() {
     }
     if (tenantId) {
         await prisma.tenant.deleteMany({ where: { id: tenantId } }).catch(() => {});
+    }
+    if (duplicateTenantId) {
+        await prisma.tenant.deleteMany({ where: { id: duplicateTenantId } }).catch(() => {});
     }
     if (superUserId) {
         await prisma.user.deleteMany({ where: { id: superUserId } }).catch(() => {});
@@ -91,6 +95,40 @@ async function main() {
         where: { id: tenant.id },
         data: { status: 'active', activo: true }
     });
+
+    const duplicateTenant = await prisma.tenant.create({
+        data: {
+            slug: `${tenantSlug}-old`,
+            accountNumber: `CT-${String(Date.now()).slice(-6)}`,
+            nombre: `Cuenta antigua ${runId}`,
+            whatsapp: '50255550102',
+            adminAccessKey: `old-${runId}`,
+            activo: false,
+            status: 'suspended'
+        }
+    });
+    duplicateTenantId = duplicateTenant.id;
+    await prisma.user.create({
+        data: {
+            tenantId: duplicateTenant.id,
+            nombre: 'Usuario duplicado suspendido',
+            email: tenantEmail,
+            usuario: tenantUsername,
+            passwordHash: await bcrypt.hash(`Old-${tenantPassword}`, 12),
+            rol: 'tenant_admin',
+            activo: true
+        }
+    });
+
+    const globalDuplicateLogin = await request(API, '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: tenantUsername.toUpperCase(), password: tenantPassword })
+    });
+    assert(
+        globalDuplicateLogin.response.ok && globalDuplicateLogin.data.tenantSlug === tenantSlug,
+        'Login global ignora tenants suspendidos con usuario duplicado'
+    );
 
     const tenantLogin = await request(API, `/api/${tenantSlug}/auth/login`, {
         method: 'POST',
