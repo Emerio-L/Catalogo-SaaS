@@ -1029,8 +1029,7 @@ if (noindex) {
                 </button>
             </header>
             <div id="historial-pedidos-lista" class="min-h-[220px] overflow-y-auto px-5 py-4"></div>
-            <footer class="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
-                <p class="text-[11px] font-bold leading-5 text-slate-400">Los pedidos se conservan localmente por tienda.</p>
+            <footer class="flex items-center justify-end gap-3 border-t border-slate-100 px-5 py-4">
                 <button type="button" onclick="borrarHistorialPedidos()" class="shrink-0 rounded-xl border border-slate-200 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-500 transition hover:bg-slate-50">Borrar historial</button>
             </footer>
         </div>
@@ -1056,6 +1055,14 @@ if (noindex) {
             function removeHistory() {
                 try {
                     window.localStorage && window.localStorage.removeItem(historyKey());
+                } catch (err) {}
+            }
+            function removeOrder(orderId) {
+                try {
+                    var nextHistory = readHistory().filter(function (order) {
+                        return String(order && order.idLocal || '') !== String(orderId || '');
+                    });
+                    window.localStorage && window.localStorage.setItem(historyKey(), JSON.stringify(nextHistory));
                 } catch (err) {}
             }
             function escapeText(value) {
@@ -1096,7 +1103,8 @@ if (noindex) {
                         return '<div class="flex items-start justify-between gap-3 text-xs"><div class="min-w-0"><p class="font-black text-slate-800">' + escapeText(item.nombre || 'Producto') + '</p><p class="font-bold text-slate-500">' + Number(item.cantidad || 0) + ' ' + escapeText(item.unidad || '') + ' x ' + money(item.precio) + '</p></div><p class="shrink-0 font-black text-slate-900">' + money(item.subtotal) + '</p></div>';
                     }).join('') + '</div><div class="mt-3 border-t border-slate-200 pt-3 text-xs font-bold text-slate-500"><p><span class="text-slate-900">Cliente:</span> ' + escapeText(fullName(order.cliente) || 'Cliente') + '</p><p><span class="text-slate-900">WhatsApp:</span> ' + escapeText(order.cliente && order.cliente.whatsapp) + '</p>' + (order.cliente && order.cliente.direccion ? '<p><span class="text-slate-900">Direccion:</span> ' + escapeText(order.cliente.direccion) + '</p>' : '') + '<p class="mt-2 text-right text-sm font-black text-slate-900">Total: ' + money(order.total) + '</p></div></div>' : '';
                     var encodedId = encodeURIComponent(String(order.idLocal || ''));
-                    return '<article class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-sm font-black text-slate-950">' + escapeText(order.idLocal || 'Pedido local') + '</p><p class="mt-1 text-xs font-bold text-slate-500">' + escapeText(formatDate(order.fecha)) + ' · ' + escapeText(order.metodo || 'Carrito') + '</p><p class="mt-1 text-xs font-bold text-slate-400">' + totalItems + ' producto' + (totalItems === 1 ? '' : 's') + '</p></div><div class="shrink-0 text-right"><p class="text-sm font-black text-slate-950">' + money(order.total) + '</p><button type="button" onclick="window.renderHistorialPedidos(decodeURIComponent(\\'' + encodedId + '\\'))" class="mt-2 rounded-xl bg-slate-900 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-slate-700">' + (open ? 'Ocultar' : 'Ver detalle') + '</button></div></div>' + detail + '</article>';
+                    var nextDetailId = open ? '' : encodedId;
+                    return '<article class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-sm font-black text-slate-950">' + escapeText(order.idLocal || 'Pedido local') + '</p><p class="mt-1 text-xs font-bold text-slate-500">' + escapeText(formatDate(order.fecha)) + ' · ' + escapeText(order.metodo || 'Carrito') + '</p><p class="mt-1 text-xs font-bold text-slate-400">' + totalItems + ' producto' + (totalItems === 1 ? '' : 's') + '</p></div><div class="shrink-0 text-right"><p class="text-sm font-black text-slate-950">' + money(order.total) + '</p><button type="button" onclick="window.renderHistorialPedidos(decodeURIComponent(\\'' + nextDetailId + '\\'))" class="mt-2 rounded-xl bg-slate-900 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-slate-700">' + (open ? 'Ocultar' : 'Ver detalle') + '</button><button type="button" onclick="window.borrarPedidoHistorial(decodeURIComponent(\\'' + encodedId + '\\'))" class="ml-2 mt-2 rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-500 transition hover:bg-slate-50">Borrar</button></div></div>' + detail + '</article>';
                 }).join('') + '</div>';
             };
             window.abrirHistorialPedidos = function () {
@@ -1114,6 +1122,10 @@ if (noindex) {
             };
             window.borrarHistorialPedidos = function () {
                 removeHistory();
+                window.renderHistorialPedidos();
+            };
+            window.borrarPedidoHistorial = function (orderId) {
+                removeOrder(orderId);
                 window.renderHistorialPedidos();
             };
         })();
@@ -5064,6 +5076,13 @@ if (noindex) {
             guardarLocalStorageJson(ORDER_HISTORY_STORAGE_KEY, [snapshot, ...historial].slice(0, 20));
         }
 
+        function borrarPedidoHistorial(orderId) {
+            const nextHistorial = obtenerHistorialPedidosLocal().filter((orden) => String(orden?.idLocal || '') !== String(orderId || ''));
+            guardarLocalStorageJson(ORDER_HISTORY_STORAGE_KEY, nextHistorial);
+            renderHistorialPedidos();
+        }
+        window.borrarPedidoHistorial = borrarPedidoHistorial;
+
         function formatearFechaHistorial(value) {
             try {
                 return new Intl.DateTimeFormat('es-GT', {
@@ -5117,6 +5136,8 @@ if (noindex) {
                         </div>
                     </div>
                 ` : '';
+                const detalleIdBoton = abierto ? '' : encodeURIComponent(String(orden.idLocal || ''));
+                const pedidoIdBoton = encodeURIComponent(String(orden.idLocal || ''));
                 return `
                     <article class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
                         <div class="flex items-start justify-between gap-3">
@@ -5127,7 +5148,8 @@ if (noindex) {
                             </div>
                             <div class="shrink-0 text-right">
                                 <p class="text-sm font-black text-slate-950">${obtenerSimboloMoneda()}${Number(orden.total || 0).toFixed(2)}</p>
-                                <button type="button" onclick="renderHistorialPedidos(decodeURIComponent('${encodeURIComponent(String(orden.idLocal || ''))}'))" class="mt-2 rounded-xl bg-slate-900 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-slate-700">${abierto ? 'Ocultar' : 'Ver detalle'}</button>
+                                <button type="button" onclick="renderHistorialPedidos(decodeURIComponent('${detalleIdBoton}'))" class="mt-2 rounded-xl bg-slate-900 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-slate-700">${abierto ? 'Ocultar' : 'Ver detalle'}</button>
+                                <button type="button" onclick="borrarPedidoHistorial(decodeURIComponent('${pedidoIdBoton}'))" class="ml-2 mt-2 rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-500 transition hover:bg-slate-50">Borrar</button>
                             </div>
                         </div>
                         ${detalle}
