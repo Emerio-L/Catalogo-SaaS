@@ -33,6 +33,7 @@ const {
     prisma
 } = require('./data-access');
 const tenantMiddleware = require('./middleware/tenant.middleware');
+const { sharedCache } = require('./utils/cache');
 const { nextAccountNumber } = require('./account-numbers');
 const { ensureRuntimeSchemaCompatibility } = require('./db');
 
@@ -2604,10 +2605,16 @@ app.patch('/api/super-admin/plans/:id', requireSuperAdminAuth, async (req, res) 
 
 app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
     try {
+        const cacheKey = `settings:${req.tenantId}`;
+        const cachedSettings = sharedCache.get(cacheKey);
+        if (cachedSettings) {
+            return res.json(cachedSettings);
+        }
+
         await applyAccountTransitions(req.tenant);
         const settings = await settingsTenant(req.tenant);
         const plan = req.tenant.planId ? await Plan.findById(req.tenant.planId) : null;
-        res.json({
+        const responseData = {
             whatsapp: settings.whatsapp,
             telefonoWhatsApp: settings.whatsapp,
             colorPrimario: settings.colorPrimario,
@@ -2629,7 +2636,10 @@ app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
             addressRequirement: settings.addressRequirement || 'optional',
             commentRequirement: settings.commentRequirement || 'optional',
             account: tenantBillingPayload(req.tenant, plan)
-        });
+        };
+
+        sharedCache.set(cacheKey, responseData, 120000); // 2 minutos
+        res.json(responseData);
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener la configuración pública' });
     }
@@ -3657,7 +3667,14 @@ app.post('/api/:tenant/auth/reset-password', tenantMiddleware, authLimiter, asyn
 
 app.get('/api/:tenant/categories', tenantMiddleware, async (req, res) => {
     try {
+        const cacheKey = `categories:${req.tenantId}`;
+        const cachedCategories = sharedCache.get(cacheKey);
+        if (cachedCategories) {
+            return res.json(cachedCategories);
+        }
+
         const lista = await Category.find({ tenantId: req.tenantId }).sort('orden');
+        sharedCache.set(cacheKey, lista, 120000); // 2 minutos
         res.json(lista);
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener categorías' });
@@ -3692,6 +3709,8 @@ app.post('/api/:tenant/admin/categories', tenantMiddleware, requireAdminAuth, re
             nombre: nombre,
             orden: parseInt(req.body.orden) || 999
         });
+        sharedCache.delete(`categories:${req.tenantId}`);
+        sharedCache.delete(`products:${req.tenantId}`);
         res.status(201).json(categoria);
     } catch (err) {
         if (esErrorCategoriaDuplicada(err)) {
@@ -3712,6 +3731,8 @@ app.put('/api/:tenant/admin/categories/:id', tenantMiddleware, requireAdminAuth,
         if (!categoria) {
             return res.status(404).json({ error: 'Categoria no encontrada' });
         }
+        sharedCache.delete(`categories:${req.tenantId}`);
+        sharedCache.delete(`products:${req.tenantId}`);
         res.json(categoria);
     } catch (err) {
         res.status(500).json({ error: 'Error al actualizar categoría' });
@@ -3728,6 +3749,8 @@ app.delete('/api/:tenant/admin/categories/:id', tenantMiddleware, requireAdminAu
         if (!categoria) {
             return res.status(404).json({ error: 'Categoria no encontrada' });
         }
+        sharedCache.delete(`categories:${req.tenantId}`);
+        sharedCache.delete(`products:${req.tenantId}`);
         res.json({ mensaje: 'Categoría eliminada exitosamente' });
     } catch (err) {
         res.status(500).json({ error: 'Error al eliminar categoria' });
@@ -3736,10 +3759,18 @@ app.delete('/api/:tenant/admin/categories/:id', tenantMiddleware, requireAdminAu
 
 app.get('/api/:tenant/products', tenantMiddleware, requireTenantOperational, async (req, res) => {
     try {
+        const cacheKey = `products:${req.tenantId}`;
+        const cachedProducts = sharedCache.get(cacheKey);
+        if (cachedProducts) {
+            return res.json(cachedProducts);
+        }
+
         const lista = await Producto.find({ tenantId: req.tenantId, activo: true })
             .populate('categoriaId')
             .sort('ordenVisualizacion');
-        res.json(lista.map(producto => productoResponse(producto, producto.categoriaId)));
+        const responseData = lista.map(producto => productoResponse(producto, producto.categoriaId));
+        sharedCache.set(cacheKey, responseData, 120000); // 2 minutos
+        res.json(responseData);
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener productos activos' });
     }
@@ -3867,6 +3898,7 @@ app.post('/api/:tenant/admin/products', tenantMiddleware, requireAdminAuth, requ
         });
 
         await nuevoProducto.save();
+        sharedCache.delete(`products:${req.tenantId}`);
         res.status(201).json({ mensaje: 'Producto creado exitosamente', producto: productoResponse(nuevoProducto, categoria) });
     } catch (err) {
         if (err instanceof z.ZodError) return res.status(400).json({ error: 'Datos de producto invalidos', detalles: err.issues });
@@ -4043,6 +4075,7 @@ app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, r
             }
         }
 
+        sharedCache.delete(`products:${req.tenantId}`);
         res.json({ mensaje: 'Producto actualizado exitosamente', producto: productoResponse(productoExistente, categoria) });
     } catch (err) {
         console.error(err);
@@ -4071,6 +4104,7 @@ app.delete('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth
         }
 
         await Producto.deleteOne({ _id: req.params.id, tenantId: req.tenantId });
+        sharedCache.delete(`products:${req.tenantId}`);
         res.json({ mensaje: 'Producto eliminado exitosamente' });
     } catch (err) {
         console.error(err);
@@ -4091,6 +4125,7 @@ app.patch('/api/:tenant/admin/products/:id/toggle', tenantMiddleware, requireAdm
             producto.activo = !producto.activo;
         }
         await producto.save();
+        sharedCache.delete(`products:${req.tenantId}`);
         res.json({
             mensaje: `Producto ${producto.activo ? 'activado' : 'desactivado'} correctamente`,
             id: String(producto._id),

@@ -1,4 +1,5 @@
 const { Tenant } = require('../data-access');
+const { sharedCache } = require('../utils/cache');
 
 async function tenantMiddleware(req, res, next) {
     try {
@@ -7,7 +8,15 @@ async function tenantMiddleware(req, res, next) {
             return res.status(400).json({ error: 'Tenant requerido' });
         }
 
-        const tenant = await Tenant.findOne({ slug });
+        const cacheKey = `tenant:${slug}`;
+        let tenant = sharedCache.get(cacheKey);
+
+        if (!tenant) {
+            tenant = await Tenant.findOne({ slug });
+            if (tenant) {
+                sharedCache.set(cacheKey, tenant, 120000); // 2 minutos de TTL
+            }
+        }
 
         if (!tenant) {
             return res.status(404).json({ error: 'Catalogo no encontrado' });
@@ -25,4 +34,5 @@ async function tenantMiddleware(req, res, next) {
 }
 
 module.exports = tenantMiddleware;
+
 

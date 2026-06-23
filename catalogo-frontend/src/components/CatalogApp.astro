@@ -15,6 +15,7 @@ let catalogTitle = 'Catalogo de productos'; // Valor por defecto, se sobreescrib
 // Color primario para evitar flash de color en el header
 let ssrPrimaryColor = '#10b981'; // default emerald
 let ssrInitialTheme = null; // Para pre-inicializar el theme en el cliente
+let ssrInitialSettings = null; // Para pre-inicializar las configuraciones completas
 
 if (initialTenantSlug && !isAdminInitialRoute) {
     noindex = false; // public catalogs default to indexable
@@ -23,6 +24,7 @@ if (initialTenantSlug && !isAdminInitialRoute) {
         if (settingsRes.ok) {
             const settingsData = await settingsRes.json();
             if (settingsData) {
+                ssrInitialSettings = settingsData;
                 if (settingsData.nombreNegocio) {
                     appName = settingsData.nombreNegocio;
                 }
@@ -83,7 +85,7 @@ if (noindex) {
         `}></style>
     )}
 
-    <script define:vars={{ publicBackendUrl, initialCatalogTitle: catalogTitle, initialNombreNegocio: appName, ssrInitialTheme }}>
+    <script define:vars={{ publicBackendUrl, initialCatalogTitle: catalogTitle, initialNombreNegocio: appName, ssrInitialTheme, ssrInitialSettings }}>
         window.__PUBLIC_BACKEND_URL__ = publicBackendUrl;
         // Pre-inicializar los valores del título desde el servidor para evitar el flash
         window.__INITIAL_CATALOG_TITLE__ = initialCatalogTitle;
@@ -91,6 +93,9 @@ if (noindex) {
         // Pre-inicializar el theme desde el servidor para evitar flash de color
         if (ssrInitialTheme) {
             window.__INITIAL_THEME__ = ssrInitialTheme;
+        }
+        if (ssrInitialSettings) {
+            window.__INITIAL_SETTINGS__ = ssrInitialSettings;
         }
     </script>
     <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2388,6 +2393,45 @@ if (noindex) {
             root.style.setProperty('--color-primary-950', c.background);
             root.style.setProperty('--color-primary-500-rgb', hexToRgb(c.primary).join(', '));
             root.style.setProperty('--color-primary-900-rgb', hexToRgb(c.surface).join(', '));
+
+            // Dynamic <style> injection to force recalculation on iOS Safari and Android Chrome
+            let styleTag = document.getElementById('dynamic-tenant-theme');
+            if (!styleTag) {
+                styleTag = document.createElement('style');
+                styleTag.id = 'dynamic-tenant-theme';
+                document.head.appendChild(styleTag);
+            }
+            styleTag.textContent = `
+                :root {
+                    --tenant-primary: ${c.primary};
+                    --tenant-secondary: ${c.secondary};
+                    --tenant-background: ${c.background};
+                    --tenant-surface: ${c.surface};
+                    --tenant-button: ${c.button};
+                    --tenant-text: ${c.text};
+                    --tenant-accent: ${c.accent};
+                    --tenant-header-text: ${headerText};
+                    --tenant-header-muted: ${headerUsesLightText ? 'rgba(255,255,255,.82)' : 'rgba(15,23,42,.78)'};
+                    --tenant-search-bg: #FFFFFF;
+                    --tenant-search-text: #0F172A;
+                    --tenant-search-border: rgba(15,23,42,.14);
+                    --tenant-search-placeholder: rgba(51,65,85,.72);
+                    --color-primary-50: ${c.background};
+                    --color-primary-100: ${c.secondary};
+                    --color-primary-200: ${c.secondary};
+                    --color-primary-300: ${c.accent};
+                    --color-primary-400: ${c.accent};
+                    --color-primary-500: ${c.primary};
+                    --color-primary-600: ${c.button};
+                    --color-primary-700: ${c.button};
+                    --color-primary-800: ${c.surface};
+                    --color-primary-900: ${c.surface};
+                    --color-primary-950: ${c.background};
+                    --color-primary-500-rgb: ${hexToRgb(c.primary).join(', ')};
+                    --color-primary-900-rgb: ${hexToRgb(c.surface).join(', ')};
+                }
+            `;
+
             configuracionNegocio.theme = normalized;
         }
 
@@ -3737,7 +3781,7 @@ if (noindex) {
 
         function cerrarAuthModal() {
             if (isAdminRoute && !adminAutenticado) {
-                window.location.href = `/c/${tenantSlug}`;
+                window.location.href = 'https://sedelynk.com';
                 return;
             }
             const modal = document.getElementById("modal-admin-auth-v2");
@@ -5268,7 +5312,6 @@ if (noindex) {
                 showToast("Agrega al menos un producto al carrito.", "error");
                 return;
             }
-            await cargarConfiguracionPublica();
             asegurarCheckoutProfesional();
             if (configuracionNegocio.orderCartEnabled === false && configuracionNegocio.orderWhatsappEnabled === false) {
                 showToast("Este catálogo no tiene métodos de pedido activos.", "error");
@@ -5323,6 +5366,12 @@ if (noindex) {
             setTimeout(() => {
                 document.getElementById('checkout-panel')?.classList.remove('translate-y-4', 'scale-95', 'opacity-0');
             }, 10);
+
+            // Sincronizar en segundo plano de forma no bloqueante
+            cargarConfiguracionPublica().then(() => {
+                actualizarCheckoutOpciones();
+                renderCheckoutResumen();
+            });
         }
 
 
@@ -6806,38 +6855,43 @@ if (noindex) {
             showToast("Pedidos agrupados generados en PDF", "success");
         }
 
+        function aplicarConfiguracionPublica(data) {
+            if (!data) return;
+            configuracionNegocio = { ...configuracionNegocio, ...data };
+            aplicarTema(data.tema);
+            actualizarBotonTemaActivo(data.tema);
+            if (data.theme) aplicarPaletaTenant(data.theme);
+            if (data.telefonoWhatsApp || data.whatsapp) {
+                MI_WHATSAPP = data.telefonoWhatsApp || data.whatsapp;
+            }
+            configuracionNegocio.logo = data.logo || '';
+            configuracionNegocio.logoShape = data.logoShape || 'rectangle';
+            configuracionNegocio.logoRotation = Number(data.logoRotation) || 0;
+            configuracionNegocio.account = data.account || null;
+            configuracionNegocio.orderCartEnabled = data.orderCartEnabled !== false;
+            configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled === true;
+            configuracionNegocio.addressRequirement = data.addressRequirement || 'optional';
+            configuracionNegocio.commentRequirement = data.commentRequirement || 'optional';
+            actualizarTituloCatalogoUI(data.catalogTitle);
+            actualizarInformacionCuenta(configuracionNegocio.account);
+            actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape, configuracionNegocio.logoRotation);
+            actualizarCheckoutOpciones();
+            const nombreEl = document.getElementById('catalog-business-name');
+            const searchWrapper = document.getElementById('catalog-search-wrapper');
+            const categoryButtons = document.getElementById('category-buttons');
+            if (nombreEl) nombreEl.innerText = data.nombreNegocio || 'Catálogo de Productos';
+            if (searchWrapper) searchWrapper.classList.toggle('hidden', data.mostrarBuscador === false);
+            if (categoryButtons) categoryButtons.classList.toggle('hidden', data.mostrarCategorias === false);
+            actualizarTituloPagina();
+            actualizarPreviewCatalogo();
+        }
+
         async function cargarConfiguracionPublica() {
             try {
                 const res = await fetch(`${TENANT_API_URL}/settings`, { cache: 'no-store' });
                 if (res.ok) {
                     const data = await res.json();
-                    configuracionNegocio = { ...configuracionNegocio, ...data };
-                    aplicarTema(data.tema);
-                    actualizarBotonTemaActivo(data.tema);
-                    if (data.theme) aplicarPaletaTenant(data.theme);
-                    if (data.telefonoWhatsApp || data.whatsapp) {
-                        MI_WHATSAPP = data.telefonoWhatsApp || data.whatsapp;
-                    }
-                    configuracionNegocio.logo = data.logo || '';
-                    configuracionNegocio.logoShape = data.logoShape || 'rectangle';
-                    configuracionNegocio.logoRotation = Number(data.logoRotation) || 0;
-                    configuracionNegocio.account = data.account || null;
-                    configuracionNegocio.orderCartEnabled = data.orderCartEnabled !== false;
-                    configuracionNegocio.orderWhatsappEnabled = data.orderWhatsappEnabled === true;
-                    configuracionNegocio.addressRequirement = data.addressRequirement || 'optional';
-                    configuracionNegocio.commentRequirement = data.commentRequirement || 'optional';
-                    actualizarTituloCatalogoUI(data.catalogTitle);
-                    actualizarInformacionCuenta(configuracionNegocio.account);
-                    actualizarLogoCatalogo(configuracionNegocio.logo, configuracionNegocio.logoShape, configuracionNegocio.logoRotation);
-                    actualizarCheckoutOpciones();
-                    const nombreEl = document.getElementById('catalog-business-name');
-                    const searchWrapper = document.getElementById('catalog-search-wrapper');
-                    const categoryButtons = document.getElementById('category-buttons');
-                    if (nombreEl) nombreEl.innerText = data.nombreNegocio || 'Catálogo de Productos';
-                    if (searchWrapper) searchWrapper.classList.toggle('hidden', data.mostrarBuscador === false);
-                    if (categoryButtons) categoryButtons.classList.toggle('hidden', data.mostrarCategorias === false);
-                    actualizarTituloPagina();
-                    actualizarPreviewCatalogo();
+                    aplicarConfiguracionPublica(data);
                 }
             } catch (err) {
                 console.error("Error al cargar la configuración pública:", err);
@@ -7528,10 +7582,14 @@ if (noindex) {
                     const clientView = document.getElementById('client-view');
                     if (clientView) clientView.classList.remove('hidden');
                     ocultarAuthModalInmediato();
-                    // Cargar configuración y categorías en paralelo (son independientes)
-                    await Promise.all([cargarConfiguracionPublica(), cargarCategorias()]);
-                    // Luego productos (dependen de que las categorías ya estén cargadas)
-                    await cargarDesdeAPI();
+                    if (window.__INITIAL_SETTINGS__) {
+                        aplicarConfiguracionPublica(window.__INITIAL_SETTINGS__);
+                        await cargarCategorias();
+                        await cargarDesdeAPI();
+                    } else {
+                        await Promise.all([cargarConfiguracionPublica(), cargarCategorias()]);
+                        await cargarDesdeAPI();
+                    }
                     return;
                 }
 
@@ -7546,10 +7604,14 @@ if (noindex) {
             }
 
             // Vista pública del catálogo:
-            // 1. Cargar configuración (tema, logo, título) y categorías en paralelo (son independientes)
-            // 2. Luego cargar productos (que depende de que las categorías ya estén listas)
-            await Promise.all([cargarConfiguracionPublica(), cargarCategorias()]);
-            await cargarDesdeAPI();
+            if (window.__INITIAL_SETTINGS__) {
+                aplicarConfiguracionPublica(window.__INITIAL_SETTINGS__);
+                await cargarCategorias();
+                await cargarDesdeAPI();
+            } else {
+                await Promise.all([cargarConfiguracionPublica(), cargarCategorias()]);
+                await cargarDesdeAPI();
+            }
             if (isResetRoute && resetToken) {
                 abrirAuthModal();
             }

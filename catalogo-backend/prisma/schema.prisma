@@ -165,6 +165,7 @@ model Product {
   @@index([tenantId])
   @@index([categoriaId])
   @@index([activo])
+  @@index([tenantId, activo, deletedAt, ordenVisualizacion])
 }
 
 model Order {
