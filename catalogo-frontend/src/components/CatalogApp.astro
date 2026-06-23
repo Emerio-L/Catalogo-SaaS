@@ -12,6 +12,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost
 let noindex = true; // default to true for safety
 let appName = isAdminInitialRoute ? "Panel de Control" : "Catálogo";
 let catalogTitle = 'Catalogo de productos'; // Valor por defecto, se sobreescribe con datos del servidor
+// Color primario para evitar flash de color en el header
+let ssrPrimaryColor = '#10b981'; // default emerald
+let ssrInitialTheme = null; // Para pre-inicializar el theme en el cliente
 
 if (initialTenantSlug && !isAdminInitialRoute) {
     noindex = false; // public catalogs default to indexable
@@ -29,6 +32,13 @@ if (initialTenantSlug && !isAdminInitialRoute) {
                 } else if (settingsData.nombreNegocio) {
                     // Si no hay catalogTitle pero sí nombreNegocio, usarlo como fallback
                     catalogTitle = settingsData.nombreNegocio;
+                }
+                // Capturar color primario del theme para evitar flash de color
+                if (settingsData.theme && settingsData.theme.colors && settingsData.theme.colors.primary) {
+                    ssrPrimaryColor = settingsData.theme.colors.primary;
+                    ssrInitialTheme = settingsData.theme;
+                } else if (settingsData.colorPrimario) {
+                    ssrPrimaryColor = settingsData.colorPrimario;
                 }
                 if (settingsData.account && settingsData.account.status) {
                     const status = settingsData.account.status;
@@ -62,11 +72,26 @@ if (noindex) {
     <!-- FLOATING TOAST NOTIFICATIONS CONTAINER -->
     <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
 
-    <script define:vars={{ publicBackendUrl, initialCatalogTitle: catalogTitle, initialNombreNegocio: appName }}>
+    {/* Inyectar CSS variables del color del tenant desde el servidor para evitar flash de color */}
+    {!isAdminInitialRoute && (
+        <style is:inline set:html={`
+            :root {
+                --color-primary-500: ${ssrPrimaryColor};
+                --color-primary-600: ${ssrPrimaryColor};
+                --color-primary-700: ${ssrPrimaryColor};
+            }
+        `}></style>
+    )}
+
+    <script define:vars={{ publicBackendUrl, initialCatalogTitle: catalogTitle, initialNombreNegocio: appName, ssrInitialTheme }}>
         window.__PUBLIC_BACKEND_URL__ = publicBackendUrl;
         // Pre-inicializar los valores del título desde el servidor para evitar el flash
         window.__INITIAL_CATALOG_TITLE__ = initialCatalogTitle;
         window.__INITIAL_NOMBRE_NEGOCIO__ = initialNombreNegocio;
+        // Pre-inicializar el theme desde el servidor para evitar flash de color
+        if (ssrInitialTheme) {
+            window.__INITIAL_THEME__ = ssrInitialTheme;
+        }
     </script>
     <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -1619,7 +1644,7 @@ if (noindex) {
             addressRequirement: 'optional',
             commentRequirement: 'optional',
             account: null,
-            theme: DEFAULT_TENANT_THEME
+            theme: window.__INITIAL_THEME__ || DEFAULT_TENANT_THEME
         };
 
         function obtenerSimboloMoneda(monedaCode = configuracionNegocio?.monedaVisible) {
@@ -2956,6 +2981,8 @@ if (noindex) {
 
         async function cargarDesdeAPI() {
             try {
+                // Nota: cargarCategorias puede haber sido llamado en paralelo.
+                // Si ya hay categorias no hay que volver a pedirlas.
                 if (categorias.length === 0) {
                     await cargarCategorias();
                 }
@@ -7501,8 +7528,9 @@ if (noindex) {
                     const clientView = document.getElementById('client-view');
                     if (clientView) clientView.classList.remove('hidden');
                     ocultarAuthModalInmediato();
-                    await cargarConfiguracionPublica();
-                    await cargarCategorias();
+                    // Cargar configuración y categorías en paralelo (son independientes)
+                    await Promise.all([cargarConfiguracionPublica(), cargarCategorias()]);
+                    // Luego productos (dependen de que las categorías ya estén cargadas)
                     await cargarDesdeAPI();
                     return;
                 }
@@ -7517,8 +7545,10 @@ if (noindex) {
                 return;
             }
 
-            await cargarConfiguracionPublica();
-            await cargarCategorias();
+            // Vista pública del catálogo:
+            // 1. Cargar configuración (tema, logo, título) y categorías en paralelo (son independientes)
+            // 2. Luego cargar productos (que depende de que las categorías ya estén listas)
+            await Promise.all([cargarConfiguracionPublica(), cargarCategorias()]);
             await cargarDesdeAPI();
             if (isResetRoute && resetToken) {
                 abrirAuthModal();
