@@ -472,7 +472,7 @@ if (noindex) {
                                         <button id="payment-bank-toggle" type="button" onclick="togglePaymentBankDetails()" class="w-full h-12 flex items-center justify-center rounded-2xl bg-primary-600 px-4 text-xs font-black uppercase tracking-wider text-white transition hover:bg-primary-500"><i class="fa-solid fa-credit-card mr-2"></i><span id="payment-bank-toggle-label">Quiero pagar mi suscripción</span></button>
                                     </div>
                                     <div>
-                                        <button type="button" onclick="toggleReportarPago()" class="w-full h-12 flex items-center justify-center rounded-2xl bg-emerald-600 px-4 text-xs font-black uppercase tracking-wider text-white transition hover:bg-emerald-500"><i class="fa-solid fa-upload mr-2"></i>Reportar pago</button>
+                                        <button type="button" onclick="toggleReportarPago()" class="w-full h-12 flex items-center justify-center rounded-2xl bg-primary-600 px-4 text-xs font-black uppercase tracking-wider text-white transition hover:bg-primary-500"><i class="fa-solid fa-upload mr-2"></i>Reportar pago</button>
                                     </div>
                                 </div>
                                 <div id="account-payment-details" class="mt-3 hidden space-y-2 text-sm font-bold text-slate-600">
@@ -1760,6 +1760,15 @@ if (noindex) {
 
         window.toggleReportarPago = function() {
             const form = document.getElementById('payment-receipt-form');
+            const detailContainer = document.getElementById('account-payment-details');
+            const toggleLabel = document.getElementById('payment-bank-toggle-label');
+            
+            // Ocultar información bancaria si está abierta
+            if (detailContainer) {
+                detailContainer.classList.add('hidden');
+                if (toggleLabel) toggleLabel.innerText = 'Quiero pagar mi suscripción';
+            }
+
             if (form) {
                 const isHidden = form.classList.toggle('hidden');
                 if (!isHidden) {
@@ -1787,7 +1796,11 @@ if (noindex) {
             const detailContainer = document.getElementById('account-payment-details');
             const toggleBtn = document.getElementById('payment-bank-toggle');
             const toggleLabel = document.getElementById('payment-bank-toggle-label');
+            const receiptForm = document.getElementById('payment-receipt-form');
             if (!detailContainer) return;
+
+            // Ocultar formulario de reporte de pago si está abierto
+            if (receiptForm) receiptForm.classList.add('hidden');
 
             if (!detailContainer.classList.contains('hidden')) {
                 detailContainer.classList.add('hidden');
