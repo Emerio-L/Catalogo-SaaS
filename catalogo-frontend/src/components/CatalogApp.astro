@@ -11,6 +11,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost
 
 let noindex = true; // default to true for safety
 let appName = isAdminInitialRoute ? "Panel de Control" : "Catálogo";
+let catalogTitle = 'Catalogo de productos'; // Valor por defecto, se sobreescribe con datos del servidor
 
 if (initialTenantSlug && !isAdminInitialRoute) {
     noindex = false; // public catalogs default to indexable
@@ -21,6 +22,13 @@ if (initialTenantSlug && !isAdminInitialRoute) {
             if (settingsData) {
                 if (settingsData.nombreNegocio) {
                     appName = settingsData.nombreNegocio;
+                }
+                // Capturar el título del catálogo desde el servidor para evitar el flash
+                if (settingsData.catalogTitle) {
+                    catalogTitle = settingsData.catalogTitle;
+                } else if (settingsData.nombreNegocio) {
+                    // Si no hay catalogTitle pero sí nombreNegocio, usarlo como fallback
+                    catalogTitle = settingsData.nombreNegocio;
                 }
                 if (settingsData.account && settingsData.account.status) {
                     const status = settingsData.account.status;
@@ -54,8 +62,11 @@ if (noindex) {
     <!-- FLOATING TOAST NOTIFICATIONS CONTAINER -->
     <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
 
-    <script define:vars={{ publicBackendUrl }}>
+    <script define:vars={{ publicBackendUrl, initialCatalogTitle: catalogTitle, initialNombreNegocio: appName }}>
         window.__PUBLIC_BACKEND_URL__ = publicBackendUrl;
+        // Pre-inicializar los valores del título desde el servidor para evitar el flash
+        window.__INITIAL_CATALOG_TITLE__ = initialCatalogTitle;
+        window.__INITIAL_NOMBRE_NEGOCIO__ = initialNombreNegocio;
     </script>
     <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -69,9 +80,9 @@ if (noindex) {
             <div class="relative mx-auto max-w-6xl">
                 <div class="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-4 md:grid-cols-[128px_minmax(0,1fr)_280px]">
                     <div class="col-start-2 row-start-1 min-w-0 text-left">
-                        <h1 id="catalog-main-title" class="text-2xl font-black tracking-tight uppercase leading-none select-none sm:text-3xl md:text-5xl" style="color: var(--tenant-header-text, #FFFFFF);">Catalogo de productos</h1>
+                        <h1 id="catalog-main-title" class="text-2xl font-black tracking-tight uppercase leading-none select-none sm:text-3xl md:text-5xl" style="color: var(--tenant-header-text, #FFFFFF);">{catalogTitle}</h1>
                         <div class="mt-2">
-                            <p id="catalog-business-name" class="max-w-full break-words text-sm font-black uppercase leading-tight tracking-wider" style="color: var(--tenant-header-text, #FFFFFF);">Catálogo de Productos</p>
+                            <p id="catalog-business-name" class="max-w-full break-words text-sm font-black uppercase leading-tight tracking-wider" style="color: var(--tenant-header-text, #FFFFFF);">{appName}</p>
                         </div>
                     </div>
                     <div class="col-span-full row-start-2 w-full space-y-2 md:col-span-1 md:col-start-3 md:row-start-1 md:w-[280px]">
@@ -1592,8 +1603,8 @@ if (noindex) {
             }
         };
         let configuracionNegocio = {
-            nombreNegocio: 'Catálogo de Productos',
-            catalogTitle: 'Catalogo de productos',
+            nombreNegocio: window.__INITIAL_NOMBRE_NEGOCIO__ || 'Catálogo de Productos',
+            catalogTitle: window.__INITIAL_CATALOG_TITLE__ || 'Catalogo de productos',
             descripcionNegocio: 'Selecciona tus productos y confirma tu pedido',
             logo: '',
             logoShape: 'rectangle',
