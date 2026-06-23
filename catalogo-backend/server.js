@@ -2749,6 +2749,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             }
         });
 
+        const shouldSaveTenant = telefonoWhatsApp || whatsapp || colorPrimario || logo !== undefined || nombreNegocio !== undefined || descripcionNegocio !== undefined;
         if (telefonoWhatsApp || whatsapp || colorPrimario || logo !== undefined) {
             if (telefonoWhatsApp || whatsapp) req.tenant.whatsapp = telefonoWhatsApp || whatsapp;
             if (colorPrimario) req.tenant.colorPrimario = colorPrimario;
@@ -2756,7 +2757,7 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
         }
         if (nombreNegocio !== undefined) req.tenant.nombre = String(nombreNegocio).trim() || req.tenant.nombre;
         if (descripcionNegocio !== undefined) req.tenant.descripcion = String(descripcionNegocio).trim();
-        await req.tenant.save();
+        if (shouldSaveTenant) await req.tenant.save();
 
         res.json({
             success: true,
