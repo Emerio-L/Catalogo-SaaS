@@ -112,6 +112,8 @@ model Settings {
   logoShape              String   @default("rectangle") // rectangle, circle
   logoRotation           Int      @default(0) // 0, 90, 180, 270
   catalogTitle           String   @default("Catalogo de productos")
+  businessNameColor      String   @default("#FFFFFF")
+  catalogTitleColor      String   @default("#FFFFFF")
   tema                   String   @default("emerald")
   theme                  Json?    // Guarda el theme flexible
   mostrarBuscador        Boolean  @default(true)

@@ -1,0 +1,3 @@
+ALTER TABLE "Settings"
+ADD COLUMN "businessNameColor" TEXT NOT NULL DEFAULT '#FFFFFF',
+ADD COLUMN "catalogTitleColor" TEXT NOT NULL DEFAULT '#FFFFFF';

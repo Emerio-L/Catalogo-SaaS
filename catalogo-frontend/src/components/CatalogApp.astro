@@ -81,6 +81,8 @@ if (noindex) {
                 --color-primary-500: ${ssrPrimaryColor};
                 --color-primary-600: ${ssrPrimaryColor};
                 --color-primary-700: ${ssrPrimaryColor};
+                --catalog-business-name-color: ${ssrInitialSettings?.businessNameColor || '#FFFFFF'};
+                --catalog-title-color: ${ssrInitialSettings?.catalogTitleColor || '#FFFFFF'};
             }
         `}></style>
     )}
@@ -110,10 +112,8 @@ if (noindex) {
             <div class="relative mx-auto max-w-6xl">
                 <div class="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-4 md:grid-cols-[128px_minmax(0,1fr)_280px]">
                     <div class="col-start-2 row-start-1 min-w-0 text-left">
-                        <h1 id="catalog-main-title" class="text-sm font-black tracking-tight uppercase leading-none select-none" style="color: var(--tenant-header-text, #FFFFFF);">{catalogTitle}</h1>
-                        <div class="mt-2">
-                            <p id="catalog-business-name" class="max-w-full break-words text-2xl font-black uppercase leading-tight tracking-wider sm:text-3xl md:text-5xl" style="color: var(--tenant-header-text, #FFFFFF);">{appName}</p>
-                        </div>
+                        <p id="catalog-business-name" class="max-w-full break-words text-2xl font-black uppercase leading-tight tracking-wider sm:text-3xl md:text-5xl" style="color: var(--catalog-business-name-color, #FFFFFF);">{appName}</p>
+                        <h1 id="catalog-main-title" class="mt-2 text-sm font-black tracking-tight uppercase leading-none select-none" style="color: var(--catalog-title-color, #FFFFFF);">{catalogTitle}</h1>
                     </div>
                     <div class="col-span-full row-start-2 w-full space-y-2 md:col-span-1 md:col-start-3 md:row-start-1 md:w-[280px]">
                         <button id="catalog-cart-entry" type="button" onclick="abrirValidacion()" class="group flex min-h-[82px] w-full items-center gap-4 rounded-[1.35rem] border-2 border-white/25 bg-black/10 px-4 py-3 text-left text-white shadow-xl transition hover:border-white/40 hover:bg-black/20 active:scale-[0.99]" aria-label="Abrir mi pedido">
@@ -1352,6 +1352,11 @@ if (noindex) {
             </div>
             <label for="perfil-business-name" class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Nombre de tu negocio</label>
             <input id="perfil-business-name" type="text" placeholder="Nombre de tu negocio" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:ring-4 focus:ring-primary-100">
+            <label for="perfil-business-name-color" class="mb-1.5 mt-4 block text-[10px] font-black uppercase tracking-wider text-slate-500">Color del nombre</label>
+            <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <input id="perfil-business-name-color" type="color" value="#FFFFFF" oninput="previsualizarColorEncabezado('businessNameColor', this.value)" class="h-11 w-16 cursor-pointer rounded-xl border-0 bg-transparent p-0" aria-label="Color del nombre del negocio">
+                <span class="text-xs font-semibold text-slate-500">El cambio se previsualiza en el encabezado.</span>
+            </div>
             <div class="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button onclick="guardarPerfilNegocio()" class="w-full rounded-2xl bg-primary-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-700">Guardar cambios</button>
                 <button type="button" onclick="cerrarModalNombreNegocio()" class="w-full rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-600 transition hover:bg-slate-200">Cancelar</button>
@@ -1371,6 +1376,11 @@ if (noindex) {
             </div>
             <label for="perfil-catalog-title" class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Titulo visible</label>
             <input id="perfil-catalog-title" type="text" placeholder="Catalogo de productos" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:ring-4 focus:ring-primary-100">
+            <label for="perfil-catalog-title-color" class="mb-1.5 mt-4 block text-[10px] font-black uppercase tracking-wider text-slate-500">Color del titulo</label>
+            <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <input id="perfil-catalog-title-color" type="color" value="#FFFFFF" oninput="previsualizarColorEncabezado('catalogTitleColor', this.value)" class="h-11 w-16 cursor-pointer rounded-xl border-0 bg-transparent p-0" aria-label="Color del titulo del catalogo">
+                <span class="text-xs font-semibold text-slate-500">El cambio se previsualiza en el encabezado.</span>
+            </div>
             <div class="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button onclick="guardarTituloCatalogo()" class="w-full rounded-2xl bg-primary-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-700">Guardar cambios</button>
                 <button type="button" onclick="cerrarModalTituloCatalogo()" class="w-full rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-600 transition hover:bg-slate-200">Cancelar</button>
@@ -1635,6 +1645,8 @@ if (noindex) {
         let configuracionNegocio = {
             nombreNegocio: window.__INITIAL_NOMBRE_NEGOCIO__ || 'Catálogo de Productos',
             catalogTitle: window.__INITIAL_CATALOG_TITLE__ || 'Catalogo de productos',
+            businessNameColor: '#FFFFFF',
+            catalogTitleColor: '#FFFFFF',
             descripcionNegocio: 'Selecciona tus productos y confirma tu pedido',
             logo: '',
             logoShape: 'rectangle',
@@ -1851,6 +1863,32 @@ if (noindex) {
             if (profileDisplay) profileDisplay.innerText = cleanTitle;
             if (profileInput) profileInput.value = cleanTitle;
             configuracionNegocio.catalogTitle = cleanTitle;
+        }
+
+        function normalizarColorEncabezado(color, fallback = '#FFFFFF') {
+            return /^#[0-9A-Fa-f]{6}$/.test(String(color || '')) ? String(color).toUpperCase() : fallback;
+        }
+
+        function aplicarColoresEncabezado(businessNameColor, catalogTitleColor) {
+            const businessColor = normalizarColorEncabezado(businessNameColor);
+            const titleColor = normalizarColorEncabezado(catalogTitleColor);
+            configuracionNegocio.businessNameColor = businessColor;
+            configuracionNegocio.catalogTitleColor = titleColor;
+            document.documentElement.style.setProperty('--catalog-business-name-color', businessColor);
+            document.documentElement.style.setProperty('--catalog-title-color', titleColor);
+            const businessInput = document.getElementById('perfil-business-name-color');
+            const titleInput = document.getElementById('perfil-catalog-title-color');
+            if (businessInput) businessInput.value = businessColor;
+            if (titleInput) titleInput.value = titleColor;
+        }
+
+        function previsualizarColorEncabezado(campo, color) {
+            const safeColor = normalizarColorEncabezado(color);
+            if (campo === 'businessNameColor') {
+                document.documentElement.style.setProperty('--catalog-business-name-color', safeColor);
+            } else if (campo === 'catalogTitleColor') {
+                document.documentElement.style.setProperty('--catalog-title-color', safeColor);
+            }
         }
 
         function actualizarSoporteSaasUI() {
@@ -4373,6 +4411,7 @@ if (noindex) {
                     if (logoShape) logoShape.value = data.logoShape || 'rectangle';
                     if (logoRotation) logoRotation.value = String(data.logoRotation || 0);
                     actualizarTituloCatalogoUI(data.catalogTitle);
+                    aplicarColoresEncabezado(data.businessNameColor, data.catalogTitleColor);
                     configuracionNegocio.logo = data.logo || '';
                     configuracionNegocio.logoShape = data.logoShape || 'rectangle';
                     configuracionNegocio.logoRotation = Number(data.logoRotation) || 0;
@@ -4414,6 +4453,7 @@ if (noindex) {
         async function guardarPerfilNegocio() {
             const inputNombre = document.getElementById('perfil-business-name');
             const nombreNegocio = inputNombre?.value.trim();
+            const businessNameColor = normalizarColorEncabezado(document.getElementById('perfil-business-name-color')?.value);
             if (!nombreNegocio) {
                 showToast("El nombre del negocio no puede estar vacío", "error");
                 return;
@@ -4424,7 +4464,7 @@ if (noindex) {
                     method: 'PUT',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombreNegocio })
+                    body: JSON.stringify({ nombreNegocio, businessNameColor })
                 });
                 if (!res.ok) {
                     showToast("Error al guardar perfil del negocio", "error");
@@ -4432,6 +4472,7 @@ if (noindex) {
                 }
                 showToast("Perfil del negocio actualizado", "success");
                 document.getElementById('perfil-business-name-display').innerText = nombreNegocio;
+                configuracionNegocio.businessNameColor = businessNameColor;
                 cerrarModalNombreNegocio();
                 await cargarConfigSeguridad();
                 await cargarConfiguracionPublica();
@@ -4453,6 +4494,8 @@ if (noindex) {
             const inputNombre = document.getElementById('perfil-business-name');
             const display = document.getElementById('perfil-business-name-display');
             if (inputNombre) inputNombre.value = display?.innerText || configuracionNegocio.nombreNegocio || '';
+            const colorInput = document.getElementById('perfil-business-name-color');
+            if (colorInput) colorInput.value = normalizarColorEncabezado(configuracionNegocio.businessNameColor);
             modal?.classList.remove('hidden');
             setTimeout(() => {
                 inputNombre?.focus();
@@ -4462,12 +4505,15 @@ if (noindex) {
 
         function cerrarModalNombreNegocio() {
             document.getElementById('modal-perfil-nombre')?.classList.add('hidden');
+            aplicarColoresEncabezado(configuracionNegocio.businessNameColor, configuracionNegocio.catalogTitleColor);
         }
 
         function abrirModalTituloCatalogo() {
             const modal = document.getElementById('modal-perfil-catalog-title');
             const input = document.getElementById('perfil-catalog-title');
             if (input) input.value = configuracionNegocio.catalogTitle || 'Catalogo de productos';
+            const colorInput = document.getElementById('perfil-catalog-title-color');
+            if (colorInput) colorInput.value = normalizarColorEncabezado(configuracionNegocio.catalogTitleColor);
             modal?.classList.remove('hidden');
             setTimeout(() => {
                 input?.focus();
@@ -4477,11 +4523,13 @@ if (noindex) {
 
         function cerrarModalTituloCatalogo() {
             document.getElementById('modal-perfil-catalog-title')?.classList.add('hidden');
+            aplicarColoresEncabezado(configuracionNegocio.businessNameColor, configuracionNegocio.catalogTitleColor);
         }
 
         async function guardarTituloCatalogo() {
             const input = document.getElementById('perfil-catalog-title');
             const catalogTitle = input?.value.trim();
+            const catalogTitleColor = normalizarColorEncabezado(document.getElementById('perfil-catalog-title-color')?.value);
             if (!catalogTitle) {
                 showToast('El titulo del catalogo no puede estar vacio', 'error');
                 return;
@@ -4491,7 +4539,7 @@ if (noindex) {
                     method: 'PUT',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ catalogTitle })
+                    body: JSON.stringify({ catalogTitle, catalogTitleColor })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
@@ -4499,6 +4547,7 @@ if (noindex) {
                     return;
                 }
                 actualizarTituloCatalogoUI(catalogTitle);
+                configuracionNegocio.catalogTitleColor = catalogTitleColor;
                 cerrarModalTituloCatalogo();
                 showToast('Titulo del catalogo actualizado', 'success');
                 await cargarConfiguracionPublica();
@@ -6871,6 +6920,7 @@ if (noindex) {
         function aplicarConfiguracionPublica(data) {
             if (!data) return;
             configuracionNegocio = { ...configuracionNegocio, ...data };
+            aplicarColoresEncabezado(data.businessNameColor, data.catalogTitleColor);
             aplicarTema(data.tema);
             actualizarBotonTemaActivo(data.tema);
             if (data.theme) aplicarPaletaTenant(data.theme);
