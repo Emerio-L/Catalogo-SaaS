@@ -1537,11 +1537,11 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         async function hardDeleteTenant(id) {
-            if (!confirm('Esta accion elimina definitivamente la cuenta y sus datos relacionados.')) return;
+            if (!confirm('Esta acción elimina definitivamente la cuenta, todos sus datos y sus archivos de Cloudinary. Esta operación no se puede deshacer.')) return;
             const response = await superFetch(`/trash/${id}`, { method: 'DELETE' });
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
-                showSuperToast(data.error || 'No se pudo eliminar definitivamente la cuenta.', 'error');
+                showSuperToast(data.error || 'No se pudo eliminar definitivamente la cuenta. La cuenta permanece en la papelera.', 'error');
                 return;
             }
             await Promise.all([loadDashboard(), loadTrash()]);

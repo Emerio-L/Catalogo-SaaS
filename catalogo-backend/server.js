@@ -220,12 +220,40 @@ async function limpiarPedidosExpirados(tenantId) {
     await Payment.deleteMany({ tenantId, createdAt: { $lt: limite } });
 }
 
+async function eliminarRecursosCloudinaryPorPrefijo(prefix, resourceType, deliveryType) {
+    let nextCursor;
+    do {
+        const result = await cloudinary.api.delete_resources_by_prefix(prefix, {
+            resource_type: resourceType,
+            type: deliveryType,
+            invalidate: true,
+            ...(nextCursor ? { next_cursor: nextCursor } : {})
+        });
+        nextCursor = result?.next_cursor;
+    } while (nextCursor);
+}
+
 async function eliminarTenantCloudinary(tenantSlug) {
-    if (!cloudinaryEnabled) return;
-    try {
-        await cloudinary.api.delete_resources_by_prefix(`catalogo-productos/${tenantSlug}/`);
-    } catch (err) {
-        console.error('Error al limpiar Cloudinary del tenant:', err);
+    if (!cloudinaryEnabled) {
+        throw new Error('Cloudinary no está configurado; la purga se canceló para evitar datos huérfanos.');
+    }
+
+    const slug = String(tenantSlug || '').trim();
+    if (!slug || !/^[a-z0-9][a-z0-9-]{0,59}$/.test(slug)) {
+        throw new Error('El identificador de Cloudinary de la cuenta no es válido.');
+    }
+
+    const prefixes = [
+        { prefix: `catalogo-productos/${slug}/`, types: ['upload'] },
+        { prefix: `catalogo-productos/private-receipts/${slug}/`, types: ['authenticated', 'upload'] }
+    ];
+
+    for (const { prefix, types } of prefixes) {
+        for (const resourceType of ['image', 'raw', 'video']) {
+            for (const deliveryType of types) {
+                await eliminarRecursosCloudinaryPorPrefijo(prefix, resourceType, deliveryType);
+            }
+        }
     }
 }
 
@@ -2095,20 +2123,29 @@ app.delete('/api/super-admin/trash/:id', requireSuperAdminAuth, async (req, res)
                 error: 'Esta cuenta conserva el acceso del super administrador y no puede purgarse definitivamente.'
             });
         }
-        await Promise.allSettled([
-            Category.deleteMany({ tenantId: tenant._id }),
-            Producto.deleteMany({ tenantId: tenant._id }),
-            Settings.deleteOne({ tenantId: tenant._id }),
-            Pedido.deleteMany({ tenantId: tenant._id }),
-            User.deleteMany({ tenantId: tenant._id, rol: { $ne: 'super_admin' } }),
-            Session.deleteMany({ tenantId: tenant._id }),
-            Payment.deleteMany({ tenantId: tenant._id }),
-            AccountStatusLog.deleteMany({ tenantId: tenant._id })
-        ]);
-        await Tenant.deleteOne({ _id: tenant._id });
-        res.json({ success: true });
+        await eliminarTenantCloudinary(tenant.slug);
+
+        await prisma.$transaction(async (tx) => {
+            await tx.auditLog.deleteMany({ where: { tenantId: tenant._id } });
+            await tx.tenant.delete({ where: { id: tenant._id } });
+        });
+
+        sharedCache.delete(`tenant:${tenant.slug}`);
+        sharedCache.delete(`settings:${tenant._id}`);
+        sharedCache.delete(`categories:${tenant._id}`);
+        sharedCache.delete(`products:${tenant._id}`);
+        res.json({
+            success: true,
+            message: 'Cuenta, datos relacionados y archivos de Cloudinary eliminados definitivamente.'
+        });
     } catch (err) {
-        res.status(500).json({ error: 'Error al eliminar definitivamente' });
+        console.error('Error al eliminar definitivamente la cuenta:', err);
+        const cloudinaryUnavailable = /Cloudinary no está configurado/i.test(String(err?.message || ''));
+        res.status(cloudinaryUnavailable ? 503 : 500).json({
+            error: cloudinaryUnavailable
+                ? err.message
+                : 'No se completó la eliminación definitiva. La cuenta permanece en la papelera; intenta nuevamente.'
+        });
     }
 });
 
