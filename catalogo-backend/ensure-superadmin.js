@@ -20,10 +20,32 @@ async function main() {
         throw new Error('SUPER_ADMIN_USER, SUPER_ADMIN_EMAIL y SUPER_ADMIN_PASSWORD son obligatorios.');
     }
 
-    const existingSuperAdmin = await prisma.user.findFirst({ where: { rol: 'super_admin' } });
+    const existingSuperAdmin = await prisma.user.findFirst({
+        where: { rol: 'super_admin' },
+        orderBy: { creadoEn: 'asc' }
+    });
     let tenant = existingSuperAdmin
         ? await prisma.tenant.findUnique({ where: { id: existingSuperAdmin.tenantId } })
         : await prisma.tenant.findUnique({ where: { slug: 'default' } });
+    if (!existingSuperAdmin && tenant) {
+        const identityConflict = await prisma.user.findFirst({
+            where: {
+                tenantId: tenant.id,
+                OR: [{ email: superEmail }, { usuario: superUser }]
+            }
+        });
+        if (identityConflict) tenant = null;
+    }
+    if (!tenant && !existingSuperAdmin) {
+        tenant = await prisma.tenant.findFirst({
+            where: {
+                users: {
+                    none: { OR: [{ email: superEmail }, { usuario: superUser }] }
+                }
+            },
+            orderBy: { creadoEn: 'asc' }
+        });
+    }
     if (!tenant) {
         tenant = await prisma.tenant.findFirst({ orderBy: { creadoEn: 'asc' } });
     }
@@ -62,7 +84,29 @@ async function main() {
     });
 
     if (existingSuperAdmin) {
-        console.log(`Super admin already exists: ${existingSuperAdmin.usuario}`);
+        const passwordMatches = await bcrypt.compare(superPassword, existingSuperAdmin.passwordHash);
+        await prisma.user.update({
+            where: { id: existingSuperAdmin.id },
+            data: {
+                nombre: process.env.SUPER_ADMIN_NAME || existingSuperAdmin.nombre || 'Super Administrador',
+                activo: true,
+                failedLoginAttempts: 0,
+                lockedUntil: null,
+                ...(passwordMatches ? {} : { passwordHash: await bcrypt.hash(superPassword, 12) })
+            }
+        });
+
+        try {
+            await prisma.user.update({
+                where: { id: existingSuperAdmin.id },
+                data: { email: superEmail, usuario: superUser }
+            });
+        } catch (error) {
+            if (error?.code !== 'P2002') throw error;
+            console.warn('Super admin password restored; username/email already belongs to another user in the same tenant.');
+        }
+
+        console.log(`Super admin credentials synchronized from server variables: ${superUser}`);
         return;
     }
 

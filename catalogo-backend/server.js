@@ -1588,7 +1588,14 @@ app.post('/api/super-admin/auth/login', authLimiter, async (req, res) => {
     try {
         const { identifier, password } = superAdminLoginSchema.parse(req.body);
         const normalized = normalizeIdentifier(identifier);
-        const user = await findUserByIdentifier(normalized, { role: 'super_admin' });
+        let user = await findUserByIdentifier(normalized, { role: 'super_admin' });
+        const configuredIdentifiers = [
+            normalizeIdentifier(process.env.SUPER_ADMIN_USER),
+            normalizeIdentifier(process.env.SUPER_ADMIN_EMAIL)
+        ].filter(Boolean);
+        if (!user && configuredIdentifiers.includes(normalized)) {
+            user = await User.findOne({ rol: 'super_admin', activo: true }).sort({ creadoEn: 1 });
+        }
 
         if (user?.lockedUntil && user.lockedUntil > new Date()) {
             await auditLog(req, 'super_admin_login_blocked', { tenantId: user.tenantId, userId: user._id });
