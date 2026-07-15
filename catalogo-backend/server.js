@@ -954,8 +954,6 @@ async function asegurarTenantDefault() {
                 logo: tenant.logo || '',
                 logoShape: 'rectangle',
                 catalogTitle: 'Catalogo de productos',
-                businessNameColor: '#FFFFFF',
-                catalogTitleColor: '#FFFFFF',
                 colorPrimario: tenant.colorPrimario || '#10b981',
                 mostrarBuscador: true,
                 mostrarCategorias: true,
@@ -1487,9 +1485,7 @@ app.get('/api/config', async (req, res) => {
             logo: settings.logo,
             logoShape: settings.logoShape || 'rectangle',
             logoRotation: normalizarRotacionLogo(settings.logoRotation),
-            catalogTitle: settings.catalogTitle || 'Catalogo de productos',
-            businessNameColor: colorHexValido(settings.businessNameColor) ? settings.businessNameColor : '#FFFFFF',
-            catalogTitleColor: colorHexValido(settings.catalogTitleColor) ? settings.catalogTitleColor : '#FFFFFF'
+            catalogTitle: settings.catalogTitle || 'Catalogo de productos'
         });
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener la configuración pública' });
@@ -1509,8 +1505,6 @@ app.get('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (r
             logoShape: settings.logoShape || 'rectangle',
             logoRotation: normalizarRotacionLogo(settings.logoRotation),
             catalogTitle: settings.catalogTitle || 'Catalogo de productos',
-            businessNameColor: colorHexValido(settings.businessNameColor) ? settings.businessNameColor : '#FFFFFF',
-            catalogTitleColor: colorHexValido(settings.catalogTitleColor) ? settings.catalogTitleColor : '#FFFFFF',
             nombreNegocio: settings.nombreNegocio || req.tenant.nombre,
             descripcionNegocio: settings.descripcionNegocio || ''
         });
@@ -1522,7 +1516,7 @@ app.get('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (r
 // Modificar configuración legacy del tenant default.
 app.put('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (req, res) => {
     try {
-        const { tema, telefonoWhatsApp, whatsapp, colorPrimario, logo, logoShape, catalogTitle, businessNameColor, catalogTitleColor, nombreNegocio, descripcionNegocio } = req.body;
+        const { tema, telefonoWhatsApp, whatsapp, colorPrimario, logo, logoShape, catalogTitle, nombreNegocio, descripcionNegocio } = req.body;
         const settings = await settingsTenant(req.tenant);
         if (tema) settings.tema = tema;
         if (telefonoWhatsApp || whatsapp) settings.whatsapp = telefonoWhatsApp || whatsapp;
@@ -1530,8 +1524,6 @@ app.put('/api/admin/config', tenantDefaultMiddleware, requireAdminAuth, async (r
         if (logo) settings.logo = logo;
         if (logoShape) settings.logoShape = logoShape;
         if (catalogTitle !== undefined) settings.catalogTitle = String(catalogTitle).trim() || settings.catalogTitle;
-        if (businessNameColor !== undefined && colorHexValido(businessNameColor)) settings.businessNameColor = businessNameColor.toUpperCase();
-        if (catalogTitleColor !== undefined && colorHexValido(catalogTitleColor)) settings.catalogTitleColor = catalogTitleColor.toUpperCase();
         if (nombreNegocio) settings.nombreNegocio = nombreNegocio;
         if (descripcionNegocio !== undefined) settings.descripcionNegocio = descripcionNegocio;
         await settings.save();
@@ -2649,8 +2641,6 @@ app.get('/api/:tenant/settings', tenantMiddleware, async (req, res) => {
             logoShape: settings.logoShape || 'rectangle',
             logoRotation: normalizarRotacionLogo(settings.logoRotation),
             catalogTitle: settings.catalogTitle || 'Catalogo de productos',
-            businessNameColor: colorHexValido(settings.businessNameColor) ? settings.businessNameColor : '#FFFFFF',
-            catalogTitleColor: colorHexValido(settings.catalogTitleColor) ? settings.catalogTitleColor : '#FFFFFF',
             tema: settings.tema,
             theme: normalizarThemeTenant(settings.theme),
             nombreNegocio: req.tenant.nombre,
@@ -2687,8 +2677,6 @@ app.get('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             logoShape: settings.logoShape || 'rectangle',
             logoRotation: normalizarRotacionLogo(settings.logoRotation),
             catalogTitle: settings.catalogTitle || 'Catalogo de productos',
-            businessNameColor: colorHexValido(settings.businessNameColor) ? settings.businessNameColor : '#FFFFFF',
-            catalogTitleColor: colorHexValido(settings.catalogTitleColor) ? settings.catalogTitleColor : '#FFFFFF',
             tema: settings.tema,
             theme: normalizarThemeTenant(settings.theme),
             nombreNegocio: req.tenant.nombre,
@@ -2720,8 +2708,6 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             logoShape,
             logoRotation,
             catalogTitle,
-            businessNameColor,
-            catalogTitleColor,
             theme,
             nombreNegocio,
             descripcionNegocio,
@@ -2744,12 +2730,6 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
         if (!finalOrderCartEnabled && !finalOrderWhatsappEnabled) {
             return res.status(400).json({ error: 'Debes mantener al menos una forma de recibir pedidos activa' });
         }
-        if (businessNameColor !== undefined && !colorHexValido(businessNameColor)) {
-            return res.status(400).json({ error: 'Color del nombre del negocio invalido' });
-        }
-        if (catalogTitleColor !== undefined && !colorHexValido(catalogTitleColor)) {
-            return res.status(400).json({ error: 'Color del titulo del catalogo invalido' });
-        }
 
         const settingsUpdate = {
             ...(tema ? { tema } : {}),
@@ -2759,8 +2739,6 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
             ...(logoShape ? { logoShape } : {}),
             ...(logoRotation !== undefined ? { logoRotation: normalizarRotacionLogo(logoRotation) } : {}),
             ...(catalogTitle !== undefined ? { catalogTitle: String(catalogTitle).trim() || 'Catalogo de productos' } : {}),
-            ...(businessNameColor !== undefined ? { businessNameColor: businessNameColor.toUpperCase() } : {}),
-            ...(catalogTitleColor !== undefined ? { catalogTitleColor: catalogTitleColor.toUpperCase() } : {}),
             ...(themeNormalizado ? { theme: themeNormalizado } : {}),
             ...(mostrarBuscador !== undefined ? { mostrarBuscador: Boolean(mostrarBuscador) } : {}),
             ...(mostrarCategorias !== undefined ? { mostrarCategorias: Boolean(mostrarCategorias) } : {}),
@@ -2786,8 +2764,6 @@ app.put('/api/:tenant/admin/settings', tenantMiddleware, requireAdminAuth, async
                     ? normalizarRotacionLogo(logoRotation)
                     : normalizarRotacionLogo(currentSettings.logoRotation),
                 catalogTitle: catalogTitle !== undefined ? String(catalogTitle).trim() || 'Catalogo de productos' : currentSettings.catalogTitle || 'Catalogo de productos',
-                businessNameColor: businessNameColor !== undefined ? businessNameColor.toUpperCase() : currentSettings.businessNameColor || '#FFFFFF',
-                catalogTitleColor: catalogTitleColor !== undefined ? catalogTitleColor.toUpperCase() : currentSettings.catalogTitleColor || '#FFFFFF',
                 tema: tema || currentSettings.tema || 'emerald',
                 theme: themeNormalizado || currentSettings.theme || DEFAULT_TENANT_THEME,
                 mostrarBuscador: mostrarBuscador !== undefined ? Boolean(mostrarBuscador) : currentSettings.mostrarBuscador !== false,

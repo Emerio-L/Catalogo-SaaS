@@ -4,11 +4,6 @@ const prisma = new PrismaClient();
 
 async function ensureRuntimeSchemaCompatibility() {
     await prisma.$executeRawUnsafe(`
-        ALTER TABLE "Settings"
-        ADD COLUMN IF NOT EXISTS "businessNameColor" TEXT NOT NULL DEFAULT '#FFFFFF',
-        ADD COLUMN IF NOT EXISTS "catalogTitleColor" TEXT NOT NULL DEFAULT '#FFFFFF'
-    `);
-    await prisma.$executeRawUnsafe(`
         ALTER TABLE "Tenant"
         ADD COLUMN IF NOT EXISTS "paymentConfig" JSONB
     `);
