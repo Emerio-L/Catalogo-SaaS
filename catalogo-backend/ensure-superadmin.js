@@ -20,7 +20,13 @@ async function main() {
         throw new Error('SUPER_ADMIN_USER, SUPER_ADMIN_EMAIL y SUPER_ADMIN_PASSWORD son obligatorios.');
     }
 
-    let tenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
+    const existingSuperAdmin = await prisma.user.findFirst({ where: { rol: 'super_admin' } });
+    let tenant = existingSuperAdmin
+        ? await prisma.tenant.findUnique({ where: { id: existingSuperAdmin.tenantId } })
+        : await prisma.tenant.findUnique({ where: { slug: 'default' } });
+    if (!tenant) {
+        tenant = await prisma.tenant.findFirst({ orderBy: { creadoEn: 'asc' } });
+    }
     if (!tenant) {
         tenant = await createTenantWithAccountNumber(prisma, {
             slug: 'default',
@@ -55,7 +61,6 @@ async function main() {
         }
     });
 
-    const existingSuperAdmin = await prisma.user.findFirst({ where: { rol: 'super_admin' } });
     if (existingSuperAdmin) {
         console.log(`Super admin already exists: ${existingSuperAdmin.usuario}`);
         return;

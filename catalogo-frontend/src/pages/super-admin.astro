@@ -1351,11 +1351,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             event.preventDefault();
             const id = document.getElementById('tenant-action-id').value;
             const type = document.getElementById('tenant-action-type').value;
+            let actionResponse = null;
             if (type === 'plan') {
                 const planId = document.getElementById('tenant-action-plan').value;
                 const monthlyPrice = Number(document.getElementById('tenant-action-price').value || 0);
                 if (!planId) return;
-                await superFetch(`/tenants/${id}/plan`, {
+                actionResponse = await superFetch(`/tenants/${id}/plan`, {
                     method: 'PATCH',
                     body: JSON.stringify({
                         planId,
@@ -1365,7 +1366,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             }
             if (type === 'cancel') {
                 const reason = document.getElementById('tenant-action-reason').value.trim();
-                await superFetch(`/tenants/${id}`, {
+                actionResponse = await superFetch(`/tenants/${id}`, {
                     method: 'DELETE',
                     body: JSON.stringify({ reason })
                 });
@@ -1374,10 +1375,15 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 const amount = Number(document.getElementById('tenant-action-payment-amount').value || 0);
                 const paymentMonth = document.getElementById('tenant-action-payment-month').value.trim();
                 const paymentMethod = document.getElementById('tenant-action-payment-method').value.trim() || 'Efectivo';
-                await superFetch(`/tenants/${id}/payments/confirm`, {
+                actionResponse = await superFetch(`/tenants/${id}/payments/confirm`, {
                     method: 'POST',
                     body: JSON.stringify({ amount, paymentMonth, paymentMethod })
                 });
+            }
+            if (!actionResponse?.ok) {
+                const errorData = await actionResponse?.json().catch(() => ({}));
+                showSuperToast(errorData?.error || 'No se pudo completar la accion.', 'error');
+                return;
             }
             closeTenantActionModal();
             await refreshTenantViews();
@@ -1532,7 +1538,12 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
 
         async function hardDeleteTenant(id) {
             if (!confirm('Esta accion elimina definitivamente la cuenta y sus datos relacionados.')) return;
-            await superFetch(`/trash/${id}`, { method: 'DELETE' });
+            const response = await superFetch(`/trash/${id}`, { method: 'DELETE' });
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                showSuperToast(data.error || 'No se pudo eliminar definitivamente la cuenta.', 'error');
+                return;
+            }
             await Promise.all([loadDashboard(), loadTrash()]);
         }
 

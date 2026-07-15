@@ -329,15 +329,8 @@ async function findLoginCandidatesByIdentifier(identifier) {
         candidates.push({ user, tenant });
     };
 
-    const matchingUsers = await User.find({
-        activo: true,
-        $or: [{ email: normalized }, { usuario: normalized }]
-    }).sort({ creadoEn: -1 });
-
-    for (const user of matchingUsers) {
-        await addCandidate(user);
-    }
-
+    // Si el identificador es un numero de cuenta, esa coincidencia exacta debe
+    // tener prioridad sobre usuarios homonimos de otros tenants.
     const accountTenant = await Tenant.findOne({
         accountNumber,
         activo: true,
@@ -354,6 +347,15 @@ async function findLoginCandidatesByIdentifier(identifier) {
         for (const user of accountUsers) {
             await addCandidate(user, accountTenant);
         }
+    }
+
+    const matchingUsers = await User.find({
+        activo: true,
+        $or: [{ email: normalized }, { usuario: normalized }]
+    }).sort({ creadoEn: -1 });
+
+    for (const user of matchingUsers) {
+        await addCandidate(user);
     }
 
     return candidates;
@@ -657,6 +659,8 @@ async function purgeDeletedTenants() {
     const cutoff = new Date(Date.now() - DELETED_ACCOUNT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
     const tenants = await Tenant.find({ status: 'deleted', deletedAt: { $lte: cutoff } });
     for (const tenant of tenants) {
+        const superAdminCount = await User.countDocuments({ tenantId: tenant._id, rol: 'super_admin' });
+        if (superAdminCount > 0) continue;
         await Promise.allSettled([
             Category.deleteMany({ tenantId: tenant._id }),
             Producto.deleteMany({ tenantId: tenant._id }),
@@ -917,6 +921,11 @@ async function asegurarTenantDefault() {
     const tema = 'emerald';
 
     if (!tenant) {
+        const tenantExistente = await Tenant.findOne({});
+        if (tenantExistente) {
+            // Una base ya inicializada no necesita una cuenta demo nueva.
+            return null;
+        }
         tenant = await createTenantWithAccountNumber({
             slug: 'default',
             nombre: 'Catálogo de Productos',
@@ -1015,11 +1024,11 @@ async function asegurarTenantDefault() {
 }
 
 async function asegurarSuperAdminBootstrap() {
-    const tenant = await tenantDefault();
-    if (!tenant) return;
-
     const existing = await User.findOne({ rol: 'super_admin' });
     if (existing) return;
+
+    const tenant = await tenantDefault();
+    if (!tenant) return;
 
     const usuario = (process.env.SUPER_ADMIN_USER || '').toLowerCase().trim();
     const email = (process.env.SUPER_ADMIN_EMAIL || '').toLowerCase().trim();
@@ -2081,6 +2090,12 @@ app.delete('/api/super-admin/trash/:id', requireSuperAdminAuth, async (req, res)
     try {
         const tenant = await Tenant.findOne({ _id: req.params.id, status: 'deleted' });
         if (!tenant) return res.status(404).json({ error: 'Cuenta no encontrada en trash' });
+        const superAdminCount = await User.countDocuments({ tenantId: tenant._id, rol: 'super_admin' });
+        if (superAdminCount > 0) {
+            return res.status(409).json({
+                error: 'Esta cuenta conserva el acceso del super administrador y no puede purgarse definitivamente.'
+            });
+        }
         await Promise.allSettled([
             Category.deleteMany({ tenantId: tenant._id }),
             Producto.deleteMany({ tenantId: tenant._id }),
@@ -2299,18 +2314,19 @@ app.delete('/api/super-admin/tenants/:id', requireSuperAdminAuth, async (req, re
     try {
         const tenant = await Tenant.findById(req.params.id);
         if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
-        
-        // 1. Eliminar absolutamente todo de Cloudinary
-        await eliminarTenantCloudinary(tenant.slug);
-        
-        // 2. Eliminar de DB de forma absoluta
-        // AuditLogs are SetNull in Prisma, so we manually wipe them first to be clean
-        await AuditLog.deleteMany({ tenantId: tenant._id });
-        await Tenant.deleteOne({ _id: tenant._id });
+        const previousStatus = tenant.status;
+        tenant.status = 'deleted';
+        tenant.activo = false;
+        tenant.deletedAt = new Date();
+        tenant.deletedReason = String(req.body?.reason || 'Cancelacion manual super admin').trim().slice(0, 200);
+        await tenant.save();
+        sharedCache.delete(`tenant:${tenant.slug}`);
+        sharedCache.delete(`settings:${tenant._id}`);
+        await logAccountStatus(tenant, previousStatus, 'deleted', tenant.deletedReason, req.user._id);
 
-        res.json({ success: true, deleted: true });
+        res.json({ success: true, deleted: true, tenant: await serializeTenantForSuperAdmin(tenant) });
     } catch (err) {
-        console.error('Error al eliminar cuenta absolutamente:', err);
+        console.error('Error al cancelar cuenta:', err);
         res.status(500).json({ error: 'Error al eliminar cuenta' });
     }
 });
