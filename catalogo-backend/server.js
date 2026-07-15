@@ -1469,12 +1469,13 @@ async function guardarLogoSaas(file) {
     return { url: `/uploads/${nombreArchivo}`, publicId: '' };
 }
 
-async function eliminarImagen(rutaImagen, publicId = '') {
+async function eliminarImagen(rutaImagen, publicId = '', options = {}) {
     if (publicId && cloudinaryEnabled) {
         try {
             await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
         } catch (err) {
             console.error(`No se pudo eliminar la imagen en Cloudinary: ${publicId}`, err);
+            if (options.strict) throw err;
         }
         return;
     }
@@ -1487,11 +1488,14 @@ async function eliminarImagen(rutaImagen, publicId = '') {
         console.warn(`Intento de path traversal detectado: ${rutaImagen}`);
         return;
     }
-    fs.unlink(rutaAbsoluta, (err) => {
+    try {
+        await fs.promises.unlink(rutaAbsoluta);
+        console.log(`Imagen antigua eliminada: ${rutaAbsoluta}`);
+    } catch (err) {
         if (err?.code === 'ENOENT') return;
-        if (err) console.error(`No se pudo eliminar la imagen antigua: ${rutaAbsoluta}`, err);
-        else console.log(`Imagen antigua eliminada: ${rutaAbsoluta}`);
-    });
+        console.error(`No se pudo eliminar la imagen antigua: ${rutaAbsoluta}`, err);
+        if (options.strict) throw err;
+    }
 }
 
 /* ==========================================================================
@@ -3032,6 +3036,36 @@ app.post('/api/:tenant/admin/settings/logo', tenantMiddleware, requireAdminAuth,
     } catch (err) {
         console.error('Error al subir logo del catálogo:', err);
         res.status(500).json({ error: 'Error al guardar el logo del catálogo' });
+    }
+});
+
+app.delete('/api/:tenant/admin/settings/logo', tenantMiddleware, requireAdminAuth, async (req, res) => {
+    try {
+        const settingsActuales = await Settings.findOne({ tenantId: req.tenantId });
+        const logoActual = settingsActuales?.logo || req.tenant.logo || '';
+        const publicIdActual = settingsActuales?.logoCloudinaryPublicId || '';
+
+        if (logoActual || publicIdActual) {
+            await eliminarImagen(logoActual, publicIdActual, { strict: true });
+        }
+
+        await prisma.$transaction([
+            prisma.settings.updateMany({
+                where: { tenantId: req.tenantId },
+                data: { logo: '', logoCloudinaryPublicId: '', logoRotation: 0 }
+            }),
+            prisma.tenant.update({
+                where: { id: req.tenantId },
+                data: { logo: '' }
+            })
+        ]);
+
+        sharedCache.delete(`tenant:${req.tenant.slug}`);
+        sharedCache.delete(`settings:${req.tenantId}`);
+        res.json({ success: true, logo: '', logoRotation: 0 });
+    } catch (err) {
+        console.error('Error al eliminar logo del catálogo:', err);
+        res.status(500).json({ error: 'No se pudo eliminar la imagen. Intenta nuevamente.' });
     }
 });
 
