@@ -73,7 +73,9 @@ const cloudinaryEnabled = Boolean(
 if (process.env.NODE_ENV === 'production' && !cloudinaryEnabled) {
     throw new Error('Cloudinary es obligatorio en produccion para conservar imagenes y archivos.');
 }
-const ADMIN_IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+// Mantiene la sesion vinculada a este navegador y la renueva con cada uso.
+// Los navegadores modernos limitan las cookies persistentes a unos 400 dias.
+const ADMIN_SESSION_DURATION_MS = 400 * 24 * 60 * 60 * 1000;
 const ACCOUNT_STATUSES = ['trial', 'active', 'pending_payment', 'suspended', 'deleted'];
 const PAYMENT_STATUSES = ['pendiente', 'aprobado', 'rechazado'];
 const SUPPORT_TICKET_STATUSES = ['open', 'in_progress', 'closed'];
@@ -389,7 +391,7 @@ function superAdminCookieOptions() {
 }
 
 function nuevaExpiracionSesion() {
-    return new Date(Date.now() + ADMIN_IDLE_TIMEOUT_MS);
+    return new Date(Date.now() + ADMIN_SESSION_DURATION_MS);
 }
 
 function startOfDay(date = new Date()) {
@@ -725,7 +727,7 @@ function cookieOptions() {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         secure: process.env.NODE_ENV === 'production',
         path: '/',
-        maxAge: ADMIN_IDLE_TIMEOUT_MS
+        maxAge: ADMIN_SESSION_DURATION_MS
     };
 }
 
@@ -1096,10 +1098,7 @@ async function requireAdminAuth(req, res, next) {
 
         const session = await Session.findOne({ tokenHash: sha256(token), tenantId: req.tenantId });
         const ahora = new Date();
-        const ultimaActividad = session?.lastActivityAt || session?.creadoEn || session?.expiresAt;
-        const sesionInactiva = ultimaActividad && (ahora.getTime() - new Date(ultimaActividad).getTime() > ADMIN_IDLE_TIMEOUT_MS);
-
-        if (!session || session.expiresAt <= ahora || sesionInactiva) {
+        if (!session || session.expiresAt <= ahora) {
             if (session) await Session.deleteOne({ _id: session._id, tenantId: req.tenantId });
             res.clearCookie(cookieName(req.tenant.slug), clearCookieOptions());
             return res.status(401).json({ error: 'Sesion invalida o expirada' });
@@ -1134,10 +1133,7 @@ async function requireSuperAdminAuth(req, res, next) {
 
         const session = await Session.findOne({ tokenHash: sha256(token) });
         const ahora = new Date();
-        const ultimaActividad = session?.lastActivityAt || session?.creadoEn || session?.expiresAt;
-        const sesionInactiva = ultimaActividad && (ahora.getTime() - new Date(ultimaActividad).getTime() > ADMIN_IDLE_TIMEOUT_MS);
-
-        if (!session || session.expiresAt <= ahora || sesionInactiva) {
+        if (!session || session.expiresAt <= ahora) {
             if (session) await Session.deleteOne({ _id: session._id });
             res.clearCookie(SUPER_ADMIN_COOKIE, clearCookieOptions());
             return res.status(401).json({ error: 'Sesion invalida o expirada' });

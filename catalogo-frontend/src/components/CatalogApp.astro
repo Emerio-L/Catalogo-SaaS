@@ -110,9 +110,9 @@ if (noindex) {
             <div class="relative mx-auto max-w-6xl">
                 <div class="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-4 md:grid-cols-[128px_minmax(0,1fr)_280px]">
                     <div class="col-start-2 row-start-1 min-w-0 text-left">
-                        <h1 id="catalog-main-title" class="text-2xl font-black tracking-tight uppercase leading-none select-none sm:text-3xl md:text-5xl" style="color: var(--tenant-header-text, #FFFFFF);">{catalogTitle}</h1>
+                        <h1 id="catalog-main-title" class="text-sm font-black tracking-tight uppercase leading-none select-none" style="color: var(--tenant-header-text, #FFFFFF);">{catalogTitle}</h1>
                         <div class="mt-2">
-                            <p id="catalog-business-name" class="max-w-full break-words text-sm font-black uppercase leading-tight tracking-wider" style="color: var(--tenant-header-text, #FFFFFF);">{appName}</p>
+                            <p id="catalog-business-name" class="max-w-full break-words text-2xl font-black uppercase leading-tight tracking-wider sm:text-3xl md:text-5xl" style="color: var(--tenant-header-text, #FFFFFF);">{appName}</p>
                         </div>
                     </div>
                     <div class="col-span-full row-start-2 w-full space-y-2 md:col-span-1 md:col-start-3 md:row-start-1 md:w-[280px]">
@@ -1570,7 +1570,7 @@ if (noindex) {
         const resetToken = new URLSearchParams(window.location.search).get('token') || '';
         const TENANT_API_URL = `${API_URL}/${tenantSlug}`;
         const DEV_SESSION_KEY = `catalogo_dev_session_${tenantSlug}`;
-        const ADMIN_IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+        const ADMIN_IDLE_TIMEOUT_MS = 400 * 24 * 60 * 60 * 1000;
         const ADMIN_LAST_ACTIVITY_KEY = `catalogo_admin_last_activity_${tenantSlug}`;
         const nativeFetch = window.fetch.bind(window);
         window.fetch = (input, init = {}) => {
