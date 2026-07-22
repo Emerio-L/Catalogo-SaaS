@@ -3896,7 +3896,7 @@ const productSchema = z.object({
     orden: z.string().or(z.number()).transform(val => parseInt(val)).optional(),
     ordenVisualizacion: z.string().or(z.number()).transform(val => parseInt(val)).optional(),
     activo: z.string().or(z.boolean()).transform(val => val === 'true' || val === true).optional(),
-    descripcion: z.string().max(500).optional().default("")
+    descripcion: z.string().optional().default("")
 }).refine(data => data.categoriaId || data.categoria, {
     message: "Debe proporcionar una categoria"
 });
@@ -4022,12 +4022,6 @@ app.put('/api/:tenant/admin/products/:id', tenantMiddleware, requireAdminAuth, r
         let publicId = productoExistente.cloudinaryPublicId;
         let imagenes = productoExistente.imagenes; // Campo JSONB
         let oldImagesToDelete = [];
-
-        if (req.body.descripcion !== undefined) {
-            if (req.body.descripcion.length > 500) {
-                return res.status(400).json({ error: 'La descripción no puede superar los 500 caracteres' });
-            }
-        }
 
         if (req.body.galeriaLayout) {
             const layout = JSON.parse(req.body.galeriaLayout);

@@ -239,9 +239,40 @@ async function main() {
         `Enlace de recuperacion usa un origen frontend valido (${forgotPassword.data.devResetUrl || 'sin enlace de desarrollo'})`
     );
 
-    await prisma.category.create({
+    const category = await prisma.category.create({
         data: { tenantId: tenant.id, nombre: 'Verduras', orden: 1 }
     });
+    const longDescription = 'Descripcion extensa de producto.\n'.repeat(250);
+    const createLongDescriptionProduct = await gatewayRequest(`/api/${tenantSlug}/admin/products`, {
+        method: 'POST',
+        headers: { ...tenantAuth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            nombre: 'Producto con descripcion extensa',
+            precio: '25.50',
+            unidad: 'unidad',
+            categoriaId: category.id,
+            descripcion: longDescription
+        })
+    });
+    assert(
+        createLongDescriptionProduct.response.status === 201
+            && createLongDescriptionProduct.data.producto?.descripcion === longDescription,
+        'Producto acepta una descripcion de mas de 500 caracteres'
+    );
+    const updatedLongDescription = `${longDescription}${'Informacion adicional. '.repeat(250)}`;
+    const updateLongDescriptionProduct = await gatewayRequest(
+        `/api/${tenantSlug}/admin/products/${createLongDescriptionProduct.data.producto.id}`,
+        {
+            method: 'PUT',
+            headers: { ...tenantAuth, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ descripcion: updatedLongDescription })
+        }
+    );
+    assert(
+        updateLongDescriptionProduct.response.ok
+            && updateLongDescriptionProduct.data.producto?.descripcion === updatedLongDescription,
+        'Producto conserva una descripcion extensa al editarse'
+    );
     const duplicateCategory = await gatewayRequest(`/api/${tenantSlug}/admin/categories`, {
         method: 'POST',
         headers: { ...tenantAuth, 'Content-Type': 'application/json' },
