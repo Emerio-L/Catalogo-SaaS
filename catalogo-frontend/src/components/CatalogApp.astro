@@ -107,8 +107,8 @@ if (noindex) {
         <div id="client-view" class={`w-full pb-36 ${isAdminInitialRoute ? 'hidden' : ''}`}>
         <!-- HEADER -->
         <header class="relative overflow-hidden bg-primary-500 text-white px-4 py-4 sticky top-0 z-50 rounded-b-[1.5rem] shadow-2xl shadow-primary-950/20">
-            <div class="relative mx-auto max-w-6xl">
-                <div class="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-4 md:grid-cols-[128px_minmax(0,1fr)_280px]">
+            <div class="relative mx-auto max-w-[1440px]">
+                <div class="catalog-header-grid grid items-center gap-4">
                     <div class="col-start-2 row-start-1 min-w-0 text-left">
                         <p id="catalog-business-name" class="max-w-full break-words text-2xl font-black uppercase leading-tight tracking-wider sm:text-3xl md:text-5xl" style="color: var(--tenant-header-text, #FFFFFF);">{appName}</p>
                         <h1 id="catalog-main-title" class="mt-2 text-sm font-black tracking-tight uppercase leading-none select-none" style="color: var(--tenant-header-text, #FFFFFF);">{catalogTitle}</h1>
@@ -134,10 +134,10 @@ if (noindex) {
                             <i class="fa-solid fa-chevron-right text-sm transition-transform group-hover:translate-x-1"></i>
                         </button>
                     </div>
-                    <div id="catalog-brand-mark" class="col-start-1 row-start-1 flex h-[72px] w-[72px] flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-white text-primary-200 shadow-xl ring-1 ring-black/5 md:h-32 md:w-32 md:rounded-[1.5rem]">
-                        <img id="catalog-logo" src="" alt="Logo del negocio" class="hidden h-full w-full object-cover">
+                    <div id="catalog-brand-mark" class="tenant-logo-container col-start-1 row-start-1 text-primary-200 shadow-xl ring-1 ring-black/5">
+                        <img id="catalog-logo" src="" alt={`Logotipo de ${appName}`} class="hidden">
                         <div id="catalog-logo-fallback" class="flex h-full w-full items-center justify-center">
-                            <i class="fa-solid fa-truck-fast text-3xl md:text-5xl"></i>
+                            <span id="catalog-logo-fallback-initial" class="text-3xl font-black uppercase md:text-5xl">{appName?.trim()?.charAt(0)?.toUpperCase() || 'T'}</span>
                         </div>
                     </div>
                     <div id="catalog-search-wrapper" class="relative col-span-full row-start-3 mt-1 w-full md:col-start-1 md:col-end-3 md:row-start-2 md:mt-3">
@@ -151,7 +151,7 @@ if (noindex) {
             </div>
         </header>
 
-        <div id="category-buttons" class="mx-auto flex max-w-6xl justify-start gap-2 overflow-x-auto px-4 py-3 no-scrollbar">
+        <div id="category-buttons" class="mx-auto flex max-w-[1440px] justify-start gap-2 overflow-x-auto px-4 py-3 no-scrollbar">
             <button onclick="filtrar('todos')" id="cat-todos"
                 class="category-active whitespace-nowrap rounded-full border border-primary-100 bg-white px-4 py-1.5 text-[11px] font-bold uppercase text-primary-700 shadow-sm transition-all hover:bg-primary-50">
                 Todos
@@ -163,8 +163,8 @@ if (noindex) {
         </div>
 
         <!-- PRODUCTOS CLIENTE -->
-        <main class="px-4 pb-6 max-w-6xl mx-auto">
-            <div id="grid-productos" class="grid grid-cols-2 gap-4 animate-slide-up md:grid-cols-3 md:gap-5 xl:grid-cols-4">
+        <main class="mx-auto max-w-[1440px] px-4 pb-6">
+            <div id="grid-productos" class="products-grid animate-slide-up">
                 <div class="col-span-full text-center text-slate-400 py-32 font-bold animate-pulse uppercase tracking-widest text-xs">
                     <i class="fa-solid fa-spinner fa-spin text-primary-500 text-3xl mb-4 block"></i>
                     Cargando catálogo...
@@ -1410,6 +1410,67 @@ if (noindex) {
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+        .catalog-header-grid {
+            grid-template-columns: minmax(96px, 124px) minmax(0, 1fr);
+        }
+        .tenant-logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 72px;
+            padding: 6px 8px;
+            overflow: hidden;
+            border-radius: 1.25rem;
+            background: rgba(255, 255, 255, 0.96);
+            flex: 0 0 auto;
+        }
+        .tenant-logo-container img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            object-position: center;
+        }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 380px));
+            justify-content: center;
+            align-items: stretch;
+            gap: 24px;
+        }
+        .product-image-container {
+            position: relative;
+            width: 100%;
+    aspect-ratio: 1 / 0.86;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .product-image-main {
+            display: block;
+            width: 100%;
+            height: 100%;
+            padding: 8px 10px;
+            object-fit: contain;
+            object-position: center;
+        }
+        @media (min-width: 768px) {
+            .catalog-header-grid {
+                grid-template-columns: clamp(180px, 18vw, 240px) minmax(0, 1fr) 280px;
+            }
+            .tenant-logo-container {
+                height: clamp(92px, 9vw, 112px);
+                padding: 8px 12px;
+                border-radius: 1.5rem;
+            }
+        }
+        @media (min-width: 1400px) {
+            .products-grid {
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+            }
+        }
         .catalog-search-input::placeholder {
             color: var(--tenant-search-placeholder, rgba(255,255,255,.72));
         }
@@ -2212,6 +2273,7 @@ if (noindex) {
             const logoUrl = normalizarAssetUrl(logo);
             const catalogLogo = document.getElementById('catalog-logo');
             const catalogFallback = document.getElementById('catalog-logo-fallback');
+            const catalogFallbackInitial = document.getElementById('catalog-logo-fallback-initial');
             const perfilPreview = document.getElementById('perfil-logo-preview');
             const perfilPlaceholder = document.getElementById('perfil-logo-placeholder');
             const modalPreview = document.getElementById('perfil-logo-modal-preview');
@@ -2224,7 +2286,22 @@ if (noindex) {
             if (shapeSelect) shapeSelect.value = shape === 'circle' ? 'circle' : 'rectangle';
             if (rotationSelect) rotationSelect.value = String(safeRotation);
             actualizarPreviewRotacionLogo(safeRotation);
+            const businessName = (configuracionNegocio.nombreNegocio || tenantSlug || 'T').trim();
+            if (catalogFallbackInitial) {
+                catalogFallbackInitial.innerText = businessName.charAt(0).toUpperCase() || 'T';
+            }
             if (catalogLogo) {
+                catalogLogo.alt = `Logotipo de ${businessName}`;
+                catalogLogo.onerror = () => {
+                    catalogLogo.classList.add('hidden');
+                    catalogFallback?.classList.remove('hidden');
+                };
+                catalogLogo.onload = () => {
+                    if (catalogLogo.src) {
+                        catalogLogo.classList.remove('hidden');
+                        catalogFallback?.classList.add('hidden');
+                    }
+                };
                 catalogLogo.src = logoUrl;
                 catalogLogo.classList.toggle('hidden', !logoUrl);
             }
@@ -3158,7 +3235,7 @@ if (noindex) {
                             const isActive = img.principal;
                             const borderClass = isActive ? 'border-primary-500 ring-2 ring-primary-500/30' : 'border-white';
                             return `
-                            <img src="${img.url}" 
+                            <img src="${img.url}" alt="Vista adicional de ${escapeHtml(prod.n)}" loading="lazy" decoding="async"
                                  onclick="event.stopPropagation(); cambiarImagenTarjeta('${prod.id}', '${img.url}', this)" 
                                  class="w-6 h-6 rounded-lg object-cover border-2 ${borderClass} cursor-pointer hover:scale-110 active:scale-95 transition-all duration-200"
                                  onerror="this.src='https://via.placeholder.com/150?text=x'">
@@ -3171,11 +3248,11 @@ if (noindex) {
                 return `
                 <div id="card-${prod.id}" class="group flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-premium transition-all duration-300 md:rounded-[2rem] ${pedido[prod.id] > 0 ? 'card-active' : 'hover:-translate-y-1 hover:shadow-premium-hover'}">
                     
-                    <div onclick="abrirDetalleProducto('${prod.id}')" class="cursor-pointer relative h-36 overflow-hidden bg-slate-50 md:h-48">
+                    <div onclick="abrirDetalleProducto('${prod.id}')" class="product-image-container cursor-pointer">
                         <span class="absolute left-3 top-3 z-10 ${badgeColor} rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-wider">
                             ${prod.cn}
                         </span>
-                        <img src="${prod.img}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://via.placeholder.com/300?text=${encodeURIComponent(prod.n)}'">
+                        <img src="${prod.img}" alt="${escapeHtml(prod.n)}" loading="lazy" decoding="async" class="product-image-main" onerror="this.src='https://via.placeholder.com/300?text=${encodeURIComponent(prod.n)}'">
                         ${thumbnailsHtml}
                     </div>
 
