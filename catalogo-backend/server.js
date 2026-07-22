@@ -257,6 +257,27 @@ async function eliminarTenantCloudinary(tenantSlug) {
     }
 }
 
+async function eliminarTenantDefinitivamente(tenant) {
+    const superAdminCount = await User.countDocuments({ tenantId: tenant._id, rol: 'super_admin' });
+    if (superAdminCount > 0) {
+        const error = new Error('Esta cuenta conserva el acceso del super administrador y no puede eliminarse definitivamente.');
+        error.statusCode = 409;
+        throw error;
+    }
+
+    await eliminarTenantCloudinary(tenant.slug);
+
+    await prisma.$transaction(async (tx) => {
+        await tx.auditLog.deleteMany({ where: { tenantId: tenant._id } });
+        await tx.tenant.delete({ where: { id: tenant._id } });
+    });
+
+    sharedCache.delete(`tenant:${tenant.slug}`);
+    sharedCache.delete(`settings:${tenant._id}`);
+    sharedCache.delete(`categories:${tenant._id}`);
+    sharedCache.delete(`products:${tenant._id}`);
+}
+
 function crearAdminAccessKey() {
     return `panel-${crypto.randomBytes(9).toString('hex')}`;
 }
@@ -2128,23 +2149,7 @@ app.delete('/api/super-admin/trash/:id', requireSuperAdminAuth, async (req, res)
     try {
         const tenant = await Tenant.findOne({ _id: req.params.id, status: 'deleted' });
         if (!tenant) return res.status(404).json({ error: 'Cuenta no encontrada en trash' });
-        const superAdminCount = await User.countDocuments({ tenantId: tenant._id, rol: 'super_admin' });
-        if (superAdminCount > 0) {
-            return res.status(409).json({
-                error: 'Esta cuenta conserva el acceso del super administrador y no puede purgarse definitivamente.'
-            });
-        }
-        await eliminarTenantCloudinary(tenant.slug);
-
-        await prisma.$transaction(async (tx) => {
-            await tx.auditLog.deleteMany({ where: { tenantId: tenant._id } });
-            await tx.tenant.delete({ where: { id: tenant._id } });
-        });
-
-        sharedCache.delete(`tenant:${tenant.slug}`);
-        sharedCache.delete(`settings:${tenant._id}`);
-        sharedCache.delete(`categories:${tenant._id}`);
-        sharedCache.delete(`products:${tenant._id}`);
+        await eliminarTenantDefinitivamente(tenant);
         res.json({
             success: true,
             message: 'Cuenta, datos relacionados y archivos de Cloudinary eliminados definitivamente.'
@@ -2152,7 +2157,7 @@ app.delete('/api/super-admin/trash/:id', requireSuperAdminAuth, async (req, res)
     } catch (err) {
         console.error('Error al eliminar definitivamente la cuenta:', err);
         const cloudinaryUnavailable = /Cloudinary no está configurado/i.test(String(err?.message || ''));
-        res.status(cloudinaryUnavailable ? 503 : 500).json({
+        res.status(err?.statusCode || (cloudinaryUnavailable ? 503 : 500)).json({
             error: cloudinaryUnavailable
                 ? err.message
                 : 'No se completó la eliminación definitiva. La cuenta permanece en la papelera; intenta nuevamente.'
@@ -2362,20 +2367,21 @@ app.delete('/api/super-admin/tenants/:id', requireSuperAdminAuth, async (req, re
     try {
         const tenant = await Tenant.findById(req.params.id);
         if (!tenant) return res.status(404).json({ error: 'Cliente no encontrado' });
-        const previousStatus = tenant.status;
-        tenant.status = 'deleted';
-        tenant.activo = false;
-        tenant.deletedAt = new Date();
-        tenant.deletedReason = String(req.body?.reason || 'Cancelacion manual super admin').trim().slice(0, 200);
-        await tenant.save();
-        sharedCache.delete(`tenant:${tenant.slug}`);
-        sharedCache.delete(`settings:${tenant._id}`);
-        await logAccountStatus(tenant, previousStatus, 'deleted', tenant.deletedReason, req.user._id);
-
-        res.json({ success: true, deleted: true, tenant: await serializeTenantForSuperAdmin(tenant) });
+        await eliminarTenantDefinitivamente(tenant);
+        res.json({
+            success: true,
+            deleted: true,
+            permanent: true,
+            message: 'Cuenta, datos relacionados y archivos de Cloudinary eliminados definitivamente.'
+        });
     } catch (err) {
         console.error('Error al cancelar cuenta:', err);
-        res.status(500).json({ error: 'Error al eliminar cuenta' });
+        const cloudinaryUnavailable = /Cloudinary no está configurado/i.test(String(err?.message || ''));
+        res.status(err?.statusCode || (cloudinaryUnavailable ? 503 : 500)).json({
+            error: cloudinaryUnavailable
+                ? err.message
+                : (err?.statusCode ? err.message : 'No se pudo eliminar por completo la cuenta. No se modificaron sus datos en el servidor.')
+        });
     }
 });
 

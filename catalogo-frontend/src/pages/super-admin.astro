@@ -1327,10 +1327,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
             openTenantActionModal({
                 id,
                 type: 'cancel',
-                title: 'Cancelar cuenta',
-                subtitle: tenantById(id)?.businessName || '',
-                submitLabel: 'Cancelar cuenta',
-                needsReason: true
+                title: 'Eliminar cuenta definitivamente',
+                subtitle: `${tenantById(id)?.businessName || ''} · Se eliminarán todos sus datos y archivos de Cloudinary. Esta acción no se puede deshacer.`,
+                submitLabel: 'Eliminar definitivamente'
             });
         }
 
@@ -1371,10 +1370,9 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 });
             }
             if (type === 'cancel') {
-                const reason = document.getElementById('tenant-action-reason').value.trim();
+                if (!confirm('Esta acción eliminará definitivamente la cuenta, todos sus datos y sus archivos de Cloudinary. No se puede deshacer.')) return;
                 actionResponse = await superFetch(`/tenants/${id}`, {
-                    method: 'DELETE',
-                    body: JSON.stringify({ reason })
+                    method: 'DELETE'
                 });
             }
             if (type === 'payment') {
@@ -1392,6 +1390,7 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
                 return;
             }
             closeTenantActionModal();
+            if (type === 'cancel') showSuperToast('Cuenta eliminada definitivamente.');
             await refreshTenantViews();
         }
 

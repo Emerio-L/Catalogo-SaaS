@@ -1466,11 +1466,6 @@ if (noindex) {
                 border-radius: 1.5rem;
             }
         }
-        @media (min-width: 1400px) {
-            .products-grid {
-                grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-            }
-        }
         .catalog-search-input::placeholder {
             color: var(--tenant-search-placeholder, rgba(255,255,255,.72));
         }
@@ -3548,9 +3543,9 @@ if (noindex) {
 
             content.innerHTML = `
                 <!-- Imagen principal grande -->
-                <div class="relative h-64 w-full rounded-2xl overflow-hidden bg-slate-50 shadow-inner group">
+                <div class="relative h-64 w-full rounded-2xl overflow-hidden bg-white shadow-inner group">
                     <img id="detalle-imagen-principal" src="${activeModalImgUrl}" onclick="abrirZoomImagen()" 
-                         class="h-full w-full object-cover transition-all duration-300 cursor-zoom-in" 
+                         class="h-full w-full object-contain p-2 transition-all duration-300 cursor-zoom-in"
                          onerror="this.src='https://via.placeholder.com/600?text=${encodeURIComponent(prod.n)}'">
                 </div>
 
