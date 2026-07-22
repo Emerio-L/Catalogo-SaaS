@@ -561,6 +561,13 @@ async function applyAccountTransitions(tenantsInput) {
     }
 }
 
+async function startManualActivationPeriod(tenant, activatedAt = new Date()) {
+    const plan = tenant.planId ? await Plan.findById(tenant.planId) : null;
+    tenant.currentPeriodStart = activatedAt;
+    tenant.currentPeriodEnd = nextBillingDate(activatedAt, tenant.billingDay || activatedAt.getDate());
+    tenant.paymentDueDate = addDays(tenant.currentPeriodEnd, plan?.graceDays || 0);
+}
+
 function tenantBillingPayload(tenant, plan = null) {
     return {
         accountNumber: tenant.accountNumber,
@@ -2220,6 +2227,7 @@ app.patch('/api/super-admin/tenants/:id/status', requireSuperAdminAuth, async (r
         tenant.suspendedAt = data.status === 'suspended' ? new Date() : (data.status === 'active' ? null : tenant.suspendedAt);
         tenant.deletedAt = data.status === 'deleted' ? new Date() : (data.status !== 'deleted' ? null : tenant.deletedAt);
         if (data.status !== 'deleted') tenant.deletedReason = '';
+        if (data.status === 'active') await startManualActivationPeriod(tenant);
         await tenant.save();
         await logAccountStatus(tenant, previousStatus, data.status, data.reason || 'Cambio manual super admin', req.user._id);
         res.json({ success: true, tenant: await serializeTenantForSuperAdmin(tenant) });

@@ -146,6 +146,34 @@ async function main() {
     assert(superLogin.response.ok && superLogin.data.devSessionToken, 'Sesion super admin creada');
     const superAuth = { Authorization: `Bearer ${superLogin.data.devSessionToken}` };
 
+    const expiredAt = new Date(Date.now() - (10 * 24 * 60 * 60 * 1000));
+    await prisma.tenant.update({
+        where: { id: tenant.id },
+        data: {
+            status: 'suspended',
+            activo: false,
+            suspendedAt: expiredAt,
+            currentPeriodStart: expiredAt,
+            currentPeriodEnd: expiredAt,
+            paymentDueDate: expiredAt
+        }
+    });
+    const activateTenant = await request(API, `/api/super-admin/tenants/${tenant.id}/status`, {
+        method: 'PATCH',
+        headers: { ...superAuth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active', reason: 'Activacion de prueba' })
+    });
+    assert(activateTenant.response.ok, 'Super admin activa una cuenta suspendida');
+    await request(API, '/api/super-admin/dashboard', { headers: superAuth });
+    const activatedTenant = await prisma.tenant.findUnique({ where: { id: tenant.id } });
+    assert(
+        activatedTenant.status === 'active'
+            && activatedTenant.activo
+            && activatedTenant.suspendedAt === null
+            && activatedTenant.paymentDueDate > new Date(),
+        'Activacion manual persiste despues de las transiciones automaticas'
+    );
+
     const temporaryAccess = await gatewayRequest(`/api/super-admin/tenants/${tenant.id}/recovery`, {
         method: 'POST',
         headers: { ...superAuth, 'Content-Type': 'application/json' },

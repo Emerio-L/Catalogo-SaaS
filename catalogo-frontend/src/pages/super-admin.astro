@@ -1260,13 +1260,19 @@ const publicBackendUrl = import.meta.env.PUBLIC_BACKEND_URL || '';
         }
 
         async function updateTenantStatus(id, status) {
-            await superFetch(`/tenants/${id}/status`, {
+            const res = await superFetch(`/tenants/${id}/status`, {
                 method: 'PATCH',
                 body: JSON.stringify({
                     status,
                     reason: status === 'suspended' ? 'Suspension manual super admin' : 'Activacion manual super admin'
                 })
             });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showSuperToast(data.error || 'No se pudo actualizar el estado de la cuenta.', 'error');
+                return;
+            }
+            showSuperToast(status === 'suspended' ? 'Cuenta suspendida.' : 'Cuenta activada.');
             await refreshTenantViews();
         }
 
